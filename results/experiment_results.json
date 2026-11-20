@@ -1,0 +1,596 @@
+{
+  "experimental_setup": {
+    "n_cycles_per_condition": 30,
+    "seed": 42
+  },
+  "conditions": {
+    "cond0_siloed_baseline": {
+      "n_cycles": 30,
+      "food_loss_rate_pct": {
+        "mean": 13.38,
+        "std": 2.63
+      },
+      "order_fulfillment_rate_pct": {
+        "mean": 98.72,
+        "std": 2.11
+      },
+      "total_supply_chain_cost_rp": {
+        "mean": 29577103.33,
+        "std": 1250843.22
+      },
+      "net_ecosystem_profit_rp": {
+        "mean": 21740750.0,
+        "std": 1005876.97
+      },
+      "jains_fairness_index": {
+        "mean": 0.9367,
+        "std": 0.0085
+      },
+      "resource_utilization_pct": {
+        "mean": 50.97,
+        "std": 1.25
+      },
+      "negotiation_success_rate_pct": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "replanning_response_time_sec": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "llm_cost_usd": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "privacy_leaks_detected": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "constraint_violations": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "constraint_violation_rate_pct": 0.0
+    },
+    "cond1_normal_agentic": {
+      "n_cycles": 30,
+      "food_loss_rate_pct": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "order_fulfillment_rate_pct": {
+        "mean": 98.72,
+        "std": 2.11
+      },
+      "total_supply_chain_cost_rp": {
+        "mean": 29520787.0,
+        "std": 1505205.91
+      },
+      "net_ecosystem_profit_rp": {
+        "mean": 27383649.67,
+        "std": 1164873.47
+      },
+      "jains_fairness_index": {
+        "mean": 0.9607,
+        "std": 0.0041
+      },
+      "resource_utilization_pct": {
+        "mean": 85.0,
+        "std": 0.0
+      },
+      "negotiation_success_rate_pct": {
+        "mean": 100.0,
+        "std": 0.0
+      },
+      "replanning_response_time_sec": {
+        "mean": 2.24,
+        "std": 0.06
+      },
+      "llm_cost_usd": {
+        "mean": 0.0062,
+        "std": 0.0001
+      },
+      "privacy_leaks_detected": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "constraint_violations": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "constraint_violation_rate_pct": 0.0
+    },
+    "cond2_disruption_no_replan": {
+      "n_cycles": 30,
+      "food_loss_rate_pct": {
+        "mean": 15.47,
+        "std": 2.44
+      },
+      "order_fulfillment_rate_pct": {
+        "mean": 92.92,
+        "std": 7.24
+      },
+      "total_supply_chain_cost_rp": {
+        "mean": 31361721.0,
+        "std": 1777653.35
+      },
+      "net_ecosystem_profit_rp": {
+        "mean": 20214024.33,
+        "std": 1639636.25
+      },
+      "jains_fairness_index": {
+        "mean": 0.8286,
+        "std": 0.0301
+      },
+      "resource_utilization_pct": {
+        "mean": 60.86,
+        "std": 2.71
+      },
+      "negotiation_success_rate_pct": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "replanning_response_time_sec": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "llm_cost_usd": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "privacy_leaks_detected": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "constraint_violations": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "constraint_violation_rate_pct": 0.0
+    },
+    "cond3_disruption_adaptive": {
+      "n_cycles": 30,
+      "food_loss_rate_pct": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "order_fulfillment_rate_pct": {
+        "mean": 98.25,
+        "std": 2.79
+      },
+      "total_supply_chain_cost_rp": {
+        "mean": 29056008.0,
+        "std": 1716287.1
+      },
+      "net_ecosystem_profit_rp": {
+        "mean": 28157963.67,
+        "std": 1508003.83
+      },
+      "jains_fairness_index": {
+        "mean": 0.9332,
+        "std": 0.0222
+      },
+      "resource_utilization_pct": {
+        "mean": 83.8,
+        "std": 2.31
+      },
+      "negotiation_success_rate_pct": {
+        "mean": 100.0,
+        "std": 0.0
+      },
+      "replanning_response_time_sec": {
+        "mean": 4.23,
+        "std": 0.09
+      },
+      "llm_cost_usd": {
+        "mean": 0.0102,
+        "std": 0.0001
+      },
+      "privacy_leaks_detected": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "constraint_violations": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "constraint_violation_rate_pct": 0.0
+    }
+  },
+  "ablations": {
+    "ablation1_single_agent": {
+      "n_cycles": 30,
+      "food_loss_rate_pct": {
+        "mean": 0.14,
+        "std": 0.75
+      },
+      "order_fulfillment_rate_pct": {
+        "mean": 98.25,
+        "std": 2.79
+      },
+      "total_supply_chain_cost_rp": {
+        "mean": 28859870.33,
+        "std": 1543283.99
+      },
+      "net_ecosystem_profit_rp": {
+        "mean": 28077341.33,
+        "std": 1519951.34
+      },
+      "jains_fairness_index": {
+        "mean": 0.8355,
+        "std": 0.072
+      },
+      "resource_utilization_pct": {
+        "mean": 86.22,
+        "std": 5.01
+      },
+      "negotiation_success_rate_pct": {
+        "mean": 100.0,
+        "std": 0.0
+      },
+      "replanning_response_time_sec": {
+        "mean": 2.54,
+        "std": 0.08
+      },
+      "llm_cost_usd": {
+        "mean": 0.0108,
+        "std": 0.0
+      },
+      "privacy_leaks_detected": {
+        "mean": 15.0,
+        "std": 0.0
+      },
+      "constraint_violations": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "constraint_violation_rate_pct": 0.0
+    },
+    "ablation1_multi_agent_6": {
+      "n_cycles": 30,
+      "food_loss_rate_pct": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "order_fulfillment_rate_pct": {
+        "mean": 98.25,
+        "std": 2.79
+      },
+      "total_supply_chain_cost_rp": {
+        "mean": 29056008.0,
+        "std": 1716287.1
+      },
+      "net_ecosystem_profit_rp": {
+        "mean": 28157963.67,
+        "std": 1508003.83
+      },
+      "jains_fairness_index": {
+        "mean": 0.9332,
+        "std": 0.0222
+      },
+      "resource_utilization_pct": {
+        "mean": 83.8,
+        "std": 2.31
+      },
+      "negotiation_success_rate_pct": {
+        "mean": 100.0,
+        "std": 0.0
+      },
+      "replanning_response_time_sec": {
+        "mean": 4.23,
+        "std": 0.09
+      },
+      "llm_cost_usd": {
+        "mean": 0.0102,
+        "std": 0.0001
+      },
+      "privacy_leaks_detected": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "constraint_violations": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "constraint_violation_rate_pct": 0.0
+    },
+    "ablation2_homogeneous_gpt4o": {
+      "n_cycles": 30,
+      "food_loss_rate_pct": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "order_fulfillment_rate_pct": {
+        "mean": 98.25,
+        "std": 2.79
+      },
+      "total_supply_chain_cost_rp": {
+        "mean": 29056008.0,
+        "std": 1716287.1
+      },
+      "net_ecosystem_profit_rp": {
+        "mean": 28157963.67,
+        "std": 1508003.83
+      },
+      "jains_fairness_index": {
+        "mean": 0.9332,
+        "std": 0.0222
+      },
+      "resource_utilization_pct": {
+        "mean": 83.8,
+        "std": 2.31
+      },
+      "negotiation_success_rate_pct": {
+        "mean": 100.0,
+        "std": 0.0
+      },
+      "replanning_response_time_sec": {
+        "mean": 4.71,
+        "std": 0.09
+      },
+      "llm_cost_usd": {
+        "mean": 0.0175,
+        "std": 0.0001
+      },
+      "privacy_leaks_detected": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "constraint_violations": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "constraint_violation_rate_pct": 0.0
+    },
+    "ablation2_heterogeneous_6llm": {
+      "n_cycles": 30,
+      "food_loss_rate_pct": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "order_fulfillment_rate_pct": {
+        "mean": 98.25,
+        "std": 2.79
+      },
+      "total_supply_chain_cost_rp": {
+        "mean": 29056008.0,
+        "std": 1716287.1
+      },
+      "net_ecosystem_profit_rp": {
+        "mean": 28157963.67,
+        "std": 1508003.83
+      },
+      "jains_fairness_index": {
+        "mean": 0.9332,
+        "std": 0.0222
+      },
+      "resource_utilization_pct": {
+        "mean": 83.8,
+        "std": 2.31
+      },
+      "negotiation_success_rate_pct": {
+        "mean": 100.0,
+        "std": 0.0
+      },
+      "replanning_response_time_sec": {
+        "mean": 4.23,
+        "std": 0.09
+      },
+      "llm_cost_usd": {
+        "mean": 0.0102,
+        "std": 0.0001
+      },
+      "privacy_leaks_detected": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "constraint_violations": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "constraint_violation_rate_pct": 0.0
+    },
+    "ablation2_cost_saving_pct": 41.71,
+    "ablation2_latency_reduction_pct": 10.19,
+    "ablation3_pure_llm_no_milp": {
+      "n_cycles": 30,
+      "food_loss_rate_pct": {
+        "mean": 1.52,
+        "std": 1.43
+      },
+      "order_fulfillment_rate_pct": {
+        "mean": 93.67,
+        "std": 6.58
+      },
+      "total_supply_chain_cost_rp": {
+        "mean": 28485689.13,
+        "std": 1154485.11
+      },
+      "net_ecosystem_profit_rp": {
+        "mean": 28898710.87,
+        "std": 1149072.94
+      },
+      "jains_fairness_index": {
+        "mean": 0.9477,
+        "std": 0.0028
+      },
+      "resource_utilization_pct": {
+        "mean": 85.0,
+        "std": 0.0
+      },
+      "negotiation_success_rate_pct": {
+        "mean": 100.0,
+        "std": 0.0
+      },
+      "replanning_response_time_sec": {
+        "mean": 4.22,
+        "std": 0.08
+      },
+      "llm_cost_usd": {
+        "mean": 0.0102,
+        "std": 0.0001
+      },
+      "privacy_leaks_detected": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "constraint_violations": {
+        "mean": 1.7,
+        "std": 0.46
+      },
+      "constraint_violation_rate_pct": 100.0
+    },
+    "ablation3_neuro_symbolic_milp": {
+      "n_cycles": 30,
+      "food_loss_rate_pct": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "order_fulfillment_rate_pct": {
+        "mean": 98.25,
+        "std": 2.79
+      },
+      "total_supply_chain_cost_rp": {
+        "mean": 29056008.0,
+        "std": 1716287.1
+      },
+      "net_ecosystem_profit_rp": {
+        "mean": 28157963.67,
+        "std": 1508003.83
+      },
+      "jains_fairness_index": {
+        "mean": 0.9332,
+        "std": 0.0222
+      },
+      "resource_utilization_pct": {
+        "mean": 83.8,
+        "std": 2.31
+      },
+      "negotiation_success_rate_pct": {
+        "mean": 100.0,
+        "std": 0.0
+      },
+      "replanning_response_time_sec": {
+        "mean": 4.23,
+        "std": 0.09
+      },
+      "llm_cost_usd": {
+        "mean": 0.0102,
+        "std": 0.0001
+      },
+      "privacy_leaks_detected": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "constraint_violations": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "constraint_violation_rate_pct": 0.0
+    }
+  },
+  "per_agent_cost_latency": {
+    "heterogeneous": {
+      "AGT-01": {
+        "avg_latency_ms": 354.78,
+        "cost_per_cycle_usd": 4.4e-05,
+        "cost_per_1k_cycles_usd": 0.044
+      },
+      "AGT-02": {
+        "avg_latency_ms": 864.12,
+        "cost_per_cycle_usd": 0.007455,
+        "cost_per_1k_cycles_usd": 7.455
+      },
+      "AGT-03": {
+        "avg_latency_ms": 592.18,
+        "cost_per_cycle_usd": 0.000235,
+        "cost_per_1k_cycles_usd": 0.235
+      },
+      "AGT-04": {
+        "avg_latency_ms": 181.02,
+        "cost_per_cycle_usd": 9e-06,
+        "cost_per_1k_cycles_usd": 0.009
+      },
+      "AGT-05": {
+        "avg_latency_ms": 344.74,
+        "cost_per_cycle_usd": 3.6e-05,
+        "cost_per_1k_cycles_usd": 0.036
+      },
+      "AGT-06": {
+        "avg_latency_ms": 630.85,
+        "cost_per_cycle_usd": 0.002395,
+        "cost_per_1k_cycles_usd": 2.395
+      }
+    },
+    "homogeneous": {
+      "AGT-01": {
+        "avg_latency_ms": 909.76,
+        "cost_per_cycle_usd": 0.003175,
+        "cost_per_1k_cycles_usd": 3.175
+      },
+      "AGT-02": {
+        "avg_latency_ms": 758.92,
+        "cost_per_cycle_usd": 0.005641,
+        "cost_per_1k_cycles_usd": 5.641
+      },
+      "AGT-03": {
+        "avg_latency_ms": 1013.21,
+        "cost_per_cycle_usd": 0.003917,
+        "cost_per_1k_cycles_usd": 3.917
+      },
+      "AGT-04": {
+        "avg_latency_ms": 829.29,
+        "cost_per_cycle_usd": 0.001365,
+        "cost_per_1k_cycles_usd": 1.365
+      },
+      "AGT-05": {
+        "avg_latency_ms": 731.06,
+        "cost_per_cycle_usd": 0.001013,
+        "cost_per_1k_cycles_usd": 1.013
+      },
+      "AGT-06": {
+        "avg_latency_ms": 634.36,
+        "cost_per_cycle_usd": 0.002395,
+        "cost_per_1k_cycles_usd": 2.395
+      }
+    }
+  },
+  "failure_cases": {
+    "case1_food_safety_hard_block": {
+      "scenario": "Batch H003 (1.000 kg Grade C) gagal uji mikroba & residu pestisida (0,08 ppm > 0,05 ppm)",
+      "flr_pct": 22.22,
+      "ofr_pct": 87.5,
+      "hitl_required": true,
+      "hitl_reasons": [
+        "FOOD_SAFETY_HARD_BLOCK_TRIGGERED",
+        "FLR_22.22%_EXCEEDS_10%"
+      ],
+      "h003_allocated_kg": 0
+    },
+    "case2_negotiation_deadlock": {
+      "scenario": "Pembeli alternatif menawar Rp5.100-5.300/kg (< floor price privat Koperasi) selama 3 ronde",
+      "rounds_executed": 3,
+      "deadlock_occurred": true,
+      "hitl_required": true,
+      "hitl_reasons": [
+        "NEGOTIATION_DEADLOCK_AFTER_3_ROUNDS"
+      ],
+      "privacy_leaks": 0
+    },
+    "case3_compound_disruption": {
+      "scenario": "Cold Storage Failure (3.000 -> 1.000 kg) + Demand Surge (2.000 -> 2.800 kg) simultan",
+      "flr_pct": 0.0,
+      "ofr_pct": 93.75,
+      "overtime_activated": false,
+      "third_pl_activated": false,
+      "grade_b_to_supermart_kg": 800.0,
+      "hitl_required": true,
+      "hitl_reasons": [
+        "CAPACITY_DROP_66.7%_EXCEEDS_40%",
+        "RETAIL_GRADE_B_SUBSTITUTION_REQUIRES_APPROVAL"
+      ],
+      "replanning_time_sec": 4.31
+    }
+  },
+  "audit_chain_verified": true
+}

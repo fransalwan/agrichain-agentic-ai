@@ -1,0 +1,14 @@
+{
+  "seed": 42,
+  "counts": {
+    "agrofarm_history": 1200,
+    "agrofarm_active": 90,
+    "koperasi_negotiations": 1500,
+    "freshfood_qc_docs": 3000,
+    "freshfood_rgb_images": 3000,
+    "coldchain_telemetry": 10000,
+    "coldchain_routes": 500,
+    "supermart_pos_sales": 3285,
+    "total_records": 19575
+  }
+}

@@ -1,0 +1,75 @@
+version: "3.9"
+
+# Heterogeneous Multi-Enterprise Database & Message Bus Stack
+# Demonstrates real database heterogeneity across 5 independent enterprises
+services:
+  agrofarm-postgres:
+    image: postgres:16-alpine
+    container_name: agrichain_agrofarm_pg
+    environment:
+      POSTGRES_USER: agro_user
+      POSTGRES_PASSWORD: agro_pass
+      POSTGRES_DB: agrofarm_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - agrofarm_pg_data:/var/lib/postgresql/data
+
+  koperasi-mysql:
+    image: mysql:8.0
+    container_name: agrichain_koperasi_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root_pass
+      MYSQL_DATABASE: koperasi_db
+      MYSQL_USER: kop_user
+      MYSQL_PASSWORD: kop_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - koperasi_mysql_data:/var/lib/mysql
+
+  freshfood-mongo:
+    image: mongo:7.0
+    container_name: agrichain_freshfood_mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - freshfood_mongo_data:/data/db
+
+  coldchain-timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    container_name: agrichain_coldchain_tsdb
+    environment:
+      POSTGRES_USER: cc_user
+      POSTGRES_PASSWORD: cc_pass
+      POSTGRES_DB: coldchain_tsdb
+    ports:
+      - "5433:5432"
+    volumes:
+      - coldchain_tsdb_data:/var/lib/postgresql/data
+
+  supermart-mysql:
+    image: mysql:8.0
+    container_name: agrichain_supermart_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root_pass
+      MYSQL_DATABASE: supermart_db
+      MYSQL_USER: sm_user
+      MYSQL_PASSWORD: sm_pass
+    ports:
+      - "3307:3306"
+    volumes:
+      - supermart_mysql_data:/var/lib/mysql
+
+  orchestrator-redis:
+    image: redis:7-alpine
+    container_name: agrichain_redis_bus
+    ports:
+      - "6379:6379"
+
+volumes:
+  agrofarm_pg_data:
+  koperasi_mysql_data:
+  freshfood_mongo_data:
+  coldchain_tsdb_data:
+  supermart_mysql_data:

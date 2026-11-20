@@ -1,0 +1,220 @@
+{
+  "dataset_counts": {
+    "agrofarm_history": 1200,
+    "agrofarm_active": 90,
+    "koperasi_negotiations": 1500,
+    "freshfood_qc_docs": 3000,
+    "freshfood_rgb_images": 3000,
+    "coldchain_telemetry": 10000,
+    "coldchain_routes": 500,
+    "supermart_pos_sales": 3285,
+    "total_records": 19575
+  },
+  "local_databases": {
+    "AgroFarm (PostgreSQL schema)": "C:\\Users\\Admin\\Desktop\\Matkul Sem3\\Agent Enterprise\\tugas_week11\\data\\local_dbs\\agrofarm_pg.sqlite",
+    "Koperasi Tani (MySQL schema)": "C:\\Users\\Admin\\Desktop\\Matkul Sem3\\Agent Enterprise\\tugas_week11\\data\\local_dbs\\koperasi_mysql.sqlite",
+    "FreshFood Processing (MongoDB JSON collection)": "C:\\Users\\Admin\\Desktop\\Matkul Sem3\\Agent Enterprise\\tugas_week11\\data\\freshfood_tomato_qc.json",
+    "ColdChain Logistics (TimescaleDB schema)": "C:\\Users\\Admin\\Desktop\\Matkul Sem3\\Agent Enterprise\\tugas_week11\\data\\local_dbs\\coldchain_timescaledb.sqlite",
+    "SuperMart (MySQL schema)": "C:\\Users\\Admin\\Desktop\\Matkul Sem3\\Agent Enterprise\\tugas_week11\\data\\local_dbs\\supermart_mysql.sqlite"
+  },
+  "enterprise_models": {
+    "AGT-01_AgroFarm": {
+      "enterprise": "AgroFarm",
+      "model": "Random Forest Regression",
+      "train_rows": 840,
+      "val_rows": 180,
+      "test_rows": 180,
+      "cv_5fold_mae_kg": 142.99,
+      "test_mae_kg": 93.09,
+      "test_mae_pct_of_mean": 7.24,
+      "target_mae_pct": "<= 10.0%",
+      "target_met": true,
+      "test_rmse_kg": 120.14,
+      "test_r2": 0.9393,
+      "train_time_ms": 306.8,
+      "avg_inference_ms": 0.2982
+    },
+    "AGT-02_Koperasi": {
+      "enterprise": "Koperasi Tani",
+      "model": "LightGBM Regressor + Contract Net Auction",
+      "train_rows": 1050,
+      "val_rows": 225,
+      "test_rows": 225,
+      "test_mae_rp": 240.1,
+      "test_mape_pct": 4.28,
+      "test_r2": 0.9853,
+      "target_met": true,
+      "train_time_ms": 116.4,
+      "avg_inference_ms": 0.0055
+    },
+    "AGT-03_FreshFood": {
+      "enterprise": "FreshFood Processing",
+      "model": "2D-Conv Spatial-Spectral CNN (MobileNetV2-Feature) + MLP Head",
+      "train_images": 2100,
+      "val_images": 450,
+      "test_images": 450,
+      "test_accuracy_pct": 98.67,
+      "test_macro_f1": 0.9878,
+      "grade_c_recall_pct": 97.89,
+      "reject_recall_pct": 100.0,
+      "target_accuracy_pct": ">= 90.0%",
+      "target_met": true,
+      "train_time_ms": 3625.6,
+      "avg_inference_ms": 0.0018
+    },
+    "AGT-04_ColdChain": {
+      "enterprise": "ColdChain Logistics",
+      "model": "Isolation Forest + Google OR-Tools CVRP",
+      "train_normal_rows": 7000,
+      "val_rows": 1500,
+      "test_rows": 1500,
+      "anomaly_precision_pct": 91.06,
+      "anomaly_recall_pct": 100.0,
+      "anomaly_f1_pct": 95.32,
+      "anomaly_roc_auc": 1.0,
+      "cvrp_naive_distance_km": 382.0,
+      "cvrp_optimized_distance_km": 263.0,
+      "cvrp_distance_reduction_pct": 31.15,
+      "target_route_reduction": ">= 10.0%",
+      "target_met": true,
+      "train_time_ms": 299.3,
+      "avg_inference_ms": 0.0141
+    },
+    "AGT-05_SuperMart": {
+      "enterprise": "SuperMart",
+      "model": "XGBoost Regression + Newsvendor Safety-Stock",
+      "train_rows": 2299,
+      "val_rows": 493,
+      "test_rows": 493,
+      "test_mae_kg": 26.71,
+      "test_rmse_kg": 33.54,
+      "test_mape_pct": 3.72,
+      "target_mape_pct": "<= 15.0%",
+      "target_met": true,
+      "test_r2": 0.9215,
+      "residual_std_kg": 33.54,
+      "train_time_ms": 196.3,
+      "avg_inference_ms": 0.0028
+    }
+  },
+  "milp_showcase_verification": {
+    "normal_condition": {
+      "solver_status": "Optimal",
+      "solve_time_ms": 338.98,
+      "allocations": [
+        {
+          "lot_id": "H001",
+          "grade": "A",
+          "shelf_life_days": 5,
+          "channel": "SuperMart",
+          "qty_kg": 2000.0,
+          "unit_cost_rp": 5420.0,
+          "unit_revenue_rp": 14500.0
+        },
+        {
+          "lot_id": "H002",
+          "grade": "B",
+          "shelf_life_days": 3,
+          "channel": "FreshFood_Reg",
+          "qty_kg": 1000.0,
+          "unit_cost_rp": 6800.0,
+          "unit_revenue_rp": 11500.0
+        },
+        {
+          "lot_id": "H002",
+          "grade": "B",
+          "shelf_life_days": 3,
+          "channel": "ColdStorage",
+          "qty_kg": 500.0,
+          "unit_cost_rp": 7630.0,
+          "unit_revenue_rp": 10800.0
+        },
+        {
+          "lot_id": "H003",
+          "grade": "C",
+          "shelf_life_days": 2,
+          "channel": "FreshFood_Reg",
+          "qty_kg": 1000.0,
+          "unit_cost_rp": 6800.0,
+          "unit_revenue_rp": 9200.0
+        }
+      ],
+      "unallocated_kg": {
+        "H001": 0.0,
+        "H002": 0.0,
+        "H003": 0.0
+      },
+      "total_supply_kg": 4500.0,
+      "total_loss_kg": 0.0,
+      "food_loss_rate_pct": 0.0,
+      "order_fulfillment_rate_pct": 100.0,
+      "total_supply_chain_cost_rp": 28255000.0,
+      "total_ecosystem_revenue_rp": 55100000.0,
+      "net_ecosystem_profit_rp": 26845000.0,
+      "overtime_activated": false,
+      "third_pl_activated": false,
+      "freshfood_used_kg": 2000.0,
+      "coldstorage_used_kg": 500.0,
+      "supermart_fulfilled_kg": 2000.0
+    },
+    "cold_storage_failure_adaptive": {
+      "solver_status": "Optimal",
+      "solve_time_ms": 29.21,
+      "allocations": [
+        {
+          "lot_id": "H001",
+          "grade": "A",
+          "shelf_life_days": 5,
+          "channel": "SuperMart",
+          "qty_kg": 2000.0,
+          "unit_cost_rp": 5420.0,
+          "unit_revenue_rp": 14500.0
+        },
+        {
+          "lot_id": "H002",
+          "grade": "B",
+          "shelf_life_days": 3,
+          "channel": "FreshFood_Reg",
+          "qty_kg": 1000.0,
+          "unit_cost_rp": 6800.0,
+          "unit_revenue_rp": 11500.0
+        },
+        {
+          "lot_id": "H002",
+          "grade": "B",
+          "shelf_life_days": 3,
+          "channel": "FreshFood_OT",
+          "qty_kg": 500.0,
+          "unit_cost_rp": 7600.0,
+          "unit_revenue_rp": 11500.0
+        },
+        {
+          "lot_id": "H003",
+          "grade": "C",
+          "shelf_life_days": 2,
+          "channel": "FreshFood_Reg",
+          "qty_kg": 1000.0,
+          "unit_cost_rp": 6800.0,
+          "unit_revenue_rp": 9200.0
+        }
+      ],
+      "unallocated_kg": {
+        "H001": 0.0,
+        "H002": 0.0,
+        "H003": 0.0
+      },
+      "total_supply_kg": 4500.0,
+      "total_loss_kg": 0.0,
+      "food_loss_rate_pct": 0.0,
+      "order_fulfillment_rate_pct": 100.0,
+      "total_supply_chain_cost_rp": 28490000.0,
+      "total_ecosystem_revenue_rp": 55450000.0,
+      "net_ecosystem_profit_rp": 26960000.0,
+      "overtime_activated": true,
+      "third_pl_activated": false,
+      "freshfood_used_kg": 2500.0,
+      "coldstorage_used_kg": 0,
+      "supermart_fulfilled_kg": 2000.0
+    }
+  }
+}
