@@ -1,0 +1,39 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "AgriChain: FastAPI Gateway (Port 8000)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": ["src.api.main:app", "--reload", "--host", "127.0.0.1", "--port", "8000"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "AgriChain: Streamlit Control Center (Port 8501)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "streamlit",
+      "args": ["run", "src/dashboard/app.py", "--server.port", "8501"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "AgriChain: Train 5 ML Models & Verify MILP",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/models/train_all.py",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "AgriChain: Run Bab 9 Experiments & Ablations",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/experiments/run_experiments.py",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal"
+    }
+  ]
+}

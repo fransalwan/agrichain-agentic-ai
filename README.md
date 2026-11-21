@@ -5,7 +5,7 @@
 ![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
 ![LangGraph](https://img.shields.io/badge/Orchestration-LangGraph%20StateGraph-1F4E79)
 ![Optimization](https://img.shields.io/badge/Optimization-PuLP%20MILP--FEFO%20%2B%20OR--Tools%20CVRP-2B6CB0)
-![Tests](https://img.shields.io/badge/Pytest-6%2F6%20Passed-2E7D32)
+![Tests](https://img.shields.io/badge/Pytest-7%2F7%20Passed-2E7D32)
 ![Standards](https://img.shields.io/badge/Standards-A2A%20%7C%20FIPA--ACL%20%7C%20GS1%20EPCIS%202.0%20%7C%20NIST%20AI%20RMF%201.0-0F766E)
 
 > **Proyek Magister Ilmu Komputer (S2 — Konsentrasi Kecerdasan Artifisial)**  
@@ -16,31 +16,44 @@
 
 ## Ringkasan Proyek
 
-`agrichain-agentic-ai` adalah implementasi lengkap ekosistem **Multi-Enterprise Agentic AI** untuk rantai pasok pangan mudah rusak (*perishable agri-food supply chain*, studi kasus komoditas **tomat** Grade A, B, C) yang mengoordinasikan **5 perusahaan independen** melalui **Global Agentic Control Center** dengan prinsip **Zero-Direct-DB-Access (*Data Sovereignty*)**.
-
-Berbeda dari arsitektur agen tunggal (*single-agent*) maupun *homogeneous LLM*, sistem ini menerapkan **heterogenitas model ganda**:
-1. **6 Model Domain ML / Optimasi Berbeda** yang dilatih pada dataset dummy terisolasi lintas 5 perusahaan (**19.575 rekaman terstruktur + 3.000 citra RGB tomat**).
-2. **6 Keluarga LLM Berbeda** yang dirutekan sesuai kebutuhan modalitas, latensi *edge*, privasi *on-premise*, dan kedalaman penalaran negosiasi/orkestrasi.
-3. **Orkestrator *Neuro-Symbolic*** berbasis **LangGraph `StateGraph`** + **PuLP MILP-FEFO** + negosiasi terbatas *Contract Net Protocol* (maksimal 3 putaran) + gerbang **Human-in-the-Loop (HITL)** berbasis **NIST AI RMF 1.0** + **SHA-256 Hash-Chained Audit Trail**.
-
----
-
-## Arsitektur 6 Agen Otonom (Heterogenitas Model Ganda)
+`agrichain-agentic-ai` mengoordinasikan **5 perusahaan independen** (*AgroFarm, Koperasi Tani, FreshFood Processing, ColdChain Logistics, SuperMart*) melalui **Global Agentic Control Center** menggunakan **6 agen otonom** dengan **heterogenitas model ganda** (6 model domain ML/optimasi berbeda + 6 keluarga LLM berbeda) serta prinsip **Zero-Direct-DB-Access (*Data Sovereignty*)**.
 
 | ID Agen | Enterprise / Layer | Model Domain AI / Optimasi | Model LLM Backbone | Basis Data Lokal |
 | :--- | :--- | :--- | :--- | :--- |
-| `AGT-01` | **AgroFarm** | Random Forest Regression | **Qwen 2.5 14B Instruct** *(On-Premise)* | PostgreSQL |
-| `AGT-02` | **Koperasi Tani** | LightGBM + Contract Net Auction | **Claude 3.5 Sonnet** | MySQL |
-| `AGT-03` | **FreshFood Processing** | 2D-Conv Visual CNN + Food Safety Hard-Block + FEFO | **Gemini 2.5 Flash** *(Multimodal VLM)* | MongoDB |
-| `AGT-04` | **ColdChain Logistics** | Isolation Forest + Google OR-Tools CVRP | **Llama 3.1 8B Instruct** *(Edge)* | TimescaleDB |
-| `AGT-05` | **SuperMart** | XGBoost Regression + Newsvendor Safety-Stock | **Mistral Small 3 (24B)** | MySQL |
-| `AGT-06` | **Global Control Center** | MILP-FEFO Solver (PuLP / CBC) | **GPT-4o** *(LangGraph Orchestrator)* | Redis + Hash-Chained Audit Log |
+| `AGT-01` | **AgroFarm** | Random Forest Regression | **Qwen 2.5 14B Instruct** *(On-Premise)* | PostgreSQL (`agrofarm_pg.sqlite`) |
+| `AGT-02` | **Koperasi Tani** | LightGBM + Contract Net Auction | **Claude 3.5 Sonnet** | MySQL (`koperasi_mysql.sqlite`) |
+| `AGT-03` | **FreshFood Processing** | 2D-Conv Visual CNN + Food Safety Hard-Block + FEFO | **Gemini 2.5 Flash** *(Multimodal VLM)* | MongoDB (`freshfood_tomato_qc.json` + RGB NPZ) |
+| `AGT-04` | **ColdChain Logistics** | Isolation Forest + Google OR-Tools CVRP | **Llama 3.1 8B Instruct** *(Edge)* | TimescaleDB (`coldchain_timescaledb.sqlite`) |
+| `AGT-05` | **SuperMart** | XGBoost Regression + Newsvendor Safety-Stock | **Mistral Small 3 (24B)** | MySQL (`supermart_mysql.sqlite`) |
+| `AGT-06` | **Global Control Center** | MILP-FEFO Solver (PuLP / CBC) | **GPT-4o** *(LangGraph Orchestrator)* | Redis + SHA-256 Audit Trail |
+
+---
+
+## Galeri Screenshot Aplikasi Aktual
+
+### 1. Global Control Center — Simulasi Role RBAC, KPI Delta, HITL Console, Sankey & Perubahan Keputusan Terukur
+![Global Control Center](./docs/screenshots/01_global_control_center.png)
+
+### 2. LangGraph 7-Node Decision Trace, FIPA-ACL Feed & SHA-256 Audit Trail
+![Decision Trace and Audit Trail](./docs/screenshots/02_decision_trace_audit.png)
+
+### 3. Modul FreshFood (`AGT-03`) — Galeri Citra RGB Tomat Aktual, CNN Visual QC & Food Safety Hard-Block
+![FreshFood RGB CNN Visual QC](./docs/screenshots/03_freshfood_cnn_rgb_qc.png)
+
+### 4. Modul ColdChain (`AGT-04`) — Deteksi Anomali Suhu Isolation Forest & Optimasi Rute OR-Tools CVRP (-31,15%)
+![ColdChain Anomaly and CVRP](./docs/screenshots/04_coldchain_anomaly_cvrp.png)
+
+### 5. Multi-Enterprise Data Explorer & Penegakan Privasi Data (`🔒 REDACTED`)
+![Data Explorer and Privacy Firewall](./docs/screenshots/05_data_explorer_privacy.png)
+
+### 6. FastAPI Multi-Enterprise Gateway — Swagger UI (`:8000/docs`)
+![FastAPI Swagger Gateway](./docs/screenshots/06_fastapi_swagger_gateway.png)
 
 ---
 
 ## Hasil Evaluasi Empiris (Aktual dari Eksekusi Kode)
 
-Seluruh angka di bawah ini direkam langsung dari eksekusi [`src/models/train_all.py`](./src/models/train_all.py) (`results/ml_metrics.json`) dan [`src/experiments/run_experiments.py`](./src/experiments/run_experiments.py) (`results/experiment_results.json`, `seed = 42`, 30 siklus berpasangan per kondisi).
+Seluruh angka terekam langsung dari [`src/models/train_all.py`](./src/models/train_all.py) (`results/ml_metrics.json`) dan [`src/experiments/run_experiments.py`](./src/experiments/run_experiments.py) (`results/experiment_results.json`, `seed = 42`, 30 siklus berpasangan per kondisi).
 
 ### 1. Kinerja 5 Model AI Domain Lokal & Optimasi
 | Agen & Enterprise | Model | Hasil Uji Aktual | Target KPI | Status |
@@ -52,7 +65,7 @@ Seluruh angka di bawah ini direkam langsung dari eksekusi [`src/models/train_all
 | `AGT-05` SuperMart | XGBoost Regression | MAE **26,71 kg**, MAPE **3,72%**, R² **0,9215** | MAPE ≤ 15% | Lulus |
 | `AGT-06` Control Center | PuLP CBC MILP-FEFO | Normal & Disrupt Adaptive: FLR **0,0%**, OFR **100,0%**, solve **29,21 ms** | FLR ≤ 5%, OFR ≥ 95% | Lulus |
 
-### 2. Perbandingan 4 Kondisi Eksperimen (30 Siklus Berpasangan)
+### 2. Perbandingan 4 Kondisi Eksperimen & 3 Studi Ablasi (30 Siklus Berpasangan)
 | Global KPI | Kondisi 0: Siloed Baseline | Kondisi 1: Normal Agentic | Kondisi 2: Disrupt Tanpa Replan | Kondisi 3: Disrupt + Adaptive Replan | Dampak Adaptive (K3 vs K2) |
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | **Food Loss Rate (FLR, %)** | 13,38 ± 2,63 | **0,00 ± 0,00** | 15,47 ± 2,44 | **0,00 ± 0,00** | **-15,47 poin %** |
@@ -63,17 +76,86 @@ Seluruh angka di bawah ini direkam langsung dari eksekusi [`src/models/train_all
 | **Replanning Time (dtk)** | — | 2,24 ± 0,06 | — | **4,23 ± 0,09** | **< 5 detik** |
 | **Privacy Leaks (Field Privat)** | 0 | **0** | 0 | **0** | **Zero Leak** |
 
-![Perbandingan Kinerja Ekosistem pada 4 Kondisi Eksperimen](./results/figures/fig_9_1_conditions.png)
-
-### 3. Hasil Tiga Studi Ablasi & Efisiensi Biaya/Latensi
 - **Ablasi 1 (*Multi-Agent 6 Agen* vs *Single-Agent Monolitik*):** Menjaga **0 kebocoran data privat** (vs **15 field privat terekspos**) dan menaikkan *Jain's Fairness Index* dari **0,8355 → 0,9332**.
-- **Ablasi 2 (*Heterogeneous 6-LLM* vs *Homogeneous 6× GPT-4o*):** Mempertahankan kualitas keputusan identik sembari **menghemat biaya token 41,71%** (`USD 17,50` → `USD 10,20` per 1.000 siklus) dan **menurunkan latensi *replanning* 10,19%** (`4,71 s` → `4,23 s`; latensi *edge alert* ColdChain turun **-78,2%** menjadi `181,02 ms`).
-- **Ablasi 3 (*Neuro-Symbolic MILP-FEFO + LLM* vs *Pure LLM*):** Menurunkan pelanggaran kendala dari **100,0% (1,70 pelanggaran/siklus) → 0,0%** dan menekan FLR dari **1,52% → 0,00%**.
-- **3 Skenario Analisis Kegagalan (NIST AI RMF 1.0):** *Food Safety Hard-Block* (`H003` dialokasikan **0 kg**, HITL aktif), *3-Round Negotiation Deadlock* (berhenti deterministik di ronde ke-3, **0 privacy leak**, HITL aktif), dan *Compound Disruption* (FLR **0,00%**, substitusi Grade B `800 kg` ≤ batas 30%, HITL aktif) dengan **SHA-256 audit chain terverifikasi 100%**.
+- **Ablasi 2 (*Heterogeneous 6-LLM* vs *Homogeneous 6× GPT-4o*):** Menghemat biaya token **41,71%** (`USD 17,50` → `USD 10,20` per 1.000 siklus) dan mempercepat *replanning* **10,19%** (`4,71 s` → `4,23 s`; *edge alert* ColdChain turun **-78,2%**).
+- **Ablasi 3 (*Neuro-Symbolic MILP-FEFO + LLM* vs *Pure LLM*):** Menurunkan pelanggaran kendala dari **100,0% → 0,0%** dan menekan FLR dari **1,52% → 0,00%**.
 
+![Perbandingan Kinerja Ekosistem pada 4 Kondisi Eksperimen](./results/figures/fig_9_1_conditions.png)
 ![Hasil Tiga Studi Ablasi Arsitektur Multi-Agent](./results/figures/fig_9_2_ablation_comparison.png)
-
 ![Analisis Biaya Token dan Latensi per Agen](./results/figures/fig_9_3_agent_cost_latency.png)
+
+---
+
+## Petunjuk Menjalankan di Visual Studio Code (VS Code)
+
+Proyek ini sudah dilengkapi konfigurasi siap pakai di [`.vscode/launch.json`](./.vscode/launch.json) dan [`.vscode/tasks.json`](./.vscode/tasks.json):
+
+1. **Buka Folder Proyek di VS Code:**
+   - Pilih `File` → `Open Folder...` lalu pilih folder `agrichain-agentic-ai` (atau ekstrak `agrichain-agentic-ai_submission.zip`).
+2. **Pilih Python Interpreter (Python 3.11+):**
+   - Tekan `Ctrl + Shift + P` → ketik `Python: Select Interpreter` → pilih Python 3.11+ (atau virtual environment `.venv`).
+3. **Instal Dependensi:**
+   - Buka Terminal (`Ctrl + ~`) atau jalankan Task `AgriChain: Install Requirements`, lalu jalankan:
+     ```bash
+     pip install -r requirements.txt
+     ```
+4. **Jalankan Server dengan 1 Klik via *Run & Debug* (`Ctrl + Shift + D`):**
+   - Pilih **`AgriChain: FastAPI Gateway (Port 8000)`** → tekan `F5` (Swagger UI aktif di `http://127.0.0.1:8000/docs`).
+   - Buka konfigurasi kedua **`AgriChain: Streamlit Control Center (Port 8501)`** → tekan `F5` (Dashboard aktif di `http://127.0.0.1:8501`).
+   - *(Opsional via Terminal Split)*:
+     ```bash
+     # Terminal 1 — FastAPI Gateway
+     python -m uvicorn src.api.main:app --reload --port 8000
+
+     # Terminal 2 — Streamlit Multi-Enterprise Control Center
+     python -m streamlit run src/dashboard/app.py --server.port 8501
+     ```
+5. **Jalankan Pengujian & Reproduksi Eksperimen:**
+   ```bash
+   # Pengujian otomatis (7/7 unit + FastAPI integration tests)
+   pytest tests/test_ecosystem.py -v
+
+   # Latih ulang 5 model ML + verifikasi MILP-FEFO & CVRP
+   python src/models/train_all.py
+
+   # Jalankan seluruh eksperimen Bab 9 (4 kondisi x 30 siklus + 3 ablasi + 3 grafik)
+   python src/experiments/run_experiments.py
+   ```
+6. *(Opsional)* Mode **LIVE 6-LLM API**: salin `.env.example` menjadi `.env`, ubah `LLM_EXECUTION_MODE=LIVE`, dan isi kredensial OpenAI / Anthropic / Gemini / Mistral / Ollama lokal.
+
+---
+
+## Panduan Alur Demo 5 Menit (Membuktikan Perubahan Keputusan Terukur)
+
+Gunakan alur berikut saat presentasi/demo di hadapan dosen penguji:
+
+1. **Menit 1 — Simulasi Role RBAC & Kedaulatan Data (Tab `Data Explorer & Benchmark`):**
+   - Dalam peran default **`Global Control Center Operator (AGT-06)`**, tunjukkan tabel `Koperasi Tani — market_price_negotiations`: kolom `floor_price_rp` otomatis tampil **`🔒 REDACTED (Private)`**.
+   - Pindah peran di *sidebar* ke **`Koperasi Tani Manager (AGT-02)`** → kolom `floor_price_rp` langsung terbuka lokal, sementara `private_costs` AgroFarm tetap ter-redaksi.
+2. **Menit 2 — Bukti Perubahan Keputusan Terukur saat Gangguan (Tab `Global Control Center`):**
+   - Pilih skenario **`COLD_STORAGE_FAILURE`** (kapasitas ruang dingin turun 3.000 → 1.000 kg) dengan **`Adaptive Replanning = ON`**.
+   - Tunjukkan grafik **Perubahan Alokasi (kg): Statis vs Adaptive Replanning** — terlihat jelas alokasi 500 kg berpindah dari `ColdStorage` ke `FreshFood_OT` (+500 kg lembur) dengan FLR **0,00%** dan profit naik.
+   - Uji juga **`FOOD_SAFETY_FAIL`** (lot `H003` diblokir mutlak `0 kg`) dan **`DEADLOCK`** (berhenti tepat di ronde 3/3 → eskalasi HITL, 0 *privacy leak*).
+3. **Menit 3 — *Glass-Box* Decision Trace, Live Agent Status & HITL SHA-256 Audit (Tab `Decision Trace & Audit`):**
+   - Tunjukkan **Live Agent Status Matrix** (6 agen heterogen + latensi & biaya token), **LangGraph 7-Node Decision Trace**, log pesan **FIPA-ACL / GS1 EPCIS 2.0**, lalu klik **`Approve & Commit Plan`** dan **`Verifikasi Integritas Rantai SHA-256`** (`VERIFIED ✅`).
+4. **Menit 4 — 5 Modul Interaktif Tiap Enterprise:**
+   - Buka **`FreshFood QC (AGT-03)`** (galeri citra RGB tomat nyata + CNN + simulator *Food Safety Hard-Block*), **`ColdChain (AGT-04)`** (grafik anomali Isolation Forest + optimasi rute OR-Tools CVRP 382 → 263 km), serta simulator prediksi RF (`AgroFarm`), LightGBM (`Koperasi`), dan XGBoost+Newsvendor (`SuperMart`).
+5. **Menit 5 — Arsitektur Server API & Automated Testing:**
+   - Tunjukkan Swagger UI `http://127.0.0.1:8000/docs` (`/.well-known/agent.json`, `/api/v1/enterprises/{enterprise_id}/status`, `/api/v1/orchestrator/run-cycle`, `/api/v1/audit/trail`) dan jalankan `pytest tests/test_ecosystem.py -v` (**7/7 PASSED**).
+
+---
+
+## *Endpoint* FastAPI Gateway (`src/api/main.py`)
+
+| Method | Endpoint | Fungsi |
+| :---: | :--- | :--- |
+| `GET` | `/api/v1/health` | Status layanan, jumlah agen aktif (6), dan validasi rantai audit SHA-256 |
+| `GET` | `/.well-known/agent.json` | A2A *Agent Discovery Cards* seluruh 6 agen heterogen |
+| `GET` | `/api/v1/enterprises/{enterprise_id}/status` | Status *local microservice*, DB lokal, metrik ML, & daftar field privat yang dilindungi (`agrofarm`, `koperasi`, `freshfood`, `coldchain`, `supermart`) |
+| `POST` | `/api/v1/orchestrator/run-cycle` | Menjalankan 1 siklus LangGraph Orchestrator + mengembalikan KPI, alokasi, `decision_trace`, & `agent_statuses` |
+| `POST` | `/api/v1/orchestrator/hitl/{cycle_id}/approve` | Persetujuan operator HITL (dicatat dengan hash SHA-256 ke `audit_trail.jsonl`) |
+| `POST` | `/api/v1/orchestrator/hitl/{cycle_id}/reject` | Penolakan operator HITL dengan catatan audit SHA-256 |
+| `GET` | `/api/v1/audit/trail` | Mengambil catatan *hash-chained audit trail* terbaru + status verifikasi kriptografi |
 
 ---
 
@@ -81,99 +163,24 @@ Seluruh angka di bawah ini direkam langsung dari eksekusi [`src/models/train_all
 
 ```text
 agrichain-agentic-ai/
-├── config/
-│   └── settings.py                      # Registri 6 profil LLM heterogen & ambang HITL NIST AI RMF
+├── .vscode/
+│   ├── launch.json                      # 1-klik Run & Debug VS Code (FastAPI, Streamlit, Train, Experiments)
+│   └── tasks.json                       # Task otomatis VS Code (Install, Pytest, Servers)
+├── config/settings.py                   # Registri 6 profil LLM heterogen & ambang HITL NIST AI RMF 1.0
 ├── src/
-│   ├── data/
-│   │   ├── generate_dummy_data.py       # Generator 19.575 rekaman dummy + 3.000 citra RGB tomat
-│   │   └── db_adapter.py                # Materialisasi 5 basis data lokal terisolasi
-│   ├── protocols/
-│   │   ├── fipa_epcis.py                # Skema A2A, FIPA-ACL performatives, GS1 EPCIS 2.0, AgentCard
-│   │   └── security.py                  # Data Sovereignty Firewall, Scoped Tokens, Hash-Chained Audit Trail
-│   ├── models/
-│   │   ├── agrofarm_rf.py               # AGT-01: Random Forest Regression
-│   │   ├── koperasi_lgbm.py             # AGT-02: LightGBM Regressor + Contract Net Auction
-│   │   ├── freshfood_cnn.py             # AGT-03: 2D-Conv Visual CNN + Food Safety Hard-Block + FEFO
-│   │   ├── coldchain_iforest_cvrp.py    # AGT-04: Isolation Forest + Google OR-Tools CVRP
-│   │   ├── supermart_xgb.py             # AGT-05: XGBoost Demand Forecasting + Newsvendor PO
-│   │   ├── milp_fefo.py                 # AGT-06: PuLP CBC MILP-FEFO Global Allocation Solver
-│   │   └── train_all.py                 # Orkestrasi generasi data, pelatihan 5 ML, & verifikasi MILP
-│   ├── llm/
-│   │   ├── prompts.py                   # 6 System Prompts terstruktur
-│   │   └── router.py                    # Dual-Mode (LIVE / Policy-Grounded Simulated) 6-LLM Router
-│   ├── agents/
-│   │   ├── base.py                      # BaseEnterpriseAgent + Outbound Privacy Sanitizer
-│   │   ├── enterprise_agents.py         # 5 Autonomous Enterprise Agents (AGT-01 s.d. AGT-05)
-│   │   └── orchestrator.py              # LangGraph StateGraph Global Orchestrator (AGT-06)
-│   ├── api/
-│   │   └── main.py                      # FastAPI Gateway (/.well-known/agent.json, /run-cycle, /hitl)
-│   ├── experiments/
-│   │   └── run_experiments.py           # Benchmark 4 Kondisi x 30 siklus + 3 Ablasi + 3 Failure Cases
-│   └── dashboard/
-│       └── app.py                       # Streamlit Control Center (Sankey, Disruption Injector, HITL)
-├── tests/
-│   └── test_ecosystem.py                # 6 Unit & FastAPI Integration Tests (pytest)
+│   ├── data/                            # Generator 19.575 rekaman + 3.000 citra RGB + Adapter 5 DB lokal
+│   ├── protocols/                       # A2A, FIPA-ACL, GS1 EPCIS 2.0, Privacy Firewall, SHA-256 Audit
+│   ├── models/                          # 5 model ML lokal + PuLP MILP-FEFO + OR-Tools CVRP + train_all.py
+│   ├── llm/                             # 6 System Prompts + Multi-Provider 6-LLM Router (LIVE & SIMULATED)
+│   ├── agents/                          # 5 Enterprise Agents + LangGraph StateGraph Global Orchestrator
+│   ├── api/main.py                      # FastAPI Gateway (Global + 5 Local Enterprise Services + Audit)
+│   ├── experiments/run_experiments.py   # Benchmark 4 Kondisi x 30 siklus + 3 Ablasi + 3 Failure Cases
+│   └── dashboard/app.py                 # Streamlit Role-Based Cockpit (8 Tab + RBAC + Data Explorer)
+├── tests/test_ecosystem.py              # 7 Automated Unit & FastAPI Integration Tests (pytest)
+├── docs/screenshots/                    # 6 Screenshot aktual dashboard & FastAPI Swagger UI
 ├── data/                                # Dataset dummy tergenerasi & 5 database lokal terisolasi
-├── results/                             # Artefak model (.pkl), metrik JSON, audit_trail.jsonl, & 3 grafik 300-DPI
+├── results/                             # Model terlatih (.pkl), metrik JSON, audit_trail.jsonl, & 3 grafik
 ├── docker-compose.yml                   # Stack PostgreSQL 16, MySQL 8, MongoDB 7, TimescaleDB, Redis 7
-├── .env.example                         # Template kredensial API LLM (mode LIVE) & parameter sistem
-├── requirements.txt                     # Dependensi Python
 ├── Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.{md,docx,pdf}  # Laporan Lengkap (Bab 1–11, 45 halaman)
 └── Laporan_Bab1_7_Smart_Agriculture_Agentic_AI.{md,docx,pdf}   # Laporan Rancangan Awal (Bab 1–7, 35 halaman)
 ```
-
----
-
-## Cara Menjalankan
-
-```bash
-# 1. Klon repositori & instal dependensi
-git clone https://github.com/fransalwan/agrichain-agentic-ai.git
-cd agrichain-agentic-ai
-pip install -r requirements.txt
-
-# 2. (Opsional) Konfigurasi API Key LLM (OpenAI/Anthropic/Gemini/Mistral/Ollama) untuk mode LIVE
-cp .env.example .env
-
-# 3. Bangkitkan dataset dummy (19.575 rekaman + 3.000 citra RGB) & latih seluruh 5 model ML + MILP/CVRP
-python src/models/train_all.py
-
-# 4. Jalankan benchmark eksperimen lengkap (4 kondisi x 30 siklus + 3 ablasi + 3 failure cases + grafik)
-python src/experiments/run_experiments.py
-
-# 5. Jalankan pengujian otomatis (unit + FastAPI integration tests)
-pytest tests/test_ecosystem.py -v
-
-# 6. Jalankan FastAPI Gateway (http://127.0.0.1:8000/docs)
-uvicorn src.api.main:app --reload --port 8000
-
-# 7. Jalankan Streamlit Global Control Center Dashboard (http://127.0.0.1:8501)
-streamlit run src/dashboard/app.py
-```
-
-### *Endpoint* Utama FastAPI Gateway (`src/api/main.py`)
-| Method | Endpoint | Fungsi |
-| :---: | :--- | :--- |
-| `GET` | `/api/v1/health` | Status layanan, jumlah agen aktif, dan integritas *audit chain* |
-| `GET` | `/.well-known/agent.json` | A2A *Agent Discovery Cards* seluruh 6 agen otonom |
-| `POST` | `/api/v1/orchestrator/run-cycle` | Menjalankan 1 siklus penuh LangGraph Orchestrator (Normal / *Cold Storage Failure* / *Demand Surge* / *Compound* / *Food Safety Block* / *Deadlock*) |
-| `POST` | `/api/v1/orchestrator/hitl/{cycle_id}/approve` | Persetujuan/penolakan operator manusia (HITL) yang dicatat ke *hash-chained audit log* |
-
-### Infrastruktur Basis Data Heterogen (Opsional via Docker)
-```bash
-docker compose up -d
-```
-Menjalankan 5 layanan basis data heterogen terisolasi (`agrofarm_postgres`, `koperasi_mysql`, `freshfood_mongodb`, `coldchain_timescaledb`, `supermart_mysql`) serta `global_redis`.
-
----
-
-## Dokumen Laporan
-
-- **Laporan Lengkap (Bab 1–11 + Daftar Pustaka — 45 Halaman):**
-  - [Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.pdf](./Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.pdf)
-  - [Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.docx](./Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.docx)
-  - [Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.md](./Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.md)
-- **Laporan Rancangan Awal (Bab 1–7 — 35 Halaman):**
-  - [Laporan_Bab1_7_Smart_Agriculture_Agentic_AI.pdf](./Laporan_Bab1_7_Smart_Agriculture_Agentic_AI.pdf)
-  - [Laporan_Bab1_7_Smart_Agriculture_Agentic_AI.docx](./Laporan_Bab1_7_Smart_Agriculture_Agentic_AI.docx)
-  - [Laporan_Bab1_7_Smart_Agriculture_Agentic_AI.md](./Laporan_Bab1_7_Smart_Agriculture_Agentic_AI.md)

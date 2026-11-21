@@ -1,0 +1,28 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "AgriChain: Install Requirements",
+      "type": "shell",
+      "command": "pip install -r requirements.txt"
+    },
+    {
+      "label": "AgriChain: Run Pytest Suite",
+      "type": "shell",
+      "command": "pytest tests/test_ecosystem.py -v",
+      "group": { "kind": "test", "isDefault": true }
+    },
+    {
+      "label": "AgriChain: Start FastAPI Gateway",
+      "type": "shell",
+      "command": "python -m uvicorn src.api.main:app --reload --host 127.0.0.1 --port 8000",
+      "isBackground": true
+    },
+    {
+      "label": "AgriChain: Start Streamlit Dashboard",
+      "type": "shell",
+      "command": "python -m streamlit run src/dashboard/app.py --server.port 8501",
+      "isBackground": true
+    }
+  ]
+}

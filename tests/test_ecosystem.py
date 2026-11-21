@@ -82,11 +82,19 @@ def test_fastapi_gateway_endpoints():
     client = TestClient(app)
     r_health = client.get("/api/v1/health")
     assert r_health.status_code == 200
-    assert r_health.json()["agents"] == "6"
+    assert int(r_health.json()["agents"]) == 6
+    assert r_health.json()["audit_chain_valid"] is True
 
     r_cards = client.get("/.well-known/agent.json")
     assert r_cards.status_code == 200
     assert r_cards.json()["agent_count"] == 6
+
+    # Per-enterprise local service status endpoints (Zero-Direct-DB-Access verified)
+    for ent in ("agrofarm", "koperasi", "freshfood", "coldchain", "supermart"):
+        r_ent = client.get(f"/api/v1/enterprises/{ent}/status")
+        assert r_ent.status_code == 200
+        assert r_ent.json()["status"] == "ONLINE"
+        assert r_ent.json()["data_sovereignty_policy"] == "STRICT_ZERO_DIRECT_DB_ACCESS"
 
     r_cycle = client.post(
         "/api/v1/orchestrator/run-cycle",
@@ -96,7 +104,29 @@ def test_fastapi_gateway_endpoints():
     body = r_cycle.json()
     assert body["hitl_required"] is True
     assert body["hitl_status"] == "PENDING_APPROVAL"
+    assert len(body["decision_trace"]) >= 5
+    assert len(body["agent_statuses"]) == 6
 
     r_app = client.post(f"/api/v1/orchestrator/hitl/{body['cycle_id']}/approve")
     assert r_app.status_code == 200
     assert r_app.json()["hitl_status"] == "HUMAN_APPROVED"
+
+    r_rej = client.post(f"/api/v1/orchestrator/hitl/{body['cycle_id']}/reject")
+    assert r_rej.status_code == 200
+    assert r_rej.json()["hitl_status"] == "HUMAN_REJECTED"
+
+    r_aud = client.get("/api/v1/audit/trail?limit=10")
+    assert r_aud.status_code == 200
+    assert r_aud.json()["chain_valid"] is True
+    assert len(r_aud.json()["entries"]) >= 1
+
+
+def test_measurable_decision_change_under_environmental_shock():
+    orch = AgriChainOrchestrator()
+    st_normal = orch.run_cycle(trigger_mode="NORMAL", adaptive_replanning=True)
+    st_disrupt = orch.run_cycle(trigger_mode="COLD_STORAGE_FAILURE", adaptive_replanning=True)
+    assert st_normal["milp_result"]["overtime_activated"] is False
+    assert st_disrupt["milp_result"]["overtime_activated"] is True
+    assert st_disrupt["round_counter"] >= 1
+    assert len(st_disrupt["decision_trace"]) > len(st_normal["decision_trace"])
+    assert st_disrupt["milp_result"]["food_loss_rate_pct"] == 0.0

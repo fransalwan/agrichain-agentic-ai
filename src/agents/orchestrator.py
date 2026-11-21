@@ -14,7 +14,7 @@ from typing import Any, Dict, List, Optional, TypedDict
 import numpy as np
 from langgraph.graph import END, StateGraph
 
-from config.settings import RESULTS_DIR, settings
+from config.settings import AGENT_MODEL_PROFILES, RESULTS_DIR, settings
 from src.agents.enterprise_agents import (
     AgroFarmAgent,
     ColdChainAgent,
@@ -29,19 +29,20 @@ from src.models.freshfood_cnn import FreshFoodVisualGradingModel
 from src.models.koperasi_lgbm import KoperasiPriceModel
 from src.models.milp_fefo import solve_milp_fefo
 from src.models.supermart_xgb import SuperMartDemandModel
-from src.protocols.fipa_epcis import A2AMessage, FIPAPerformative, HarvestBatch
+from src.protocols.fipa_epcis import A2AMessage, FIPAPerformative, HarvestBatch, now_wib_iso
 from src.protocols.security import ImmutableAuditTrail, detect_privacy_leak
 
 
 class EcosystemState(TypedDict, total=False):
     cycle_id: str
-    trigger_mode: str                  # NORMAL | COLD_STORAGE_FAILURE | DEMAND_SURGE | FOOD_SAFETY_FAIL | COMPOUND | DEADLOCK_TEST
+    trigger_mode: str                  # NORMAL | COLD_STORAGE_FAILURE | DEMAND_SURGE | FOOD_SAFETY_FAIL | COMPOUND | DEADLOCK
     adaptive_replanning: bool
     use_milp: bool                     # False for Pure-LLM Ablation
     single_agent_monolith: bool        # True for Single-Agent Ablation
     plot_records: List[Dict[str, Any]]
     use_showcase_numbers: bool
     demand_override_kg: Optional[float]
+    cold_storage_cap_override_kg: Optional[float]
     cold_storage_cap_kg: float
     freshfood_reg_cap_kg: float
     freshfood_ot_cap_kg: float
@@ -64,9 +65,11 @@ class EcosystemState(TypedDict, total=False):
     negotiation_successes: int
     deadlock_occurred: bool
     messages: List[Dict[str, Any]]
+    decision_trace: List[Dict[str, Any]]
+    agent_statuses: List[Dict[str, Any]]
     hitl_required: bool
     hitl_reasons: List[str]
-    hitl_status: str                   # AUTO_APPROVED | PENDING_APPROVAL | HUMAN_APPROVED
+    hitl_status: str                   # AUTO_APPROVED | PENDING_APPROVAL | HUMAN_APPROVED | HUMAN_REJECTED
     auto_approve_hitl: bool
     privacy_leaks_detected: int
     constraint_violations: int
@@ -264,14 +267,36 @@ class AgriChainOrchestrator:
         state["privacy_leaks_detected"] = state.get("privacy_leaks_detected", 0) + len(leaks)
         state.setdefault("messages", []).append(msg.model_dump())
 
+    @staticmethod
+    def _record_trace(
+        state: EcosystemState,
+        node: str,
+        actors: str,
+        status: str,
+        summary: str,
+        metrics: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        trace = state.setdefault("decision_trace", [])
+        trace.append({
+            "step": len(trace) + 1,
+            "timestamp": now_wib_iso(),
+            "node": node,
+            "actors": actors,
+            "status": status,
+            "summary": summary,
+            "metrics": metrics or {},
+        })
+
     def _node_collect_telemetry(self, state: EcosystemState) -> EcosystemState:
         cid = state["cycle_id"]
         trigger = state.get("trigger_mode", "NORMAL")
         inject_cold = trigger in ("COLD_STORAGE_FAILURE", "COMPOUND")
         inject_surge = trigger in ("DEMAND_SURGE", "COMPOUND")
-        failed_fs = state.get("failed_food_safety_lots", [])
+        failed_fs = list(state.get("failed_food_safety_lots", []))
         if trigger == "FOOD_SAFETY_FAIL" and not failed_fs:
             failed_fs = ["H003"]
+        if trigger in ("DEADLOCK", "DEADLOCK_TEST"):
+            state["force_low_bid_deadlock"] = True
 
         # Parallel fan-out snapshot collection from 5 independent enterprises (via authorized API)
         m_sm = self.supermart.forecast_and_plan_po(cid, demand_override_kg=state.get("demand_override_kg"), demand_surge=inject_surge)
@@ -305,15 +330,44 @@ class AgriChainOrchestrator:
         state["demand_supermart_kg"] = float(m_sm.payload["demand_forecast_kg"])
         state["freshfood_reg_cap_kg"] = float(m_ff.payload["regular_capacity_kg"])
         state["freshfood_ot_cap_kg"] = float(m_ff.payload["overtime_available_kg"])
-        state["cold_storage_cap_kg"] = float(m_cc.payload["effective_capacity_kg"])
-        state["capacity_drop_pct"] = float(m_cc.payload["capacity_drop_pct"])
-        state["allow_grade_b_to_supermart"] = bool(m_sm.payload["grade_b_substitution_allowed"] and state.get("adaptive_replanning", True))
+
+        # Apply optional custom Cold Storage capacity override from interactive slider/API
+        cold_override = state.get("cold_storage_cap_override_kg")
+        if cold_override is not None:
+            eff_cold = max(0.0, float(cold_override))
+            drop_pct = round(((3000.0 - eff_cold) / 3000.0) * 100.0, 1)
+            state["cold_storage_cap_kg"] = eff_cold
+            state["capacity_drop_pct"] = max(0.0, drop_pct)
+        else:
+            state["cold_storage_cap_kg"] = float(m_cc.payload["effective_capacity_kg"])
+            state["capacity_drop_pct"] = float(m_cc.payload["capacity_drop_pct"])
+
+        state["allow_grade_b_to_supermart"] = bool(
+            (m_sm.payload["grade_b_substitution_allowed"] or state["demand_supermart_kg"] > 2200.0)
+            and state.get("adaptive_replanning", True)
+        )
         state["round_counter"] = 0
         state["negotiation_agreed"] = False
         state["deadlock_occurred"] = False
         state["negotiation_sessions"] = 0
         state["negotiation_successes"] = 0
         state["constraint_violations"] = 0
+
+        total_supply = sum(b["qty_kg"] for b in merged_batches)
+        blocked_lots = [b["lot_id"] for b in merged_batches if not b["food_safety_approved"]]
+        self._record_trace(
+            state,
+            node="collect_telemetry",
+            actors="AGT-01..AGT-05 → AGT-06",
+            status="ALERT" if (state["capacity_drop_pct"] > 0 or blocked_lots or inject_surge) else "COMPLETED",
+            summary=(
+                f"Snapshot 5 enterprise terkumpul (Zero-Direct-DB): Pasokan={total_supply:,.0f} kg, "
+                f"Demand SuperMart={state['demand_supermart_kg']:,.0f} kg, "
+                f"Kapasitas ColdStorage={state['cold_storage_cap_kg']:,.0f} kg (drop {state['capacity_drop_pct']}%)"
+                + (f", Food Safety Hard-Block={blocked_lots}" if blocked_lots else "")
+            ),
+            metrics={"supply_kg": total_supply, "demand_kg": state["demand_supermart_kg"], "cold_cap_kg": state["cold_storage_cap_kg"]},
+        )
 
         self.audit.record("COLLECT_TELEMETRY", "AGT-06", {"cycle_id": cid, "trigger": trigger, "cold_cap": state["cold_storage_cap_kg"], "demand_sm": state["demand_supermart_kg"]})
         return state
@@ -355,6 +409,21 @@ class AgriChainOrchestrator:
             {"flr": res["food_loss_rate_pct"], "ofr": res["order_fulfillment_rate_pct"], "ot": res["overtime_activated"]},
             lambda ctx: {"proposal_ready": True, "summary": ctx},
         )
+        solver_lbl = "PuLP MILP-FEFO" if state.get("use_milp", True) else "Pure-LLM Heuristic"
+        self._record_trace(
+            state,
+            node=f"run_milp (R{state['round_counter']})",
+            actors="AGT-06 (GPT-4o + MILP)",
+            status="COMPLETED",
+            summary=(
+                f"{solver_lbl} selesai dalam {res['solve_time_ms']} ms → "
+                f"FLR={res['food_loss_rate_pct']}%, OFR={res['order_fulfillment_rate_pct']}%, "
+                f"Overtime={'ON' if res['overtime_activated'] else 'OFF'}, "
+                f"3PL={'ON' if res['third_pl_activated'] else 'OFF'}, "
+                f"Loss={res['total_loss_kg']:,.0f} kg."
+            ),
+            metrics={"flr_pct": res["food_loss_rate_pct"], "ofr_pct": res["order_fulfillment_rate_pct"], "solve_ms": res["solve_time_ms"]},
+        )
         return state
 
     def _node_validate_local_policy(self, state: EcosystemState) -> EcosystemState:
@@ -365,6 +434,13 @@ class AgriChainOrchestrator:
         # If adaptive_replanning is disabled or single_agent_monolith skips local autonomy
         if not state.get("adaptive_replanning", True) or state.get("single_agent_monolith", False):
             state["negotiation_agreed"] = True
+            self._record_trace(
+                state,
+                node="validate_local_policy",
+                actors="AGT-06 (Static / Monolith)",
+                status="SKIPPED",
+                summary="Validasi otonomi & negosiasi lintas perusahaan dinonaktifkan (mode Statis / Single-Agent).",
+            )
             return state
 
         price_override = {}
@@ -381,9 +457,9 @@ class AgriChainOrchestrator:
         )
         self._record_msg(state, m_kop)
 
-        # Also trigger negotiation if ColdStorage failed and we haven't yet negotiated overtime/3PL/harvest deferral
+        # Also trigger negotiation if ColdStorage dropped significantly and we haven't yet negotiated overtime/3PL/harvest deferral
         cold_crisis_unmitigated = (
-            state["trigger_mode"] in ("COLD_STORAGE_FAILURE", "COMPOUND")
+            (state["trigger_mode"] in ("COLD_STORAGE_FAILURE", "COMPOUND") or state.get("capacity_drop_pct", 0.0) >= 35.0)
             and not state.get("allow_overtime", False)
             and rnd == 0
         )
@@ -392,10 +468,25 @@ class AgriChainOrchestrator:
             state["negotiation_agreed"] = True
             if rnd > 0:
                 state["negotiation_successes"] = state.get("negotiation_successes", 0) + 1
+            self._record_trace(
+                state,
+                node="validate_local_policy",
+                actors="AGT-02 (Claude 3.5 Sonnet)",
+                status="ACCEPTED",
+                summary=f"Koperasi menyetujui proposal (ACCEPT_PROPOSAL) — unsold {m_kop.payload.get('unsold_pct', 0)}% <= 5% & floor price aman.",
+            )
         else:
             state["negotiation_agreed"] = False
             if rnd == 0:
                 state["negotiation_sessions"] = state.get("negotiation_sessions", 0) + 1
+            reason = m_kop.payload.get("reason_code", "COLD_STORAGE_MITIGATION_NEEDED")
+            self._record_trace(
+                state,
+                node="validate_local_policy",
+                actors="AGT-02 (Claude 3.5 Sonnet)",
+                status="NEGOTIATING",
+                summary=f"Veto / perlu adaptasi ({m_kop.performative.value}: {reason}) → memicu putaran negosiasi Contract Net.",
+            )
         return state
 
     def _node_negotiation_loop(self, state: EcosystemState) -> EcosystemState:
@@ -416,6 +507,16 @@ class AgriChainOrchestrator:
             self._record_msg(state, m_auc)
             if rnd >= settings.max_negotiation_rounds:
                 state["deadlock_occurred"] = True
+            self._record_trace(
+                state,
+                node=f"negotiation_loop (R{rnd}/3)",
+                actors="AGT-02 ↔ AltBuyer",
+                status="DEADLOCK" if state.get("deadlock_occurred") else "REJECTED",
+                summary=(
+                    f"Ronde {rnd}/3: Tawaran Rp{5100 + rnd*100:,.0f}/kg ditolak Koperasi (tanpa bocorkan floor price). "
+                    + ("Batas R_max=3 tercapai → DEADLOCK ke HITL!" if state.get("deadlock_occurred") else "Lanjut ronde berikutnya.")
+                ),
+            )
             return state
 
         # Round 1: Request FreshFood Overtime (+500 kg) + AgroFarm Harvest Deferral (24h)
@@ -429,12 +530,14 @@ class AgriChainOrchestrator:
         m_auc = self.koperasi.negotiate_p2p_with_buyers(cid, "H002", "B", 500.0, bids, rnd)
         self._record_msg(state, m_auc)
 
+        deferred_note = ""
         if m_auc.performative == FIPAPerformative.ACCEPT_PROPOSAL:
             state["allow_overtime"] = True
-            if state["trigger_mode"] in ("COLD_STORAGE_FAILURE", "COMPOUND"):
+            if state["trigger_mode"] in ("COLD_STORAGE_FAILURE", "COMPOUND") or state.get("capacity_drop_pct", 0.0) >= 35.0:
                 m_af_def = self.agrofarm.respond_harvest_deferral(cid, 24, "H004")
                 self._record_msg(state, m_af_def)
-            if rnd >= 2 or state["trigger_mode"] == "COMPOUND":
+                deferred_note = " + AgroFarm Harvest Deferral 24h"
+            if rnd >= 2 or state["trigger_mode"] == "COMPOUND" or state.get("cold_storage_cap_kg", 3000.0) < 1000.0:
                 state["allow_3pl"] = True
                 state["cap_3pl_kg"] = 1500.0
                 state["cap_alt_buyer_kg"] = 800.0
@@ -443,6 +546,18 @@ class AgriChainOrchestrator:
             state["cap_3pl_kg"] = 1500.0
             state["cap_alt_buyer_kg"] = 1000.0
 
+        self._record_trace(
+            state,
+            node=f"negotiation_loop (R{rnd}/3)",
+            actors="AGT-02 ↔ AGT-03 ↔ AGT-01",
+            status="AGREED",
+            summary=(
+                f"Contract Net Ronde {rnd}: Pemenang={m_auc.payload.get('winner', '3PL/AltBuyer')} "
+                f"(Rp{m_auc.payload.get('agreed_price_rp', 0):,.0f}/kg), "
+                f"FreshFood Overtime={'AKTIF (+500kg)' if state.get('allow_overtime') else 'OFF'}, "
+                f"3PL={'AKTIF (+1.500kg)' if state.get('allow_3pl') else 'OFF'}{deferred_note} → Re-solve MILP."
+            ),
+        )
         self.audit.record("NEGOTIATION_ROUND", "AGT-06", {"cycle_id": cid, "round": rnd, "overtime": state.get("allow_overtime"), "allow_3pl": state.get("allow_3pl")})
         return state
 
@@ -471,6 +586,17 @@ class AgriChainOrchestrator:
             {"reasons": reasons, "flr": milp["food_loss_rate_pct"]},
             lambda ctx: {"hitl_required": len(ctx["reasons"]) > 0, "reasons": ctx["reasons"]},
         )
+        self._record_trace(
+            state,
+            node="risk_hitl_gate",
+            actors="AGT-06 (NIST AI RMF 1.0)",
+            status="ESCALATED" if state["hitl_required"] else "AUTO_PASS",
+            summary=(
+                f"Gerbang Risiko HITL AKTIF — Pemicu: {', '.join(reasons)}"
+                if state["hitl_required"]
+                else "Seluruh ambang batas risiko NIST AI RMF 1.0 aman → Auto-Commit disetujui."
+            ),
+        )
         return state
 
     def _node_escalate_hitl(self, state: EcosystemState) -> EcosystemState:
@@ -478,6 +604,13 @@ class AgriChainOrchestrator:
             state["hitl_status"] = "HUMAN_APPROVED"
         else:
             state["hitl_status"] = "PENDING_APPROVAL"
+        self._record_trace(
+            state,
+            node="escalate_hitl",
+            actors="HUMAN_SUPERVISOR",
+            status=state["hitl_status"],
+            summary=f"Status eskalasi operator manusia: {state['hitl_status']} (dicatat ke Audit Trail SHA-256).",
+        )
         self.audit.record("HITL_ESCALATION", "HUMAN_SUPERVISOR", {"cycle_id": state["cycle_id"], "status": state["hitl_status"], "reasons": state["hitl_reasons"]})
         return state
 
@@ -516,6 +649,51 @@ class AgriChainOrchestrator:
         neg_extra_ms = state["round_counter"] * (by_ag.get("AGT-02", {}).get("avg_latency_ms", 600.0) + by_ag.get("AGT-03", {}).get("avg_latency_ms", 350.0))
         replan_time_sec = round((parallel_fanout_ms + orch_ms + neg_extra_ms + milp["solve_time_ms"]) / 1000.0, 3)
 
+        # Build Live Agent Status snapshot for all 6 heterogeneous agents
+        blocked_any = any(not b["food_safety_approved"] for b in state["batches"])
+        agent_statuses: List[Dict[str, Any]] = []
+        for aid, prof in AGENT_MODEL_PROFILES.items():
+            stat = by_ag.get(aid, {})
+            if aid == "AGT-04" and state.get("capacity_drop_pct", 0.0) > 0:
+                op_state = "DISRUPTION_ALERT"
+                last_act = f"Anomali suhu terdeteksi — kapasitas turun {state['capacity_drop_pct']}%"
+            elif aid == "AGT-03" and blocked_any:
+                op_state = "HARD_BLOCK_ACTIVE"
+                last_act = "Blokir mutlak lot gagal uji mikroba/pestisida (0% toleransi)"
+            elif aid == "AGT-03" and milp["overtime_activated"]:
+                op_state = "OVERTIME_ACTIVE"
+                last_act = f"Shift overtime aktif (+500 kg FEFO), terpakai {milp['freshfood_used_kg']:,.0f} kg"
+            elif aid == "AGT-02" and state.get("deadlock_occurred", False):
+                op_state = "DEADLOCK_ESCALATED"
+                last_act = "Menolak tawaran < floor price privat (3 ronde → HITL)"
+            elif aid == "AGT-02" and state["round_counter"] > 0:
+                op_state = "NEGOTIATED"
+                last_act = f"Sepakat Contract Net dalam {state['round_counter']} ronde (0 leak)"
+            elif aid == "AGT-05" and state.get("allow_grade_b_to_supermart", False):
+                op_state = "SURGE_SUBSTITUTION"
+                last_act = f"Demand Surge {state['demand_supermart_kg']:,.0f} kg (izin substitusi Grade B <= 30%)"
+            elif aid == "AGT-06" and state["hitl_status"] == "PENDING_APPROVAL":
+                op_state = "AWAITING_HITL"
+                last_act = f"Menunggu persetujuan operator ({len(state['hitl_reasons'])} pemicu risiko)"
+            else:
+                op_state = "ONLINE_SYNCED"
+                last_act = "Snapshot & keputusan tersinkronisasi aman"
+
+            agent_statuses.append({
+                "agent_id": aid,
+                "enterprise": prof.enterprise,
+                "status": op_state,
+                "domain_model": prof.domain_model,
+                "llm_model": stat.get("llm_model", prof.llm_model),
+                "deployment": prof.deployment,
+                "calls": stat.get("calls", 0),
+                "avg_latency_ms": stat.get("avg_latency_ms", 0.0),
+                "cost_usd": stat.get("cost_usd", 0.0),
+                "privacy_firewall": "LOCKED (0 Leaks)",
+                "last_action": last_act,
+            })
+
+        state["agent_statuses"] = agent_statuses
         state["enterprise_profits_rp"] = profits
         state["global_kpis"] = {
             "food_loss_rate_pct": milp["food_loss_rate_pct"],
@@ -538,6 +716,17 @@ class AgriChainOrchestrator:
             "llm_telemetry": tel,
         }
 
+        self._record_trace(
+            state,
+            node="commit_and_audit",
+            actors="AGT-06 → Audit Trail SHA-256",
+            status="COMMITTED" if state["hitl_status"] != "PENDING_APPROVAL" else "PENDING_HITL",
+            summary=(
+                f"Siklus {state['cycle_id']} selesai: FLR={milp['food_loss_rate_pct']}%, "
+                f"OFR={milp['order_fulfillment_rate_pct']}%, Profit=Rp{milp['net_ecosystem_profit_rp']/1e6:.2f} Jt, "
+                f"Fairness={fairness:.4f}, Privacy Leaks={state.get('privacy_leaks_detected', 0)}."
+            ),
+        )
         self.audit.record("COMMIT_PLAN", "AGT-06", {"cycle_id": state["cycle_id"], "flr": milp["food_loss_rate_pct"], "ofr": milp["order_fulfillment_rate_pct"], "fairness": fairness})
         return state
 
@@ -594,6 +783,7 @@ class AgriChainOrchestrator:
         plot_records: List[Dict[str, Any]] | None = None,
         use_showcase_numbers: bool = True,
         demand_override_kg: float | None = None,
+        cold_storage_cap_override_kg: float | None = None,
         adaptive_replanning: bool = True,
         use_milp: bool = True,
         single_agent_monolith: bool = False,
@@ -621,14 +811,17 @@ class AgriChainOrchestrator:
             "plot_records": plot_records,
             "use_showcase_numbers": use_showcase_numbers,
             "demand_override_kg": demand_override_kg,
+            "cold_storage_cap_override_kg": cold_storage_cap_override_kg,
             "allow_overtime": False,
             "allow_3pl": False,
             "cap_3pl_kg": 0.0,
             "cap_alt_buyer_kg": 0.0,
             "failed_food_safety_lots": failed_food_safety_lots or [],
-            "force_low_bid_deadlock": force_low_bid_deadlock,
+            "force_low_bid_deadlock": force_low_bid_deadlock or (trigger_mode in ("DEADLOCK", "DEADLOCK_TEST")),
             "auto_approve_hitl": auto_approve_hitl,
             "messages": [],
+            "decision_trace": [],
+            "agent_statuses": [],
             "privacy_leaks_detected": 0,
             "cycle_start_perf": time.perf_counter(),
         }

@@ -54,38 +54,100 @@ class HeterogeneousLLMRouter:
         # Standard ~4 chars/token approximation for multilingual/JSON prompts
         return max(24, int(round(len(text) / 3.8)))
 
-    def _try_live_openai_compatible(self, profile: ModelProfile, system_prompt: str, user_prompt: str) -> Optional[str]:
-        """Attempt a real OpenAI-compatible completion if LIVE mode & credentials exist."""
+    def _try_live_provider_call(self, profile: ModelProfile, system_prompt: str, user_prompt: str) -> Optional[str]:
+        """Attempt a real LLM API completion across all 6 configured providers when LIVE mode & keys exist."""
         if self.mode != "LIVE":
             return None
         try:
+            # 1. OpenAI (AGT-06: GPT-4o) or Local Ollama (AGT-01: Qwen 2.5, AGT-04: Llama 3.1)
             if profile.provider == "openai" and settings.openai_api_key:
-                url = "https://api.openai.com/v1/chat/completions"
-                headers = {"Authorization": f"Bearer {settings.openai_api_key}"}
-                model_name = "gpt-4o"
+                resp = httpx.post(
+                    "https://api.openai.com/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {settings.openai_api_key}"},
+                    json={
+                        "model": "gpt-4o",
+                        "temperature": profile.temperature,
+                        "response_format": {"type": "json_object"},
+                        "messages": [
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_prompt},
+                        ],
+                    },
+                    timeout=15.0,
+                )
+                if resp.status_code == 200:
+                    return resp.json()["choices"][0]["message"]["content"]
             elif profile.provider == "ollama":
-                url = f"{settings.ollama_base_url.rstrip('/')}/chat/completions"
-                headers = {}
                 model_name = "qwen2.5:14b" if "Qwen" in profile.llm_model else "llama3.1:8b"
-            else:
-                return None
-
-            resp = httpx.post(
-                url,
-                headers=headers,
-                json={
-                    "model": model_name,
-                    "temperature": profile.temperature,
-                    "response_format": {"type": "json_object"},
-                    "messages": [
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt},
-                    ],
-                },
-                timeout=12.0,
-            )
-            if resp.status_code == 200:
-                return resp.json()["choices"][0]["message"]["content"]
+                resp = httpx.post(
+                    f"{settings.ollama_base_url.rstrip('/')}/chat/completions",
+                    json={
+                        "model": model_name,
+                        "temperature": profile.temperature,
+                        "response_format": {"type": "json_object"},
+                        "messages": [
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_prompt},
+                        ],
+                    },
+                    timeout=12.0,
+                )
+                if resp.status_code == 200:
+                    return resp.json()["choices"][0]["message"]["content"]
+            # 2. Anthropic (AGT-02: Claude 3.5 Sonnet)
+            elif profile.provider == "anthropic" and settings.anthropic_api_key:
+                resp = httpx.post(
+                    "https://api.anthropic.com/v1/messages",
+                    headers={
+                        "x-api-key": settings.anthropic_api_key,
+                        "anthropic-version": "2023-06-01",
+                        "content-type": "application/json",
+                    },
+                    json={
+                        "model": "claude-3-5-sonnet-20241022",
+                        "max_tokens": 512,
+                        "temperature": profile.temperature,
+                        "system": system_prompt + " Respond strictly in valid JSON.",
+                        "messages": [{"role": "user", "content": user_prompt}],
+                    },
+                    timeout=15.0,
+                )
+                if resp.status_code == 200:
+                    return resp.json()["content"][0]["text"]
+            # 3. Google Gemini (AGT-03: Gemini 2.5 Flash)
+            elif profile.provider == "gemini" and settings.gemini_api_key:
+                resp = httpx.post(
+                    f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={settings.gemini_api_key}",
+                    json={
+                        "systemInstruction": {"parts": [{"text": system_prompt}]},
+                        "contents": [{"parts": [{"text": user_prompt}]}],
+                        "generationConfig": {
+                            "temperature": profile.temperature,
+                            "responseMimeType": "application/json",
+                        },
+                    },
+                    timeout=15.0,
+                )
+                if resp.status_code == 200:
+                    return resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+            # 4. Mistral AI (AGT-05: Mistral Small 3)
+            elif profile.provider == "mistral" and settings.mistral_api_key:
+                resp = httpx.post(
+                    "https://api.mistral.ai/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {settings.mistral_api_key}"},
+                    json={
+                        "model": "mistral-small-latest",
+                        "temperature": profile.temperature,
+                        "response_format": {"type": "json_object"},
+                        "messages": [
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_prompt},
+                        ],
+                    },
+                    timeout=15.0,
+                )
+                if resp.status_code == 200:
+                    return resp.json()["choices"][0]["message"]["content"]
         except Exception:
             return None
         return None
@@ -103,7 +165,7 @@ class HeterogeneousLLMRouter:
         user_prompt = json.dumps({"task": task_label, "context": context_payload}, default=str)
 
         t0 = time.perf_counter()
-        live_raw = self._try_live_openai_compatible(profile, sys_prompt, user_prompt)
+        live_raw = self._try_live_provider_call(profile, sys_prompt, user_prompt)
         if live_raw is not None:
             try:
                 result = json.loads(live_raw)
@@ -189,6 +251,21 @@ class HeterogeneousLLMRouter:
             "total_cost_usd": round(total_cost, 6),
             "total_serial_latency_ms": round(total_lat_ms, 2),
             "by_agent": by_agent,
+            "calls": [
+                {
+                    "agent_id": r.agent_id,
+                    "llm_model": r.llm_model,
+                    "provider": r.provider,
+                    "deployment": r.deployment,
+                    "task_label": r.task_label,
+                    "input_tokens": r.input_tokens,
+                    "output_tokens": r.output_tokens,
+                    "cost_usd": round(r.cost_usd, 6),
+                    "latency_ms": r.simulated_api_latency_ms,
+                    "mode": r.mode,
+                }
+                for r in self.call_log
+            ],
         }
 
     def reset_log(self) -> None:
