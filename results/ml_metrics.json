@@ -20,19 +20,33 @@
   "enterprise_models": {
     "AGT-01_AgroFarm": {
       "enterprise": "AgroFarm",
-      "model": "Random Forest Regression",
+      "model": "Random Forest Regression (250 Trees + 80% Quantile PI)",
+      "model_version": "rf-v2.0",
       "train_rows": 840,
       "val_rows": 180,
       "test_rows": 180,
-      "cv_5fold_mae_kg": 142.99,
-      "test_mae_kg": 93.09,
-      "test_mae_pct_of_mean": 7.24,
+      "cv_5fold_mae_kg": 139.92,
+      "test_mae_kg": 87.84,
+      "test_mae_pct_of_mean": 6.83,
+      "baseline_hist_mean_mae_kg": 421.47,
+      "baseline_linear_reg_mae_kg": 125.0,
+      "beats_both_baselines": true,
+      "pi80_coverage": 0.9167,
       "target_mae_pct": "<= 10.0%",
       "target_met": true,
-      "test_rmse_kg": 120.14,
-      "test_r2": 0.9393,
-      "train_time_ms": 306.8,
-      "avg_inference_ms": 0.2982
+      "test_rmse_kg": 114.47,
+      "test_r2": 0.9449,
+      "feature_importance": {
+        "area_ha": 0.4349,
+        "soil_moisture_pct": 0.2494,
+        "ndvi": 0.1484,
+        "fertilizer_kg_ha": 0.0966,
+        "rainfall_mm": 0.0328,
+        "avg_temp_c": 0.0315,
+        "crop_age_days": 0.0063
+      },
+      "train_time_ms": 245.8,
+      "avg_inference_ms": 0.1223
     },
     "AGT-02_Koperasi": {
       "enterprise": "Koperasi Tani",
@@ -44,8 +58,8 @@
       "test_mape_pct": 4.28,
       "test_r2": 0.9853,
       "target_met": true,
-      "train_time_ms": 116.4,
-      "avg_inference_ms": 0.0055
+      "train_time_ms": 137.2,
+      "avg_inference_ms": 0.0043
     },
     "AGT-03_FreshFood": {
       "enterprise": "FreshFood Processing",
@@ -59,12 +73,14 @@
       "reject_recall_pct": 100.0,
       "target_accuracy_pct": ">= 90.0%",
       "target_met": true,
-      "train_time_ms": 3625.6,
+      "train_time_ms": 3548.1,
       "avg_inference_ms": 0.0018
     },
     "AGT-04_ColdChain": {
       "enterprise": "ColdChain Logistics",
-      "model": "Isolation Forest + Google OR-Tools CVRP",
+      "model": "Isolation Forest + XGBoost ETA + Google OR-Tools VRPTW/CVRP",
+      "model_version": "iforest-vrptw-v2.0",
+      "tomato_safe_temp_c": "7.0-12.0",
       "train_normal_rows": 7000,
       "val_rows": 1500,
       "test_rows": 1500,
@@ -72,13 +88,18 @@
       "anomaly_recall_pct": 100.0,
       "anomaly_f1_pct": 95.32,
       "anomaly_roc_auc": 1.0,
+      "eta_mae_min": 7.66,
+      "eta_mape_pct": 5.35,
+      "eta_beats_baseline": true,
       "cvrp_naive_distance_km": 382.0,
       "cvrp_optimized_distance_km": 263.0,
       "cvrp_distance_reduction_pct": 31.15,
+      "vrptw_optimized_distance_km": 263.0,
+      "vrptw_time_window_violations": 0,
       "target_route_reduction": ">= 10.0%",
       "target_met": true,
-      "train_time_ms": 299.3,
-      "avg_inference_ms": 0.0141
+      "train_time_ms": 334.6,
+      "avg_inference_ms": 0.0139
     },
     "AGT-05_SuperMart": {
       "enterprise": "SuperMart",
@@ -93,14 +114,14 @@
       "target_met": true,
       "test_r2": 0.9215,
       "residual_std_kg": 33.54,
-      "train_time_ms": 196.3,
-      "avg_inference_ms": 0.0028
+      "train_time_ms": 101.2,
+      "avg_inference_ms": 0.0024
     }
   },
   "milp_showcase_verification": {
     "normal_condition": {
       "solver_status": "Optimal",
-      "solve_time_ms": 338.98,
+      "solve_time_ms": 21.08,
       "allocations": [
         {
           "lot_id": "H001",
@@ -159,7 +180,7 @@
     },
     "cold_storage_failure_adaptive": {
       "solver_status": "Optimal",
-      "solve_time_ms": 29.21,
+      "solve_time_ms": 20.67,
       "allocations": [
         {
           "lot_id": "H001",

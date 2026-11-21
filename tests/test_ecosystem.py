@@ -130,3 +130,132 @@ def test_measurable_decision_change_under_environmental_shock():
     assert st_disrupt["round_counter"] >= 1
     assert len(st_disrupt["decision_trace"]) > len(st_normal["decision_trace"])
     assert st_disrupt["milp_result"]["food_loss_rate_pct"] == 0.0
+    assert len(st_disrupt.get("lineage", [])) >= 1
+    assert "Executive Briefing" in st_disrupt.get("executive_briefing", "") or len(st_disrupt.get("executive_briefing", "")) > 40
+
+
+def test_agrofarm_v2_extreme_rain_and_sensor_outage_fallback():
+    orch = AgriChainOrchestrator()
+    # 1. Extreme rain: harvest window advances -2 days on impacted BLK-11/H003, 80% Quantile PI present, yield drops vs normal
+    st_norm = orch.run_cycle(trigger_mode="NORMAL", adaptive_replanning=True)
+    st_rain = orch.run_cycle(trigger_mode="EXTREME_RAIN", adaptive_replanning=True)
+    norm_yield = sum(b["qty_kg"] for b in st_norm["batches"])
+    rain_yield = sum(b["qty_kg"] for b in st_rain["batches"])
+    assert rain_yield < norm_yield
+    for b in st_rain["batches"]:
+        lo, hi = b["pi80_interval_kg"]
+        assert lo <= b["qty_kg"] <= hi
+        assert b["ndvi"] is not None
+    h003_rain = next(b for b in st_rain["batches"] if b["lot_id"] == "H003")
+    assert h003_rain["harvest_window"]["shift_days"] == -2
+    assert len(st_rain["agrofarm_monitoring"]) == 3
+    assert any(m["status"] == "MENYIMPANG" for m in st_rain["agrofarm_monitoring"])
+
+    # 2. Sensor outage (>= 3 days offline): triggers historical mean fallback + freshness warning
+    st_out = orch.run_cycle(trigger_mode="SENSOR_OUTAGE", adaptive_replanning=True)
+    assert st_out["data_freshness_warning"] is not None
+    assert any(b["prediction_mode"] == "FALLBACK_HISTORICAL_MEAN" for b in st_out["batches"])
+    assert any(m["stale_data"] for m in st_out["agrofarm_monitoring"])
+
+
+def test_coldchain_v2_vrptw_eta_and_crud_endpoints():
+    client = TestClient(app)
+
+    # 1. Standardized tomato temperature range 7.0-12.0 C in health
+    r_h = client.get("/api/v1/health")
+    assert r_h.status_code == 200
+    assert r_h.json()["tomato_safe_temp_c"] == [7.0, 12.0]
+
+    # 2. AgroFarm Local REST endpoints
+    r_mon = client.get("/api/v1/agrofarm/monitoring?extreme_rain=true")
+    assert r_mon.status_code == 200
+    assert len(r_mon.json()["blocks"]) == 3
+    r_pred = client.post(
+        "/api/v1/agrofarm/predict",
+        json={"block_id": "BLK-11", "lot_id": "H003", "extreme_rain_flag": True},
+    )
+    assert r_pred.status_code == 200
+    p = r_pred.json()["prediction"]
+    lo, hi = p["pi80_interval_kg"]
+    assert lo <= p["predicted_kg"] <= hi
+    assert p["harvest_window"]["shift_days"] == -2
+    assert len(r_pred.json()["feature_importance"]) >= 5
+
+    # 3. ColdChain VRPTW & XGBoost ETA
+    r_vrp = client.post("/api/v1/coldchain/vrptw", json={"scenario": "ROAD_DISRUPTION", "traffic_level": 2})
+    assert r_vrp.status_code == 200
+    plan = r_vrp.json()["active_plan"]
+    assert plan["time_window_violations"] == 0
+    assert plan["scenario"] == "ROAD_DISRUPTION"
+    assert len(plan["routes"]) >= 1
+
+    r_eta = client.post(
+        "/api/v1/coldchain/eta",
+        json={"distance_km": 42.0, "traffic_level": 2, "num_stops": 2, "weather_severity": 1, "departure_hour": 8},
+    )
+    assert r_eta.status_code == 200
+    assert r_eta.json()["eta"]["predicted_duration_min"] > 0
+
+    # 4. Fleet CRUD & RBAC rejection for non-fleet role
+    r_fleet_deny = client.post(
+        "/api/v1/coldchain/fleet",
+        headers={"X-Scoped-Token": "tok_agrofarm_local_v1"},
+        json={"vehicle_id": "V099", "capacity_kg": 2500, "min_temp_c": 7.0, "max_temp_c": 12.0},
+    )
+    assert r_fleet_deny.status_code == 403
+
+    r_fleet_ok = client.post(
+        "/api/v1/coldchain/fleet",
+        headers={"X-Scoped-Token": "tok_coldchain_local_v1"},
+        json={"vehicle_id": "V005", "capacity_kg": 3500, "min_temp_c": 7.0, "max_temp_c": 12.0, "status": "Available"},
+    )
+    assert r_fleet_ok.status_code == 200
+    assert r_fleet_ok.json()["action"] in ("CREATE_VEHICLE", "UPDATE_VEHICLE")
+
+    # 5. Shipments CRUD validation (deadline <= ready_time MUST be rejected 422)
+    r_ship_bad = client.post(
+        "/api/v1/coldchain/shipments",
+        headers={"X-Scoped-Token": "tok_coldchain_local_v1"},
+        json={"shipment_id": "SH999", "quantity_kg": 500, "ready_time": "12:00", "deadline": "10:00"},
+    )
+    assert r_ship_bad.status_code == 422
+
+    r_ship_ok = client.post(
+        "/api/v1/coldchain/shipments",
+        headers={"X-Scoped-Token": "tok_coldchain_local_v1"},
+        json={"shipment_id": "SH_TEST_01", "lot_id": "H001", "quantity_kg": 900, "ready_time": "08:00", "deadline": "12:00"},
+    )
+    assert r_ship_ok.status_code == 200
+    assert r_ship_ok.json()["status"] == "CREATED"
+
+
+def test_server_side_rbac_data_explorer_redaction():
+    client = TestClient(app)
+
+    # 1. Global Operator querying Koperasi table -> floor_price_rp MUST be redacted server-side
+    r_global = client.get(
+        "/api/v1/data-explorer/koperasi/market_price_negotiations?limit=5",
+        headers={"X-Scoped-Token": "tok_orchestrator_global_scope_v1"},
+    )
+    assert r_global.status_code == 200
+    b_global = r_global.json()
+    assert b_global["server_side_firewall"] is True
+    assert "floor_price_rp" in b_global["redacted_columns"]
+    assert all("REDACTED" in str(row["floor_price_rp"]) for row in b_global["records"])
+
+    # 2. Koperasi Owner querying OWN table -> floor_price_rp unlocked server-side
+    r_owner = client.get(
+        "/api/v1/data-explorer/koperasi/market_price_negotiations?limit=5",
+        headers={"X-Scoped-Token": "tok_koperasi_local_v1"},
+    )
+    assert r_owner.status_code == 200
+    b_owner = r_owner.json()
+    assert b_owner["redacted_columns"] == []
+    assert all(isinstance(row["floor_price_rp"], (int, float)) for row in b_owner["records"])
+
+    # 3. Unauthorized token -> 403 Forbidden
+    r_bad = client.get(
+        "/api/v1/data-explorer/koperasi/market_price_negotiations",
+        headers={"X-Scoped-Token": "tok_invalid_hacker"},
+    )
+    assert r_bad.status_code == 403

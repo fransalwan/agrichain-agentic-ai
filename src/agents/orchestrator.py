@@ -67,6 +67,11 @@ class EcosystemState(TypedDict, total=False):
     messages: List[Dict[str, Any]]
     decision_trace: List[Dict[str, Any]]
     agent_statuses: List[Dict[str, Any]]
+    agrofarm_monitoring: List[Dict[str, Any]]
+    vrptw_plan: Dict[str, Any]
+    lineage: List[Dict[str, Any]]
+    executive_briefing: str
+    data_freshness_warning: Optional[str]
     hitl_required: bool
     hitl_reasons: List[str]
     hitl_status: str                   # AUTO_APPROVED | PENDING_APPROVAL | HUMAN_APPROVED | HUMAN_REJECTED
@@ -292,15 +297,43 @@ class AgriChainOrchestrator:
         trigger = state.get("trigger_mode", "NORMAL")
         inject_cold = trigger in ("COLD_STORAGE_FAILURE", "COMPOUND")
         inject_surge = trigger in ("DEMAND_SURGE", "COMPOUND")
+        inject_rain = trigger == "EXTREME_RAIN"
+        inject_outage = trigger == "SENSOR_OUTAGE"
         failed_fs = list(state.get("failed_food_safety_lots", []))
         if trigger == "FOOD_SAFETY_FAIL" and not failed_fs:
             failed_fs = ["H003"]
         if trigger in ("DEADLOCK", "DEADLOCK_TEST"):
             state["force_low_bid_deadlock"] = True
 
-        # Parallel fan-out snapshot collection from 5 independent enterprises (via authorized API)
+        # AgroFarm v2 Crop Monitoring (14-day +/- 2 sigma deviation + sensor outage check)
+        af_mon = self.agrofarm.model.evaluate_block_monitoring(extreme_rain=inject_rain, sensor_outage=inject_outage)
+        state["agrofarm_monitoring"] = af_mon
+        state["data_freshness_warning"] = (
+            "STALE DATA WARNING: Sensor blok BLK-11 offline >= 3 hari — AgroFarm beroperasi pada FALLBACK_HISTORICAL_MEAN."
+            if inject_outage
+            else None
+        )
+
+        # Propagate extreme rain / sensor outage into plot_records cleanly
+        plot_recs = [dict(r) for r in state["plot_records"]]
+        for rec in plot_recs:
+            if rec.get("lot_id") == "H003":
+                rec["block_id"] = "BLK-11"
+                if inject_rain:
+                    rec["extreme_rain_flag"] = True
+                    rec["rainfall_mm"] = 96.0
+                    rec["ndvi"] = 0.41
+                    rec["actual_yield_kg"] = round(float(rec["actual_yield_kg"]) * 0.861, 1)
+                if inject_outage:
+                    rec["sensor_offline_days"] = 3
+            elif rec.get("lot_id") == "H001":
+                rec["block_id"] = "BLK-07"
+            elif rec.get("lot_id") == "H002":
+                rec["block_id"] = "BLK-03"
+
+        # Parallel fan-out snapshot collection from 5 independent enterprises (Brokered Single-Gate / Zero-Direct-DB)
         m_sm = self.supermart.forecast_and_plan_po(cid, demand_override_kg=state.get("demand_override_kg"), demand_surge=inject_surge)
-        m_af = self.agrofarm.forecast_harvest(cid, state["plot_records"], use_showcase_volumes=state.get("use_showcase_numbers", True))
+        m_af = self.agrofarm.forecast_harvest(cid, plot_recs, use_showcase_volumes=state.get("use_showcase_numbers", True))
         raw_lots = m_af.payload["batches"]
         m_kp = self.koperasi.aggregate_and_quote(cid, raw_lots, use_showcase_prices=state.get("use_showcase_numbers", True))
         quoted_lots = m_kp.payload["aggregated_lots"]
@@ -310,13 +343,20 @@ class AgriChainOrchestrator:
         for m in (m_sm, m_af, m_kp, m_ff, m_cc):
             self._record_msg(state, m)
 
-        # Merge QC food_safety status into shared batch objects
+        # Solve real ColdChain OR-Tools VRPTW + XGBoost ETA for the active scenario
+        vrptw_scen = "COLD_STORAGE_DROP" if inject_cold else ("ROAD_DISRUPTION" if inject_rain else "NORMAL")
+        state["vrptw_plan"] = self.coldchain.model.solve_vrptw(scenario=vrptw_scen)
+
+        # Merge QC food_safety status + AgroFarm v2 telemetry into shared batch objects
         qc_map = {q["lot_id"]: q for q in m_ff.payload["qc_reports"]}
+        af_map = {b["lot_id"]: b for b in raw_lots}
         merged_batches = []
         for lot in quoted_lots:
             q = qc_map.get(lot["lot_id"], {})
+            af = af_map.get(lot["lot_id"], {})
             merged_batches.append({
                 "lot_id": lot["lot_id"],
+                "block_id": af.get("block_id", "BLK-01"),
                 "qty_kg": float(lot["qty_kg"]),
                 "grade": lot["grade"],
                 "shelf_life_days": int(lot["shelf_life_days"]),
@@ -324,6 +364,11 @@ class AgriChainOrchestrator:
                 "food_safety_approved": bool(q.get("food_safety_approved", True)),
                 "defect_ratio": float(q.get("defect_ratio", 0.03)),
                 "cnn_confidence": float(q.get("cnn_confidence", 0.94)),
+                "ndvi": af.get("ndvi"),
+                "pi80_interval_kg": af.get("pi80_interval_kg", [float(lot["qty_kg"]) * 0.9, float(lot["qty_kg"]) * 1.1]),
+                "prediction_mode": af.get("prediction_mode", "RF_QUANTILE_PI80"),
+                "doubtful": bool(af.get("doubtful", False)),
+                "harvest_window": af.get("harvest_window", {"shift_days": 0}),
             })
 
         state["batches"] = merged_batches
@@ -355,21 +400,35 @@ class AgriChainOrchestrator:
 
         total_supply = sum(b["qty_kg"] for b in merged_batches)
         blocked_lots = [b["lot_id"] for b in merged_batches if not b["food_safety_approved"]]
+        extra_note = ""
+        if inject_rain:
+            extra_note = ", AgroFarm Hujan Ekstrem BLK-11 (panen maju 2 hari, estimasi -13.9%)"
+        elif inject_outage:
+            extra_note = ", Sensor BLK-11 Offline 3 hari (Fallback Historical Mean)"
+        if blocked_lots:
+            extra_note += f", Food Safety Hard-Block={blocked_lots}"
+
         self._record_trace(
             state,
             node="collect_telemetry",
             actors="AGT-01..AGT-05 → AGT-06",
-            status="ALERT" if (state["capacity_drop_pct"] > 0 or blocked_lots or inject_surge) else "COMPLETED",
+            status="ALERT" if (state["capacity_drop_pct"] > 0 or blocked_lots or inject_surge or inject_rain or inject_outage) else "COMPLETED",
             summary=(
-                f"Snapshot 5 enterprise terkumpul (Zero-Direct-DB): Pasokan={total_supply:,.0f} kg, "
+                f"Snapshot 5 enterprise terkumpul (Brokered Single-Gate & Zero-Direct-DB): Pasokan={total_supply:,.0f} kg, "
                 f"Demand SuperMart={state['demand_supermart_kg']:,.0f} kg, "
-                f"Kapasitas ColdStorage={state['cold_storage_cap_kg']:,.0f} kg (drop {state['capacity_drop_pct']}%)"
-                + (f", Food Safety Hard-Block={blocked_lots}" if blocked_lots else "")
+                f"ColdStorage={state['cold_storage_cap_kg']:,.0f} kg (drop {state['capacity_drop_pct']}%), "
+                f"VRPTW={state['vrptw_plan']['optimized_distance_km']:.0f} km{extra_note}"
             ),
             metrics={"supply_kg": total_supply, "demand_kg": state["demand_supermart_kg"], "cold_cap_kg": state["cold_storage_cap_kg"]},
         )
 
-        self.audit.record("COLLECT_TELEMETRY", "AGT-06", {"cycle_id": cid, "trigger": trigger, "cold_cap": state["cold_storage_cap_kg"], "demand_sm": state["demand_supermart_kg"]})
+        self.audit.record(
+            "COLLECT_TELEMETRY",
+            "AGT-06",
+            {"cycle_id": cid, "trigger": trigger, "cold_cap": state["cold_storage_cap_kg"], "demand_sm": state["demand_supermart_kg"]},
+            model_version="orchestrator-v2.0",
+            input_reference=f"snapshot_{cid}",
+        )
         return state
 
     def _node_run_milp(self, state: EcosystemState) -> EcosystemState:
@@ -576,6 +635,10 @@ class AgriChainOrchestrator:
             reasons.append("NEGOTIATION_DEADLOCK_AFTER_3_ROUNDS")
         if state.get("allow_grade_b_to_supermart", False):
             reasons.append("RETAIL_GRADE_B_SUBSTITUTION_REQUIRES_APPROVAL")
+        if state.get("trigger_mode") == "EXTREME_RAIN":
+            reasons.append("AGROFARM_HARVEST_WINDOW_SHIFTED_2_DAYS")
+        if state.get("trigger_mode") == "SENSOR_OUTAGE":
+            reasons.append("AGROFARM_SENSOR_OFFLINE_FALLBACK_ACTIVE")
 
         state["hitl_required"] = len(reasons) > 0
         state["hitl_reasons"] = reasons
@@ -692,6 +755,46 @@ class AgriChainOrchestrator:
                 "privacy_firewall": "LOCKED (0 Leaks)",
                 "last_action": last_act,
             })
+
+        # Build Canonical Cross-Enterprise Entity Lineage (Pillar 1)
+        block_map = {"H001": "BLK-07", "H002": "BLK-03", "H003": "BLK-11"}
+        vrptw_routes = state.get("vrptw_plan", {}).get("routes", [])
+        lineage_rows = []
+        for idx_a, a in enumerate(milp["allocations"]):
+            lid = a["lot_id"]
+            r_info = vrptw_routes[idx_a % len(vrptw_routes)] if vrptw_routes else {}
+            lineage_rows.append({
+                "block_id": block_map.get(lid, "BLK-01"),
+                "lot_id": lid,
+                "grade": a["grade"],
+                "qc_doc_id": f"QC-{lid}",
+                "shipment_id": f"SH-{lid[-3:]}-{idx_a+1}",
+                "trip_id": f"TRP-{idx_a+1:03d}",
+                "vehicle_id": r_info.get("truck", "V001 (Reefer 7-12°C)"),
+                "destination_channel": a["channel"],
+                "qty_kg": a["qty_kg"],
+                "po_ref": f"PO-SM-{lid}" if a["channel"] == "SuperMart" else f"WO-{a['channel']}-{lid}",
+            })
+        state["lineage"] = lineage_rows
+
+        # Executive HITL Impact Briefing (Indonesian natural-language summary for operators)
+        trig = state.get("trigger_mode", "NORMAL")
+        brief_parts = [
+            f"Siklus {state['cycle_id']} pada skenario {trig}: total pasokan {milp['total_supply_kg']:,.0f} kg berhasil dioptimalkan "
+            f"oleh MILP-FEFO dengan Food Loss Rate {milp['food_loss_rate_pct']:.2f}%, Order Fulfillment {milp['order_fulfillment_rate_pct']:.1f}%, "
+            f"Net Profit ekosistem Rp{milp['net_ecosystem_profit_rp']/1e6:.2f} Jt, dan Jain's Fairness {fairness:.4f}.",
+        ]
+        if milp["overtime_activated"]:
+            brief_parts.append("Negosiasi Contract Net mengaktifkan shift Overtime FreshFood (+500 kg) untuk mencegah susut pangan.")
+        if state.get("allow_grade_b_to_supermart"):
+            brief_parts.append("Substitusi Grade B ke SuperMart (<= 30% cap) diaktifkan untuk meredam lonjakan permintaan.")
+        if state.get("data_freshness_warning"):
+            brief_parts.append(state["data_freshness_warning"])
+        if state["hitl_required"]:
+            brief_parts.append(f"Eskalasi NIST AI RMF 1.0 aktif ({', '.join(state['hitl_reasons'])}) — mohon tinjau dampak & konfirmasi Approve/Reject.")
+        else:
+            brief_parts.append("Seluruh ambang risiko & privacy firewall (0 leak) aman; rencana otomatis disetujui.")
+        state["executive_briefing"] = " ".join(brief_parts)
 
         state["agent_statuses"] = agent_statuses
         state["enterprise_profits_rp"] = profits

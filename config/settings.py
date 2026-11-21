@@ -147,5 +147,14 @@ class Settings(BaseSettings):
     max_negotiation_rounds: int = 3
     random_seed: int = 42
 
+    # Standardized Biological & Operational Constants (Pillar 1 Harmonization)
+    tomato_safe_temp_min_c: float = 7.0
+    tomato_safe_temp_max_c: float = 12.0
+    agrofarm_sensor_outage_days_threshold: int = 3
+    agrofarm_rain_extreme_14d_mm: float = 90.0
+    agrofarm_deviation_sigma: float = 2.0
+    data_stale_threshold_minutes: int = 15
+    api_base_url: str = "http://127.0.0.1:8000"
+
 
 settings = Settings()

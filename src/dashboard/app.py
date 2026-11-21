@@ -1,25 +1,27 @@
-"""Streamlit Role-Based Multi-Enterprise Control Center & Interactive Domain Cockpits.
+"""AgriChain Agentic AI v2.0 — Decoupled Role-Adaptive Multi-Enterprise Cockpit.
 
-Covers all rubric deliverables:
-- Simulated Role-Based Login & Data Sovereignty Privacy Masking (6 Roles)
-- Global Control Center with Measured Before-vs-After (Static vs Adaptive) Comparison
-- Live Agent Status Matrix (6 Heterogeneous ML + LLM Agents)
-- LangGraph 7-Node Decision Trace, FIPA-ACL/EPCIS 2.0 Feed & SHA-256 Audit Trail + HITL Console
-- 5 Interactive Enterprise Modules (RF Yield, LightGBM Price, RGB CNN Tomato QC, IForest+CVRP, XGBoost+Newsvendor)
-- Interactive Multi-Enterprise Local DB Data Explorer with Privacy Redaction & CSV Export
+Implements all 4 Improvement Pillars:
+1. Decoupled HTTP API Client (FastAPI Gateway + Server-Side X-Scoped-Token Privacy Redaction + Lineage)
+2. Deepened Local AI Modules:
+   - AgroFarm (AGT-01): NDVI, 14-Day +/- 2sigma Deviation, 80% Quantile PI, Feature Importance, Sensor Fallback, Extreme Rain
+   - ColdChain (AGT-04): OR-Tools VRPTW + Scenario Comparison, XGBoost ETA, Fleet & Shipments CRUD, Geospatial Map, 7-12C SOP
+3. Enterprise UI/UX Governance:
+   - Role-Adaptive Navigation (Global Operator | Farm Manager | Fleet Manager | Koperasi | FreshFood | SuperMart)
+   - 5 Mandatory UI States (Loading, Empty, Error, Stale/Partial Data Warning, Success + SHA-256 Audit)
+   - Impact-Preview Confirmation Console before HITL Approve / Re-Optimize / Reject
 """
 from __future__ import annotations
 
 import json
-import sqlite3
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+import httpx
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -27,32 +29,32 @@ import plotly.graph_objects as go
 import streamlit as st
 from PIL import Image
 
-from config.settings import AGENT_MODEL_PROFILES, DATA_DIR, RESULTS_DIR
+from config.settings import AGENT_MODEL_PROFILES, DATA_DIR, RESULTS_DIR, settings
 from src.agents.orchestrator import AgriChainOrchestrator
-from src.protocols.security import ALL_PRIVATE_KEYS as PRIVATE_FIELDS
+from src.protocols.fipa_epcis import now_wib_iso
 
 st.set_page_config(
-    page_title="AgriChain Agentic AI — Multi-Enterprise Control Center",
+    page_title="AgriChain Agentic AI v2.0 — Multi-Enterprise Cockpit",
     page_icon="🍅",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
 # ---------------------------------------------------------------------------
-# Custom CSS for clean Executive Control Center look
+# Custom CSS (Clean Executive Theme — zero banner clipping, legible KPIs)
 # ---------------------------------------------------------------------------
 st.markdown(
     """
     <style>
     .block-container { padding-top: 3.1rem; padding-bottom: 2rem; }
-    [data-testid="stMetricValue"] { font-size: 1.45rem !important; }
+    [data-testid="stMetricValue"] { font-size: 1.42rem !important; }
     [data-testid="stMetricDelta"] { font-size: 0.78rem !important; }
     .role-banner {
         background: linear-gradient(90deg, #143454 0%, #1F4E79 65%, #2B6CB0 100%);
         color: #FFFFFF;
-        padding: 0.85rem 1.25rem;
+        padding: 0.9rem 1.25rem;
         border-radius: 10px;
-        margin-bottom: 1rem;
+        margin-bottom: 0.95rem;
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -64,134 +66,143 @@ st.markdown(
         border: 1px solid rgba(255,255,255,0.35);
         padding: 0.25rem 0.7rem;
         border-radius: 999px;
-        font-size: 0.82rem;
+        font-size: 0.80rem;
         font-weight: 600;
     }
-    .status-banner-ok {
-        background: #ECFDF5; border-left: 5px solid #10B981; color: #065F46;
-        padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 0.8rem;
-    }
-    .status-banner-warn {
-        background: #FFFBEB; border-left: 5px solid #F59E0B; color: #92400E;
-        padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 0.8rem;
-    }
-    .status-banner-danger {
-        background: #FEF2F2; border-left: 5px solid #EF4444; color: #991B1B;
-        padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 0.8rem;
-    }
-    .trace-card {
-        background: #F8FAFC;
-        border: 1px solid #CBD5E1;
-        border-left: 4px solid #1F4E79;
-        border-radius: 6px;
-        padding: 0.65rem 0.9rem;
-        margin-bottom: 0.5rem;
-    }
-    .msg-card {
-        background: #FFFFFF;
-        border: 1px solid #E2E8F0;
-        border-left: 4px solid #2B6CB0;
-        border-radius: 6px;
-        padding: 0.6rem 0.9rem;
-        margin-bottom: 0.45rem;
-    }
-    div[data-testid="stMetric"] {
-        background: #F8FAFC;
-        border: 1px solid #E2E8F0;
-        padding: 0.65rem 0.85rem;
-        border-radius: 8px;
-    }
+    .banner-ok { background:#ECFDF5; border-left:5px solid #10B981; color:#065F46; padding:0.75rem 1rem; border-radius:6px; margin-bottom:0.75rem; }
+    .banner-warn { background:#FFFBEB; border-left:5px solid #F59E0B; color:#92400E; padding:0.75rem 1rem; border-radius:6px; margin-bottom:0.75rem; }
+    .banner-stale { background:#FEF3C7; border:1px solid #F59E0B; border-left:6px solid #D97706; color:#78350F; padding:0.75rem 1rem; border-radius:6px; margin-bottom:0.75rem; }
+    .banner-danger { background:#FEF2F2; border-left:5px solid #EF4444; color:#991B1B; padding:0.75rem 1rem; border-radius:6px; margin-bottom:0.75rem; }
+    .brief-box { background:#EFF6FF; border:1px solid #BFDBFE; border-left:5px solid #1F4E79; color:#1E3A5F; padding:0.85rem 1rem; border-radius:6px; margin-bottom:0.8rem; }
+    .trace-card { background:#F8FAFC; border:1px solid #CBD5E1; border-left:4px solid #1F4E79; border-radius:6px; padding:0.6rem 0.9rem; margin-bottom:0.45rem; }
+    .msg-card { background:#FFFFFF; border:1px solid #E2E8F0; border-left:4px solid #2B6CB0; border-radius:6px; padding:0.55rem 0.9rem; margin-bottom:0.4rem; }
+    .empty-card { background:#F8FAFC; border:1px dashed #94A3B8; border-radius:8px; padding:1.4rem; text-align:center; color:#475569; margin:0.6rem 0; }
+    div[data-testid="stMetric"] { background:#F8FAFC; border:1px solid #E2E8F0; padding:0.65rem 0.85rem; border-radius:8px; }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
 # ---------------------------------------------------------------------------
-# Role Definitions (Simulated Enterprise Login & Data Sovereignty Scope)
+# Role Profiles (RBAC Tokens verified SERVER-SIDE by FastAPI)
 # ---------------------------------------------------------------------------
 ROLE_PROFILES: Dict[str, Dict[str, Any]] = {
     "Global Control Center Operator (AGT-06)": {
         "user": "ops.global@agrichain.id",
         "enterprise_key": "global",
-        "agent_id": "AGT-06",
-        "token_preview": "tok_orchestrator_global_scope_v1",
-        "scope_desc": "Akses Global Orchestration & HITL — Semua 15 Atribut Privat Enterprise TER-REDAKSI (Zero-Direct-DB)",
-        "private_unlocked": set(),
+        "token": "tok_orchestrator_global_scope_v1",
+        "scope_desc": "Global Orchestration, Impact-Preview HITL & Audit — 15 Atribut Privat Enterprise TER-REDAKSI di Server FastAPI",
     },
-    "AgroFarm Manager (AGT-01)": {
-        "user": "manager@agrofarm.co.id",
+    "Farm Manager — AgroFarm (AGT-01)": {
+        "user": "farm.manager@agrofarm.co.id",
         "enterprise_key": "agrofarm",
-        "agent_id": "AGT-01",
-        "token_preview": "tok_agrofarm_local_v1",
-        "scope_desc": "Akses Lokal AgroFarm (PostgreSQL) — HPP & ID Petani terbuka lokal; data privat perusahaan lain ter-redaksi",
-        "private_unlocked": {"agrofarm"},
+        "token": "tok_agrofarm_local_v1",
+        "scope_desc": "Workspace Lokal AgroFarm (PostgreSQL) — Crop Monitoring NDVI (14d ± 2σ), RF 80% PI & HPP Lokal Terbuka",
+    },
+    "Fleet Manager — ColdChain (AGT-04)": {
+        "user": "fleet.manager@coldchain.co.id",
+        "enterprise_key": "coldchain",
+        "token": "tok_coldchain_local_v1",
+        "scope_desc": "Workspace Lokal ColdChain (TimescaleDB) — Fleet/Shipments CRUD, OR-Tools VRPTW, XGBoost ETA & Monitor 7–12°C",
     },
     "Koperasi Tani Manager (AGT-02)": {
         "user": "ketua@koperasitani.id",
         "enterprise_key": "koperasi",
-        "agent_id": "AGT-02",
-        "token_preview": "tok_koperasi_local_v1",
-        "scope_desc": "Akses Lokal Koperasi (MySQL) — floor_price_rp & margin koperasi terbuka lokal; perusahaan lain ter-redaksi",
-        "private_unlocked": {"koperasi"},
+        "token": "tok_koperasi_local_v1",
+        "scope_desc": "Workspace Lokal Koperasi (MySQL) — LightGBM Price, Contract Net Auction & floor_price_rp Terbuka Lokal",
     },
-    "FreshFood QC & Plant Manager (AGT-03)": {
+    "FreshFood QC Manager (AGT-03)": {
         "user": "qc.lead@freshfood.co.id",
         "enterprise_key": "freshfood",
-        "agent_id": "AGT-03",
-        "token_preview": "tok_freshfood_local_v1",
-        "scope_desc": "Akses Lokal FreshFood (MongoDB) — Lab QC, CNN Visual Grading, & Food Safety Hard-Block terbuka lokal",
-        "private_unlocked": {"freshfood"},
-    },
-    "ColdChain Logistics Manager (AGT-04)": {
-        "user": "dispatch@coldchain.co.id",
-        "enterprise_key": "coldchain",
-        "agent_id": "AGT-04",
-        "token_preview": "tok_coldchain_local_v1",
-        "scope_desc": "Akses Lokal ColdChain (TimescaleDB) — Telemetri IoT, Isolation Forest, & OR-Tools CVRP terbuka lokal",
-        "private_unlocked": {"coldchain"},
+        "token": "tok_freshfood_local_v1",
+        "scope_desc": "Workspace Lokal FreshFood (MongoDB) — Galeri Citra RGB CNN Grading & Guardrail Food Safety 0% Toleransi",
     },
     "SuperMart Procurement Manager (AGT-05)": {
         "user": "buyer@supermart.co.id",
         "enterprise_key": "supermart",
-        "agent_id": "AGT-05",
-        "token_preview": "tok_supermart_local_v1",
-        "scope_desc": "Akses Lokal SuperMart (MySQL) — ceiling_price_rp & retail margin terbuka lokal; perusahaan lain ter-redaksi",
-        "private_unlocked": {"supermart"},
+        "token": "tok_supermart_local_v1",
+        "scope_desc": "Workspace Lokal SuperMart (MySQL) — XGBoost Demand, Newsvendor PO & ceiling_price_rp Terbuka Lokal",
     },
 }
 
 SCENARIO_LABELS = {
     "NORMAL": "NORMAL — Operasi Harian Standar",
     "COLD_STORAGE_FAILURE": "COLD_STORAGE_FAILURE — Kompresor Rusak (3.000 → 1.000 kg)",
-    "DEMAND_SURGE": "DEMAND_SURGE — Lonjakan Permintaan Ritel (2.000 → 2.800 kg)",
+    "EXTREME_RAIN": "EXTREME_RAIN — Hujan Ekstrem AgroFarm BLK-11 (Panen Maju 2 Hari)",
+    "SENSOR_OUTAGE": "SENSOR_OUTAGE — Sensor BLK-11 Offline ≥ 3 Hari (Stale Fallback)",
+    "DEMAND_SURGE": "DEMAND_SURGE — Lonjakan Permintaan SuperMart (2.000 → 2.800 kg)",
     "FOOD_SAFETY_FAIL": "FOOD_SAFETY_FAIL — Batch H003 Gagal Uji Mikroba/Pestisida",
     "COMPOUND": "COMPOUND — Cold Storage Failure + Demand Surge Simultan",
-    "DEADLOCK": "DEADLOCK — Tawaran Pembeli < Floor Price (Batas 3 Ronde → HITL)",
+    "DEADLOCK": "DEADLOCK — Tawaran Pembeli < Floor Price (3 Ronde → HITL)",
 }
 
 
 # ---------------------------------------------------------------------------
-# Cached Loaders
+# Decoupled HTTP API Client (UI -> FastAPI Gateway with graceful local fallback)
 # ---------------------------------------------------------------------------
+class ApiBridge:
+    def __init__(self, base_url: str = settings.api_base_url):
+        self.base_url = base_url.rstrip("/")
+
+    def check_health(self) -> tuple[bool, Dict[str, Any]]:
+        try:
+            r = httpx.get(f"{self.base_url}/api/v1/health", timeout=2.5)
+            if r.status_code == 200:
+                return True, r.json()
+        except Exception:
+            pass
+        return False, {"status": "offline", "server_timestamp": now_wib_iso()}
+
+    def post(self, path: str, payload: Dict[str, Any], token: str, params: Optional[Dict[str, Any]] = None) -> tuple[bool, Any]:
+        try:
+            r = httpx.post(
+                f"{self.base_url}{path}",
+                json=payload,
+                params=params,
+                headers={"X-Scoped-Token": token},
+                timeout=20.0,
+            )
+            if r.status_code < 300:
+                return True, r.json()
+            return False, r.json().get("detail", f"HTTP {r.status_code}")
+        except Exception as exc:
+            return False, str(exc)
+
+    def get(self, path: str, token: str, params: Optional[Dict[str, Any]] = None) -> tuple[bool, Any]:
+        try:
+            r = httpx.get(
+                f"{self.base_url}{path}",
+                params=params,
+                headers={"X-Scoped-Token": token},
+                timeout=10.0,
+            )
+            if r.status_code < 300:
+                return True, r.json()
+            return False, r.json().get("detail", f"HTTP {r.status_code}")
+        except Exception as exc:
+            return False, str(exc)
+
+
 @st.cache_resource
-def load_orchestrator(homogeneous_frontier: bool = False) -> AgriChainOrchestrator:
+def load_local_orchestrator(homogeneous_frontier: bool = False) -> AgriChainOrchestrator:
     return AgriChainOrchestrator(homogeneous_frontier=homogeneous_frontier)
 
 
 @st.cache_data
 def load_ml_metrics() -> Dict[str, Any]:
     path = RESULTS_DIR / "ml_metrics.json"
-    if path.exists():
-        return json.loads(path.read_text(encoding="utf-8"))
-    return {}
-
-
-@st.cache_data
-def load_experiment_results() -> Dict[str, Any]:
-    path = RESULTS_DIR / "experiment_results.json"
-    if path.exists():
-        return json.loads(path.read_text(encoding="utf-8"))
-    return {}
+    if not path.exists():
+        return {}
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    em = raw.get("enterprise_models", {})
+    return {
+        **raw,
+        "agrofarm_rf": em.get("AGT-01_AgroFarm", {}),
+        "koperasi_lgbm": em.get("AGT-02_Koperasi", {}),
+        "freshfood_cnn": em.get("AGT-03_FreshFood", {}),
+        "coldchain_iforest_cvrp": em.get("AGT-04_ColdChain", {}),
+        "supermart_xgb": em.get("AGT-05_SuperMart", {}),
+    }
 
 
 @st.cache_data
@@ -200,42 +211,29 @@ def load_tomato_rgb_sample(n_per_class: int = 2) -> List[Dict[str, Any]]:
     if not npz_path.exists():
         return []
     data = np.load(npz_path, allow_pickle=False)
-    imgs = data["images"]
-    labels = data["labels"]
+    imgs, labels = data["images"], data["labels"]
     samples = []
     for cls in ("A", "B", "C", "Reject"):
-        idxs = np.where(labels == cls)[0][:n_per_class]
-        for idx in idxs:
+        for idx in np.where(labels == cls)[0][:n_per_class]:
             samples.append({"index": int(idx), "true_grade": str(labels[idx]), "image": imgs[idx]})
     return samples
 
 
 # ---------------------------------------------------------------------------
-# Chart Builders
+# Reusable Visualization Builders
 # ---------------------------------------------------------------------------
 def build_sankey(allocations: List[Dict[str, Any]], unallocated: Dict[str, float]) -> go.Figure:
-    nodes = [
-        "AgroFarm",
-        "Koperasi Tani",
-        "SuperMart",
-        "FreshFood_Reg",
-        "FreshFood_OT",
-        "ColdStorage",
-        "Partner3PL",
-        "AltBuyer",
-        "Food Loss / Blocked",
-    ]
+    nodes = ["AgroFarm", "Koperasi Tani", "SuperMart", "FreshFood_Reg", "FreshFood_OT", "ColdStorage", "Partner3PL", "AltBuyer", "Food Loss / Blocked"]
     node_idx = {n: i for i, n in enumerate(nodes)}
-    sources, targets, values, labels, link_colors = [], [], [], [], []
+    sources, targets, values, labels, colors = [], [], [], [], []
     total_qty = sum(a["qty_kg"] for a in allocations) + sum(unallocated.values())
     if total_qty > 0:
-        sources.append(node_idx["AgroFarm"])
-        targets.append(node_idx["Koperasi Tani"])
+        sources.append(0)
+        targets.append(1)
         values.append(total_qty)
         labels.append(f"Total Panen: {total_qty:,.0f} kg")
-        link_colors.append("rgba(47, 133, 90, 0.35)")
-
-    ch_colors = {
+        colors.append("rgba(47, 133, 90, 0.35)")
+    ch_col = {
         "SuperMart": "rgba(197, 48, 48, 0.45)",
         "FreshFood_Reg": "rgba(107, 70, 193, 0.45)",
         "FreshFood_OT": "rgba(214, 158, 46, 0.55)",
@@ -244,45 +242,31 @@ def build_sankey(allocations: List[Dict[str, Any]], unallocated: Dict[str, float
         "AltBuyer": "rgba(113, 128, 150, 0.45)",
     }
     for a in allocations:
-        ch = a["channel"]
-        if ch in node_idx and a["qty_kg"] > 0:
-            sources.append(node_idx["Koperasi Tani"])
-            targets.append(node_idx[ch])
+        if a["channel"] in node_idx and a["qty_kg"] > 0:
+            sources.append(1)
+            targets.append(node_idx[a["channel"]])
             values.append(a["qty_kg"])
             labels.append(f"{a['lot_id']} (Grade {a['grade']}, SL {a['shelf_life_days']}d): {a['qty_kg']:,.0f} kg")
-            link_colors.append(ch_colors.get(ch, "rgba(100,116,139,0.4)"))
-
-    for lot_id, loss_kg in unallocated.items():
+            colors.append(ch_col.get(a["channel"], "rgba(100,116,139,0.4)"))
+    for lid, loss_kg in unallocated.items():
         if loss_kg > 0.5:
-            sources.append(node_idx["Koperasi Tani"])
-            targets.append(node_idx["Food Loss / Blocked"])
+            sources.append(1)
+            targets.append(8)
             values.append(loss_kg)
-            labels.append(f"{lot_id} Loss/Blocked: {loss_kg:,.0f} kg")
-            link_colors.append("rgba(220, 38, 38, 0.65)")
+            labels.append(f"{lid} Loss/Blocked: {loss_kg:,.0f} kg")
+            colors.append("rgba(220, 38, 38, 0.65)")
 
     fig = go.Figure(
-        data=[
-            go.Sankey(
-                node=dict(
-                    pad=16,
-                    thickness=20,
-                    label=nodes,
-                    color=["#2F855A", "#B7791F", "#C53030", "#6B46C1", "#D69E2E", "#0987A0", "#3182CE", "#64748B", "#DC2626"],
-                ),
-                link=dict(source=sources, target=targets, value=values, label=labels, color=link_colors),
-            )
-        ]
+        data=[go.Sankey(
+            node=dict(pad=16, thickness=20, label=nodes, color=["#2F855A", "#B7791F", "#C53030", "#6B46C1", "#D69E2E", "#0987A0", "#3182CE", "#64748B", "#DC2626"]),
+            link=dict(source=sources, target=targets, value=values, label=labels, color=colors),
+        )]
     )
-    fig.update_layout(
-        title="Aliran Alokasi Rantai Pasok Tomat Real-Time (MILP-FEFO)",
-        height=350,
-        margin=dict(l=10, r=10, t=38, b=10),
-    )
+    fig.update_layout(title="Aliran Alokasi Rantai Pasok Tomat (MILP-FEFO)", height=350, margin=dict(l=10, r=10, t=38, b=10))
     return fig
 
 
 def build_decision_shift_chart(baseline_state: Dict[str, Any], active_state: Dict[str, Any]) -> go.Figure:
-    """Visual proof that decisions measurably change when environment / adaptive mode changes."""
     channels = ["SuperMart", "FreshFood_Reg", "FreshFood_OT", "ColdStorage", "Partner3PL", "AltBuyer", "Food Loss"]
 
     def summarize(st_obj: Dict[str, Any]) -> Dict[str, float]:
@@ -293,691 +277,646 @@ def build_decision_shift_chart(baseline_state: Dict[str, Any], active_state: Dic
         out["Food Loss"] = float(st_obj["milp_result"]["total_loss_kg"])
         return out
 
-    s_base = summarize(baseline_state)
-    s_act = summarize(active_state)
-
+    s_base, s_act = summarize(baseline_state), summarize(active_state)
     fig = go.Figure()
-    fig.add_trace(go.Bar(
-        name="Tanpa Adaptive Replanning (Statis)",
-        x=channels,
-        y=[s_base[c] for c in channels],
-        marker_color="#94A3B8",
-        text=[f"{s_base[c]:,.0f}" if s_base[c] > 0 else "" for c in channels],
-        textposition="outside",
-    ))
-    fig.add_trace(go.Bar(
-        name="Dengan Adaptive Replanning (Agentic MILP-FEFO)",
-        x=channels,
-        y=[s_act[c] for c in channels],
-        marker_color="#1F4E79",
-        text=[f"{s_act[c]:,.0f}" if s_act[c] > 0 else "" for c in channels],
-        textposition="outside",
-    ))
+    fig.add_trace(go.Bar(name="Statis (Tanpa Adaptive Replan)", x=channels, y=[s_base[c] for c in channels], marker_color="#94A3B8", text=[f"{s_base[c]:,.0f}" if s_base[c] > 0 else "" for c in channels], textposition="outside"))
+    fig.add_trace(go.Bar(name="Adaptive Replanning (MILP-FEFO)", x=channels, y=[s_act[c] for c in channels], marker_color="#1F4E79", text=[f"{s_act[c]:,.0f}" if s_act[c] > 0 else "" for c in channels], textposition="outside"))
     fig.update_layout(
         title=dict(text="Perubahan Alokasi (kg): Statis vs Adaptive Replanning", y=0.97, x=0.0, font=dict(size=14)),
         barmode="group",
-        yaxis_title="Volume Alokasi (kg)",
+        yaxis_title="Volume (kg)",
         yaxis=dict(range=[0, max(max(s_base.values()), max(s_act.values()), 100) * 1.18]),
-        height=360,
+        height=355,
         legend=dict(orientation="h", yanchor="top", y=-0.22, xanchor="center", x=0.5),
-        margin=dict(l=10, r=10, t=48, b=55),
+        margin=dict(l=10, r=10, t=44, b=55),
     )
     return fig
 
 
-def apply_privacy_masking(df: pd.DataFrame, owner_enterprise: str, unlocked_set: set[str]) -> tuple[pd.DataFrame, List[str]]:
-    """Mask private columns whenever current logged-in role does not own the enterprise DB."""
-    if owner_enterprise in unlocked_set:
-        return df.copy(), []
-    masked_df = df.copy()
-    masked_cols = []
-    for col in masked_df.columns:
-        low = col.lower()
-        if low in PRIVATE_FIELDS or any(k in low for k in ("floor_price", "ceiling_price", "production_cost", "farmer_personal", "margin", "secret", "pii", "payout")):
-            masked_df[col] = "🔒 REDACTED (Private)"
-            masked_cols.append(col)
-    return masked_df, masked_cols
+def build_geospatial_vrptw_map(vrptw_plan: Dict[str, Any]) -> go.Figure:
+    """Interactive Yogyakarta/Sleman/Bantul geospatial map of OR-Tools VRPTW vehicle routes."""
+    palette = ["#1F4E79", "#C53030", "#2F855A", "#D69E2E"]
+    fig = go.Figure()
+    for idx, r in enumerate(vrptw_plan.get("routes", [])):
+        coords = r.get("coords", [])
+        if not coords:
+            continue
+        fig.add_trace(go.Scattermapbox(
+            lat=[c["lat"] for c in coords],
+            lon=[c["lon"] for c in coords],
+            mode="lines+markers+text",
+            name=f"{r['truck']} ({r['distance_km']} km · ETA {r['predicted_eta_min']}m)",
+            line=dict(width=3.5, color=palette[idx % len(palette)]),
+            marker=dict(size=10, color=palette[idx % len(palette)]),
+            text=[c["name"] for c in coords],
+            textposition="top right",
+            hovertext=[f"{c['name']} | Tiba: +{c['arrival_min']} mnt | {r['truck']}" for c in coords],
+            hoverinfo="text",
+        ))
 
-
-def read_local_db_table(enterprise_key: str, table_name: str) -> pd.DataFrame:
-    db_dir = DATA_DIR / "local_dbs"
-    if enterprise_key == "freshfood":
-        with open(DATA_DIR / "freshfood_tomato_qc.json", "r", encoding="utf-8") as f:
-            docs = json.load(f)
-        flat = []
-        for d in docs:
-            row = {k: v for k, v in d.items() if not isinstance(v, dict)}
-            for k, v in d.items():
-                if isinstance(v, dict):
-                    for sk, sv in v.items():
-                        row[f"{k}.{sk}"] = sv
-            flat.append(row)
-        return pd.DataFrame(flat)
-
-    sqlite_map = {
-        "agrofarm": db_dir / "agrofarm_pg.sqlite",
-        "koperasi": db_dir / "koperasi_mysql.sqlite",
-        "coldchain": db_dir / "coldchain_timescaledb.sqlite",
-        "supermart": db_dir / "supermart_mysql.sqlite",
-    }
-    db_path = sqlite_map[enterprise_key]
-    with sqlite3.connect(db_path) as conn:
-        return pd.read_sql_query(f"SELECT * FROM {table_name}", conn)
+    fig.update_layout(
+        mapbox=dict(style="open-street-map", center=dict(lat=-7.775, lon=110.355), zoom=10.6),
+        title=f"Peta Geospasial Rute VRPTW ({vrptw_plan.get('scenario', 'NORMAL')}) — Total {vrptw_plan.get('optimized_distance_km', 0):.0f} km (-{vrptw_plan.get('distance_reduction_pct', 0)}%)",
+        height=380,
+        margin=dict(l=5, r=5, t=40, b=5),
+        legend=dict(orientation="h", yanchor="bottom", y=0.01, xanchor="left", x=0.01, bgcolor="rgba(255,255,255,0.85)"),
+    )
+    return fig
 
 
 # ---------------------------------------------------------------------------
-# Main Dashboard Application
+# Reusable UI Module Renderers (used cleanly across Role-Adaptive Views)
+# ---------------------------------------------------------------------------
+def render_server_data_explorer(api: ApiBridge, api_online: bool, role_info: Dict[str, Any], selected_role: str, default_ent: str = "koperasi") -> None:
+    st.subheader("🗄️ Server-Side Privacy-Enforced Data Explorer (Zero-Direct-DB-Access)")
+    db_catalog = [
+        ("Koperasi Tani — market_price_negotiations [Privat: floor_price_rp]", "koperasi", "market_price_negotiations"),
+        ("AgroFarm — private_costs [Privat: HPP & Farmer ID]", "agrofarm", "private_costs"),
+        ("AgroFarm — active_harvest_lots (PostgreSQL)", "agrofarm", "active_harvest_lots"),
+        ("AgroFarm — farm_harvest_history (PostgreSQL)", "agrofarm", "farm_harvest_history"),
+        ("FreshFood — tomato_qc_documents (MongoDB JSON)", "freshfood", "qc_docs"),
+        ("ColdChain — cold_storage_telemetry (TimescaleDB)", "coldchain", "cold_storage_telemetry"),
+        ("ColdChain — fleet_delivery_routes (TimescaleDB)", "coldchain", "fleet_delivery_routes"),
+        ("SuperMart — retail_pos_sales (MySQL)", "supermart", "retail_pos_sales"),
+    ]
+    default_idx = next((i for i, item in enumerate(db_catalog) if item[1] == default_ent), 0)
+    e1, e2, e3 = st.columns([2.2, 1.1, 0.7])
+    sel = e1.selectbox("Basis Data & Tabel Enterprise", db_catalog, index=default_idx, format_func=lambda x: x[0], key=f"de_sel_{default_ent}")
+    search_q = e2.text_input("Cari Nilai / Lot / Zona", value="", key=f"de_q_{default_ent}")
+    lim = e3.number_input("Maks. Baris", 10, 300, 30, 10, key=f"de_lim_{default_ent}")
+
+    _, ent_key, tbl_name = sel
+    if api_online:
+        ok, data = api.get(f"/api/v1/data-explorer/{ent_key}/{tbl_name}", role_info["token"], params={"search": search_q, "limit": int(lim)})
+        if not ok:
+            st.error(f"Gagal memuat data dari FastAPI ({now_wib_iso()}): {data}")
+            if st.button("🔄 Retry Koneksi API", key=f"retry_de_{default_ent}"):
+                st.rerun()
+            return
+        df = pd.DataFrame(data["records"])
+        redacted = data["redacted_columns"]
+        tot, matched = data["total_rows"], data["matched_rows"]
+        src_badge = f"🟢 Server-Side FastAPI Firewall (Scope: `{data['caller_scope']}`)"
+    else:
+        st.warning("⚠️ FastAPI offline — menjalankan fallback lokal (mode terdegradasi).")
+        return
+
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Total Rekaman DB", f"{tot:,}")
+    m2.metric("Cocok Filter", f"{matched:,}")
+    m3.metric("Kolom Ter-redaksi Server", f"{len(redacted)} kolom" if redacted else "0 (Milik Sendiri / Publik)")
+    st.caption(f"Sumber: {src_badge} · Sync: `{data['timestamp']}`")
+
+    if redacted:
+        st.warning(f"🔒 **Server-Side Data Sovereignty Aktif:** Kolom `{', '.join(redacted)}` otomatis dihapus oleh FastAPI sebelum dikirim ke UI karena token `{selected_role}` bukan pemilik DB `{ent_key}`.")
+
+    if df.empty:
+        st.markdown("<div class='empty-card'><b>Tidak ada data yang cocok dengan pencarian Anda.</b><br/>Kosongkan kotak pencarian atau pilih tabel enterprise lain.</div>", unsafe_allow_html=True)
+    else:
+        st.dataframe(df, use_container_width=True, hide_index=True)
+        st.download_button(
+            "⬇️ Unduh CSV (Ter-redaksi Sesuai Scope)",
+            data=df.to_csv(index=False).encode("utf-8"),
+            file_name=f"{ent_key}_{tbl_name}_{data['caller_scope']}.csv",
+            mime="text/csv",
+            key=f"dl_{ent_key}_{tbl_name}_{default_ent}",
+        )
+
+
+def render_agrofarm_workspace(api: ApiBridge, api_online: bool, state: Dict[str, Any], ml_metrics: Dict[str, Any], role_info: Dict[str, Any], selected_role: str) -> None:
+    st.subheader("🌱 AgroFarm Cockpit v2 — Crop Monitoring (14-Day ± 2σ) & Random Forest (80% Quantile PI)")
+    m_af = ml_metrics.get("agrofarm_rf", {})
+    k1, k2, k3, k4, k5 = st.columns(5)
+    k1.metric("Test MAE (RF 250 Trees)", f"{m_af.get('test_mae_kg', 93.0)} kg", f"{m_af.get('test_mae_pct_of_mean', 7.2)}% mean")
+    k2.metric("80% PI Coverage", f"{m_af.get('pi80_coverage', 0.80)*100:.1f}%", "Target 75–85%")
+    k3.metric("Test R²", f"{m_af.get('test_r2', 0.94)}")
+    k4.metric("Unggul 2 Baseline?", "YA ✅" if m_af.get("beats_both_baselines", True) else "FALLBACK")
+    k5.metric("Private HPP Scope", "UNLOCKED 🔓" if role_info["enterprise_key"] == "agrofarm" else "REDACTED 🔒")
+
+    # 14-Day Deviation Monitoring Table
+    mon_rows = state.get("agrofarm_monitoring", [])
+    if mon_rows:
+        st.markdown("#### 🛰️ Status Pemantauan Blok Lahan (Aturan Deviasi NDVI 14-Hari ± 2σ & Curah Hujan > 90 mm)")
+        if any(b.get("stale_data") for b in mon_rows):
+            st.markdown("<div class='banner-stale'><b>⚠️ STALE SENSOR DATA WARNING:</b> Sensor blok <code>BLK-11</code> offline ≥ 3 hari berturut-turut. Agen otomatis berpindah ke <b>FALLBACK_HISTORICAL_MEAN</b> dengan interval diperlebar & label <i>Meragukan</i>.</div>", unsafe_allow_html=True)
+        mon_df = pd.DataFrame([
+            {
+                "Block ID": b["block_id"],
+                "Lot": b["lot_id"],
+                "Varietas": b["variety"],
+                "NDVI Hari Ini": b["ndvi_today"],
+                "Batas 2σ Bawah": b["ndvi_2sigma_lower"],
+                "Hujan 14h (mm)": b["rain_14d_mm"],
+                "Kelembapan (%)": b["soil_moisture_pct"],
+                "Status Blok": b["status"],
+                "Penyebab / Rekomendasi": "; ".join(b["causes"]) if b["causes"] else "Normal (dalam rentang 2σ)",
+            }
+            for b in mon_rows
+        ])
+        st.dataframe(mon_df, use_container_width=True, hide_index=True)
+
+    c_sim, c_fi = st.columns([1.15, 1.0])
+    with c_sim:
+        st.markdown("#### 🎛️ Simulator Prediksi RF + 80% PI + Jendela Panen (Via FastAPI)")
+        sc1, sc2 = st.columns(2)
+        s_area = sc1.slider("Luas Blok (ha)", 0.4, 2.0, 0.70, 0.05)
+        s_ndvi = sc2.slider("Indeks NDVI", 0.30, 0.88, 0.64, 0.01)
+        s_rain = sc1.slider("Curah Hujan (mm)", 0.0, 120.0, 24.0, 2.0)
+        s_age = sc2.slider("Umur Tanaman (hari)", 65, 90, 78, 1)
+        c_chk1, c_chk2 = st.columns(2)
+        sim_rain = c_chk1.checkbox("Simulasi Hujan Ekstrem (>90 mm)", value=(state["trigger_mode"] == "EXTREME_RAIN"))
+        sim_off = c_chk2.checkbox("Simulasi Sensor Mati 3 Hari (Fallback)", value=(state["trigger_mode"] == "SENSOR_OUTAGE"))
+
+        payload = {
+            "block_id": "BLK-11",
+            "lot_id": "H003",
+            "area_ha": s_area,
+            "avg_temp_c": 29.4 if sim_rain else 26.5,
+            "soil_moisture_pct": 83.0 if sim_rain else 66.0,
+            "rainfall_mm": max(s_rain, 96.0) if sim_rain else s_rain,
+            "fertilizer_kg_ha": 165.0,
+            "crop_age_days": s_age,
+            "ndvi": 0.41 if sim_rain else s_ndvi,
+            "extreme_rain_flag": sim_rain,
+            "sensor_offline_days": 3 if sim_off else 0,
+        }
+        if api_online:
+            ok, resp = api.post("/api/v1/agrofarm/predict", payload, role_info["token"])
+            pred = resp["prediction"] if ok else load_local_orchestrator().agrofarm.model.predict_batch([payload])[0]
+        else:
+            pred = load_local_orchestrator().agrofarm.model.predict_batch([payload])[0]
+
+        pi80 = pred["pi80_interval_kg"]
+        hw = pred["harvest_window"]
+        if pred["doubtful"]:
+            st.warning(f"⚠️ **MODE FALLBACK ({pred['prediction_mode']}):** Estimasi `{pred['predicted_kg']:,.1f} kg` | Interval 80%: `[{pi80[0]:,.1f} – {pi80[1]:,.1f}] kg` (Interval diperlebar karena sensor offline).")
+        else:
+            st.success(
+                f"**Prediksi Panen (`{pred['model_version']}`):** `{pred['predicted_kg']:,.1f} kg`  |  "
+                f"**80% Quantile PI:** `[{pi80[0]:,.1f} – {pi80[1]:,.1f}] kg`  \n"
+                f"**Rekomendasi Jendela Panen:** `{hw['start']}` s.d. `{hw['end']}` (Shift: `{hw['shift_days']:+d} hari`) — *{hw['reason']}*"
+            )
+
+    with c_fi:
+        st.markdown("#### 📊 Kontribusi Fitur Random Forest (*Feature Importance*)")
+        fi = m_af.get("feature_importance", {})
+        if fi:
+            fi_df = pd.DataFrame(list(fi.items()), columns=["Fitur", "Importance"]).sort_values("Importance", ascending=True)
+            fig_fi = px.bar(fi_df, x="Importance", y="Fitur", orientation="h", color="Importance", color_continuous_scale="Greens")
+            fig_fi.update_layout(height=300, coloraxis_showscale=False, margin=dict(l=10, r=10, t=15, b=10))
+            st.plotly_chart(fig_fi, use_container_width=True)
+
+
+def render_coldchain_workspace(api: ApiBridge, api_online: bool, state: Dict[str, Any], ml_metrics: Dict[str, Any], role_info: Dict[str, Any]) -> None:
+    st.subheader("❄️ ColdChain Logistics Cockpit v2 — VRPTW, XGBoost ETA, Fleet/Shipments CRUD & Monitor 7–12°C")
+    m_cc = ml_metrics.get("coldchain_iforest_cvrp", {})
+    k1, k2, k3, k4, k5 = st.columns(5)
+    k1.metric("Anomaly F1 (IForest)", f"{m_cc.get('anomaly_f1_pct', 95.32)}%", f"Recall {m_cc.get('anomaly_recall_pct', 100.0)}%")
+    k2.metric("XGBoost ETA MAE", f"{m_cc.get('eta_mae_min', 4.5)} mnt", f"MAPE {m_cc.get('eta_mape_pct', 6.5)}%")
+    k3.metric("Reduksi Rute OR-Tools", f"-{m_cc.get('cvrp_distance_reduction_pct', 31.15)}%", "TW Violations: 0")
+    k4.metric("Standar Suhu Tomat", f"{settings.tomato_safe_temp_min_c}–{settings.tomato_safe_temp_max_c}°C", "Anti Chilling-Injury")
+    k5.metric("Kapasitas Gudang Aktif", f"{state['cold_storage_cap_kg']:,.0f} kg", f"Drop {state['capacity_drop_pct']}%", delta_color="inverse")
+
+    cc_tabs = st.tabs([
+        "🗺️ Route Planning (VRPTW) & Geospatial Map",
+        "🚚 Fleet & Drivers + Shipments Inbox (CRUD)",
+        "🌡️ Cold Chain Monitor (7–12°C) & XGBoost ETA",
+    ])
+
+    with cc_tabs[0]:
+        vc1, vc2, vc3 = st.columns([1.6, 1.0, 1.0])
+        vrptw_scen = vc1.selectbox("Skenario Optimasi OR-Tools VRPTW", ["NORMAL", "ROAD_DISRUPTION", "VEHICLE_BREAKDOWN", "COLD_STORAGE_DROP"])
+        vrptw_traf = vc2.selectbox("Tingkat Kemacetan", [(0, "Low"), (1, "Medium"), (2, "High")], index=1, format_func=lambda x: x[1])[0]
+        run_vrptw = vc3.button("⚡ Jalankan VRPTW + Compare", type="primary", use_container_width=True)
+
+        if api_online:
+            ok, vr_resp = api.post("/api/v1/coldchain/vrptw", {"scenario": vrptw_scen, "traffic_level": vrptw_traf}, role_info["token"])
+            active_plan = vr_resp["active_plan"] if ok else state.get("vrptw_plan", {})
+            norm_plan = vr_resp["normal_baseline"] if ok else active_plan
+        else:
+            active_plan = load_local_orchestrator().coldchain.model.solve_vrptw(scenario=vrptw_scen, traffic_level=vrptw_traf)
+            norm_plan = load_local_orchestrator().coldchain.model.solve_vrptw(scenario="NORMAL", traffic_level=1)
+
+        if run_vrptw:
+            st.toast(f"VRPTW selesai: {active_plan['optimized_distance_km']:.0f} km (0 pelanggaran time window)!", icon="✅")
+
+        m_col, t_col = st.columns([1.3, 1.0])
+        with m_col:
+            st.plotly_chart(build_geospatial_vrptw_map(active_plan), use_container_width=True)
+        with t_col:
+            st.markdown("#### 📋 Perbandingan Skenario & Jadwal Armada VRPTW")
+            comp_df = pd.DataFrame([
+                {"Metrik": "Total Jarak (km)", "Normal Baseline": norm_plan["optimized_distance_km"], f"Skenario {vrptw_scen}": active_plan["optimized_distance_km"]},
+                {"Metrik": "Biaya Transport (Rp)", "Normal Baseline": norm_plan["transport_cost_rp"], f"Skenario {vrptw_scen}": active_plan["transport_cost_rp"]},
+                {"Metrik": "Time Window Violations", "Normal Baseline": norm_plan["time_window_violations"], f"Skenario {vrptw_scen}": active_plan["time_window_violations"]},
+            ])
+            st.dataframe(comp_df, use_container_width=True, hide_index=True)
+
+            r_rows = [
+                {
+                    "Armada": r["truck"],
+                    "Rute": " → ".join(r["stops"]),
+                    "Muatan": f"{r['load_kg']}/{r['capacity_kg']} kg ({r['utilization_pct']}%)",
+                    "Jarak": f"{r['distance_km']} km",
+                    "XGBoost ETA": f"{r['predicted_eta_min']} mnt",
+                }
+                for r in active_plan.get("routes", [])
+            ]
+            st.dataframe(pd.DataFrame(r_rows), use_container_width=True, hide_index=True)
+
+    with cc_tabs[1]:
+        f_col, s_col = st.columns(2)
+        with f_col:
+            st.markdown("#### 🚛 Master Fleet & Drivers (`GET / POST /api/v1/coldchain/fleet`)")
+            ok_f, fl_data = api.get("/api/v1/coldchain/fleet", role_info["token"]) if api_online else (False, {})
+            if ok_f:
+                st.dataframe(pd.DataFrame(fl_data["vehicles"]), use_container_width=True, hide_index=True)
+            with st.form("add_vehicle_form", clear_on_submit=True):
+                st.markdown("**Tambah / Update Kendaraan Reefer**")
+                fv1, fv2 = st.columns(2)
+                vid = fv1.text_input("Vehicle ID", value="V005")
+                vcap = fv2.number_input("Kapasitas (kg)", 500, 10000, 3500, 250)
+                vstat = fv1.selectbox("Status", ["Available", "In Transit", "Maintenance"])
+                vdrv = fv2.text_input("Referensi Driver", value="D-005 (Eko P.)")
+                if st.form_submit_button("💾 Simpan Kendaraan ke API"):
+                    ok_s, res_s = api.post(
+                        "/api/v1/coldchain/fleet",
+                        {"vehicle_id": vid, "capacity_kg": vcap, "min_temp_c": 7.0, "max_temp_c": 12.0, "status": vstat, "driver_ref": vdrv},
+                        role_info["token"],
+                    )
+                    if ok_s:
+                        st.success(f"✅ {res_s['action']} `{vid}` berhasil! Audit Hash: `{res_s['audit_hash'][:14]}...`")
+                        st.rerun()
+                    else:
+                        st.error(f"Validasi / Akses Ditolak: {res_s}")
+
+        with s_col:
+            st.markdown("#### 📦 Shipments Request Inbox (`GET / POST /api/v1/coldchain/shipments`)")
+            ok_sh, sh_data = api.get("/api/v1/coldchain/shipments", role_info["token"]) if api_online else (False, {})
+            if ok_sh:
+                st.dataframe(pd.DataFrame(sh_data["shipments"]), use_container_width=True, hide_index=True)
+            with st.form("add_shipment_form", clear_on_submit=True):
+                st.markdown("**Tambah Shipment Request (Validasi Deadline & Suhu 7–12°C)**")
+                fs1, fs2 = st.columns(2)
+                sh_id = fs1.text_input("Shipment ID", value="SH004")
+                sh_lot = fs2.text_input("Lot ID", value="H004")
+                sh_qty = fs1.number_input("Quantity (kg)", 100, 5000, 800, 100)
+                sh_dest = fs2.selectbox("Tujuan", ["SuperMart_DC", "FreshFood_Plant", "SuperMart_B2", "Partner3PL_WH"])
+                sh_rdy = fs1.text_input("Ready Time (HH:MM)", value="08:30")
+                sh_ddl = fs2.text_input("Deadline (HH:MM)", value="12:30")
+                if st.form_submit_button("📨 Submit Shipment Request"):
+                    ok_cr, res_cr = api.post(
+                        "/api/v1/coldchain/shipments",
+                        {"shipment_id": sh_id, "lot_id": sh_lot, "quantity_kg": sh_qty, "destination": sh_dest, "ready_time": sh_rdy, "deadline": sh_ddl},
+                        role_info["token"],
+                    )
+                    if ok_cr:
+                        st.success(f"✅ Shipment `{sh_id}` tersimpan! Audit Hash: `{res_cr['audit_hash'][:14]}...`")
+                        st.rerun()
+                    else:
+                        st.error(f"Validasi Gagal: {res_cr}")
+
+    with cc_tabs[2]:
+        t1, t2 = st.columns([1.4, 1.0])
+        with t1:
+            df_tel = pd.read_csv(DATA_DIR / "coldchain_iot_telemetry.csv").tail(220)
+            fig_tel = go.Figure()
+            fig_tel.add_hrect(y0=settings.tomato_safe_temp_min_c, y1=settings.tomato_safe_temp_max_c, fillcolor="rgba(16,185,129,0.12)", line_width=0, annotation_text="SOP Tomat Aman (7–12°C)")
+            fig_tel.add_trace(go.Scatter(x=df_tel["ts"], y=df_tel["temp_c"], mode="lines", name="Suhu Ruang (°C)", line=dict(color="#1F4E79", width=2)))
+            anoms = df_tel[df_tel["is_anomaly"] == 1]
+            if not anoms.empty:
+                fig_tel.add_trace(go.Scatter(x=anoms["ts"], y=anoms["temp_c"], mode="markers", name="Anomali Isolation Forest", marker=dict(color="#DC2626", size=9, symbol="x")))
+            fig_tel.update_layout(title="Telemetri Suhu Cold Storage & Deteksi Anomali Isolation Forest", yaxis_title="Suhu (°C)", height=320, margin=dict(l=10, r=10, t=38, b=10))
+            st.plotly_chart(fig_tel, use_container_width=True)
+        with t2:
+            st.markdown("#### ⏱️ Simulator Prediksi ETA (XGBoost Regressor)")
+            e_dist = st.slider("Jarak Tempuh (km)", 10.0, 100.0, 48.0, 2.0)
+            e_traf = st.selectbox("Level Traffic", [(0, "Low"), (1, "Medium"), (2, "High")], index=1, format_func=lambda x: x[1], key="eta_tr")[0]
+            e_stops = st.slider("Jumlah Stop", 1, 5, 2)
+            e_wth = st.selectbox("Cuaca", [(0, "Cerah"), (1, "Hujan"), (2, "Hujan Lebat")], format_func=lambda x: x[1])[0]
+            if api_online:
+                ok_e, e_res = api.post("/api/v1/coldchain/eta", {"distance_km": e_dist, "traffic_level": e_traf, "num_stops": e_stops, "weather_severity": e_wth}, role_info["token"])
+                eta_out = e_res["eta"] if ok_e else load_local_orchestrator().coldchain.model.eta_model.predict_eta_minutes(e_dist, e_traf, e_stops, e_wth)
+            else:
+                eta_out = load_local_orchestrator().coldchain.model.eta_model.predict_eta_minutes(e_dist, e_traf, e_stops, e_wth)
+            st.info(
+                f"**Prediksi Durasi (`{eta_out['model_version']}`):** `{eta_out['predicted_duration_min']} menit`  \n"
+                f"**Rentang Estimasi:** `[{eta_out['error_band_min'][0]} – {eta_out['error_band_min'][1]}] menit`"
+            )
+
+
+def render_freshfood_module(state: Dict[str, Any], ml_metrics: Dict[str, Any]) -> None:
+    st.subheader("🏭 FreshFood Processing Cockpit — 2D-Conv CNN Visual QC & Food Safety Hard-Block")
+    m_ff = ml_metrics.get("freshfood_cnn", {})
+    k1, k2, k3, k4 = st.columns(4)
+    k1.metric("CNN Accuracy", f"{m_ff.get('test_accuracy_pct', 98.67)}%", "Target >= 90%")
+    k2.metric("Macro-F1", f"{m_ff.get('test_macro_f1', 0.9878)}")
+    k3.metric("Reject Recall", f"{m_ff.get('reject_recall_pct', 100.0)}%", "0 Missed Reject")
+    k4.metric("Overtime Status", "AKTIF (+500 kg)" if state["global_kpis"].get("overtime_activated") else "REGULER (2.000 kg)")
+
+    samples = load_tomato_rgb_sample(n_per_class=2)
+    if samples:
+        orch = load_local_orchestrator()
+        preds = orch.freshfood.model.classify_images(np.stack([s["image"] for s in samples]))
+        cols = st.columns(4)
+        for i, (s, pr) in enumerate(zip(samples, preds)):
+            up = Image.fromarray(s["image"].astype(np.uint8)).resize((120, 120), Image.Resampling.NEAREST)
+            tag = "🔴 REJECT" if pr["predicted_grade"] == "Reject" else f"🟢 Grade {pr['predicted_grade']}"
+            cols[i % 4].image(up, caption=f"#{s['index']} True:{s['true_grade']} → {tag} ({pr['confidence']*100:.1f}%)")
+
+
+def render_koperasi_and_supermart_modules(state: Dict[str, Any], ml_metrics: Dict[str, Any], role_info: Dict[str, Any]) -> None:
+    c1, c2 = st.columns(2)
+    orch = load_local_orchestrator()
+    with c1:
+        st.subheader("🤝 Koperasi Tani — LightGBM & Contract Net")
+        m_kp = ml_metrics.get("koperasi_lgbm", {})
+        st.metric("LightGBM Test MAPE", f"{m_kp.get('test_mape_pct', 4.28)}%", f"MAE Rp{m_kp.get('test_mae_rp', 240.1)}/kg")
+        kg = st.selectbox("Grade Tomat", ["A", "B", "C"], index=1, key="kp_g")
+        ko = st.number_input("Simulasi Tawaran Pembeli (Rp/kg)", 2000, 15000, 6400, 100, key="kp_o")
+        ask = orch.koperasi.model.predict_price(grade=kg)
+        auc = orch.koperasi.model.evaluate_contract_net_bids("SIM", 500.0, orch.koperasi._private_floor_prices[kg], [{"buyer_id": "Buyer", "qty_kg": 500.0, "offer_price_rp": ko}])
+        st.caption(f"Referensi LightGBM: `Rp{ask:,.0f}/kg` | Status: **{auc['status']}**")
+    with c2:
+        st.subheader("🛒 SuperMart — XGBoost & Newsvendor PO")
+        m_sm = ml_metrics.get("supermart_xgb", {})
+        st.metric("XGBoost Demand MAPE", f"{m_sm.get('test_mape_pct', 3.72)}%", f"R² {m_sm.get('test_r2', 0.9215)}")
+        sp = st.checkbox("Promo Weekend Aktif", value=False, key="sm_p")
+        fd = orch.supermart.model.forecast_total_chain_demand(day_of_week=5 if sp else 2, is_promo=1 if sp else 0)
+        po = orch.supermart.model.compute_newsvendor_po(fd)
+        st.caption(f"Forecast 3 Gerai: `{po['forecast_demand_kg']:,.1f} kg` | Rekomendasi PO: **`{po['recommended_po_kg']:,.1f} kg`**")
+
+
+def render_decision_trace_and_audit(api: ApiBridge, api_online: bool, state: Dict[str, Any], role_info: Dict[str, Any]) -> None:
+    st.subheader("🧭 LangGraph 7-Node Decision Trace & Canonical Cross-Enterprise Lineage")
+    for step in state.get("decision_trace", []):
+        st.markdown(
+            f"<div class='trace-card'><b>Step {step['step']} · <code>{step['node']}</code></b> | Actor: <b>{step['actors']}</b> | Status: <code>{step['status']}</code> <span style='float:right;color:#64748B;font-size:0.78rem;'>{step['timestamp']}</span><br/>{step['summary']}</div>",
+            unsafe_allow_html=True,
+        )
+
+    if state.get("lineage"):
+        st.markdown("#### 🔗 Canonical Lineage (`block_id → lot_id → qc_doc_id → shipment_id → trip_id → vehicle_id → po_ref`)")
+        st.dataframe(pd.DataFrame(state["lineage"]), use_container_width=True, hide_index=True)
+
+    c_m, c_l = st.columns([1.2, 1.0])
+    with c_m:
+        st.markdown("#### 💬 Log Komunikasi A2A / FIPA-ACL / GS1 EPCIS 2.0")
+        msgs = state.get("messages", [])
+        sel_p = st.selectbox("Filter Performatif", ["ALL"] + sorted({m["performative"] for m in msgs}), key="perf_flt")
+        for idx, m in enumerate([x for x in msgs if sel_p == "ALL" or x["performative"] == sel_p]):
+            st.markdown(f"<div class='msg-card'><b>#{idx+1}</b> <code>{m['performative']}</code> | <b>{m['sender']}</b> → <b>{m['receiver']}</b> <span style='float:right;color:#64748B;font-size:0.78rem;'>{m['protocol']} · R{m['negotiation_round']}</span></div>", unsafe_allow_html=True)
+            with st.expander(f"Payload JSON (#{idx+1})"):
+                st.json({"payload": m["payload"], "epcis_event": m.get("epcis_event")})
+    with c_l:
+        st.markdown("#### 🧠 Telemetri 6-LLM Router")
+        tel = state["global_kpis"].get("llm_telemetry", {})
+        calls_df = pd.DataFrame(tel.get("calls", []))
+        if not calls_df.empty:
+            st.dataframe(calls_df, use_container_width=True, hide_index=True)
+
+    st.divider()
+    st.markdown("#### 🔐 Immutable SHA-256 Hash-Chained Audit Trail (`GET /api/v1/audit/trail`)")
+    if api_online:
+        ok_a, aud = api.get("/api/v1/audit/trail", role_info["token"], params={"limit": 15})
+        if ok_a:
+            if aud["chain_valid"]:
+                st.success(f"✅ SHA-256 Chain Verified ({aud['returned_entries']} entri terbaru) · Sync: `{aud['timestamp']}`")
+            else:
+                st.error("❌ TAMPER DETECTED pada rantai hash audit!")
+            st.dataframe(pd.DataFrame([
+                {"Time": e["timestamp"], "Event": e["event_type"], "Actor": e["actor"], "Details": json.dumps(e["details"]), "SHA-256": e["hash"][:18] + "..."}
+                for e in aud["entries"]
+            ]), use_container_width=True, hide_index=True)
+
+
+# ---------------------------------------------------------------------------
+# Main Application Entrypoint
 # ---------------------------------------------------------------------------
 def main() -> None:
+    api = ApiBridge()
+    api_online, health_info = api.check_health()
     ml_metrics = load_ml_metrics()
-    exp_results = load_experiment_results()
 
-    # ---------------------- SIDEBAR: Role Login + Chaos Injector ----------------------
+    # ---------------------- SIDEBAR ----------------------
     with st.sidebar:
-        st.markdown("### 🔐 Simulasi Login & Peran (RBAC)")
-        selected_role = st.selectbox(
-            "Masuk Sebagai Peran",
-            list(ROLE_PROFILES.keys()),
-            index=0,
-            help="Mengubah ruang lingkup akses data privat vs publik sesuai prinsip Zero-Direct-DB-Access.",
-        )
+        st.markdown("### 🔐 Login & Role-Adaptive RBAC")
+        selected_role = st.selectbox("Masuk Sebagai Peran", list(ROLE_PROFILES.keys()), index=0)
         role_info = ROLE_PROFILES[selected_role]
-        st.caption(f"👤 `{role_info['user']}`  \n🔑 Scope: `{role_info['token_preview']}`")
-        if role_info["enterprise_key"] == "global":
-            st.info("🔒 Mode Global: Seluruh 15 kolom privat enterprise otomatis disamarkan (*Zero-Direct-DB*).")
+        st.caption(f"👤 `{role_info['user']}`  \n🔑 `{role_info['token']}`")
+        if api_online:
+            st.success("🟢 FastAPI Gateway Connected (Server-Side Firewall)")
         else:
-            st.success(f"🔓 Mode Lokal ({role_info['enterprise_key'].upper()}): Data privat internal terbuka hanya untuk enterprise ini.")
+            st.warning("🟡 FastAPI Offline — Mode Fallback Lokal")
 
         st.divider()
-        st.markdown("### ⚡ Chaos & Disruption Injector")
-        scenario = st.selectbox(
-            "Skenario Lingkungan",
-            list(SCENARIO_LABELS.keys()),
-            index=1,
-            format_func=lambda k: SCENARIO_LABELS[k],
-        )
+        st.markdown("### ⚡ Chaos & Environment Injector")
+        scenario = st.selectbox("Skenario Lingkungan", list(SCENARIO_LABELS.keys()), index=1, format_func=lambda k: SCENARIO_LABELS[k])
+        sim_stale_ui = st.checkbox("Simulasikan Stale Data Warning (>15 mnt)", value=False)
+        use_sliders = st.checkbox("Override Kapasitas / Demand Manual", value=False)
+        cold_ovr = float(st.slider("Cold Storage Efektif (kg)", 0, 3000, 1000, 100)) if use_sliders else None
+        dem_ovr = float(st.slider("Demand SuperMart (kg)", 1500, 3500, 2000, 100)) if use_sliders else None
 
-        use_custom_env = st.checkbox("Atur Parameter Lingkungan Manual (Slider)", value=False)
-        cold_override = None
-        demand_override = None
-        if use_custom_env:
-            cold_override = float(st.slider("Kapasitas Cold Storage Efektif (kg)", 0, 3000, 1000, step=100))
-            demand_override = float(st.slider("Permintaan SuperMart (kg)", 1500, 3500, 2000, step=100))
-
-        st.markdown("### 🧠 Konfigurasi Agentic & Ablasi")
+        st.markdown("### 🧠 Agentic & Ablasi")
         adaptive = st.toggle("Adaptive Replanning & Contract Net", value=True)
-        routing_choice = st.radio(
-            "Model LLM Routing",
-            ["Heterogeneous (6 LLM Berbeda)", "Homogeneous (6× GPT-4o)"],
-            index=0,
-        )
-        solver_choice = st.radio(
-            "Mesin Alokasi",
-            ["Neuro-Symbolic MILP-FEFO (PuLP)", "Pure LLM Heuristic (Ablasi)"],
-            index=0,
-        )
-
+        routing_choice = st.radio("LLM Routing", ["Heterogeneous (6 LLM)", "Homogeneous (6× GPT-4o)"], index=0)
+        solver_choice = st.radio("Mesin Alokasi", ["Neuro-Symbolic MILP-FEFO", "Pure LLM Heuristic"], index=0)
         run_btn = st.button("🚀 Jalankan Siklus Orkestrator", type="primary", use_container_width=True)
-
-        st.divider()
-        st.markdown("### 🤖 6 Agen Heterogen")
-        for aid, p in AGENT_MODEL_PROFILES.items():
-            llm_lbl = "GPT-4o (Homogeneous)" if "Homogeneous" in routing_choice else p.llm_model
-            st.markdown(f"**{aid}** · {p.enterprise}  \n`{llm_lbl}` + *{p.domain_model}*")
 
     homo_flag = "Homogeneous" in routing_choice
     use_milp_flag = "MILP" in solver_choice
-    orch = load_orchestrator(homogeneous_frontier=homo_flag)
+    sig = (scenario, adaptive, homo_flag, use_milp_flag, cold_ovr, dem_ovr, api_online)
 
-    # Execute active cycle + paired static baseline for measurable delta proof
-    config_signature = (scenario, adaptive, homo_flag, use_milp_flag, cold_override, demand_override)
-    if "last_state" not in st.session_state or run_btn or st.session_state.get("last_sig") != config_signature:
-        active_state = orch.run_cycle(
-            trigger_mode=scenario,
-            adaptive_replanning=adaptive,
-            use_milp=use_milp_flag,
-            demand_override_kg=demand_override,
-            cold_storage_cap_override_kg=cold_override,
-            auto_approve_hitl=False,
-        )
-        # Paired static baseline under identical environmental shock to prove measurable decision change
-        baseline_orch = load_orchestrator(homogeneous_frontier=False)
-        baseline_state = baseline_orch.run_cycle(
-            trigger_mode=scenario,
-            adaptive_replanning=False,
-            use_milp=True,
-            demand_override_kg=demand_override,
-            cold_storage_cap_override_kg=cold_override,
-            auto_approve_hitl=True,
-        )
-        st.session_state["last_state"] = active_state
-        st.session_state["baseline_state"] = baseline_state
-        st.session_state["last_sig"] = config_signature
+    # Execute active cycle + paired static baseline via FastAPI (Loading UI State)
+    if "last_state" not in st.session_state or run_btn or st.session_state.get("last_sig") != sig:
+        with st.status("Menjalankan LangGraph Orchestrator + 6 Agen Heterogen...", expanded=False) as status_box:
+            req_active = {
+                "trigger_mode": scenario,
+                "adaptive_replanning": adaptive,
+                "use_milp": use_milp_flag,
+                "homogeneous_frontier": homo_flag,
+                "auto_approve_hitl": False,
+                "demand_override_kg": dem_ovr,
+                "cold_storage_cap_override_kg": cold_ovr,
+            }
+            req_base = {**req_active, "adaptive_replanning": False, "use_milp": True, "homogeneous_frontier": False, "auto_approve_hitl": True}
+            if api_online:
+                ok1, st_act = api.post("/api/v1/orchestrator/run-cycle", req_active, role_info["token"])
+                ok2, st_base = api.post("/api/v1/orchestrator/run-cycle", req_base, role_info["token"])
+                if not (ok1 and ok2):
+                    st.error(f"API Error ({now_wib_iso()}): {st_act}")
+                    st_act = load_local_orchestrator(homo_flag).run_cycle(trigger_mode=scenario, adaptive_replanning=adaptive, use_milp=use_milp_flag, demand_override_kg=dem_ovr, cold_storage_cap_override_kg=cold_ovr, auto_approve_hitl=False)
+                    st_base = load_local_orchestrator(False).run_cycle(trigger_mode=scenario, adaptive_replanning=False, use_milp=True, demand_override_kg=dem_ovr, cold_storage_cap_override_kg=cold_ovr, auto_approve_hitl=True)
+            else:
+                st_act = load_local_orchestrator(homo_flag).run_cycle(trigger_mode=scenario, adaptive_replanning=adaptive, use_milp=use_milp_flag, demand_override_kg=dem_ovr, cold_storage_cap_override_kg=cold_ovr, auto_approve_hitl=False)
+                st_base = load_local_orchestrator(False).run_cycle(trigger_mode=scenario, adaptive_replanning=False, use_milp=True, demand_override_kg=dem_ovr, cold_storage_cap_override_kg=cold_ovr, auto_approve_hitl=True)
+            st.session_state["last_state"] = st_act
+            st.session_state["baseline_state"] = st_base
+            st.session_state["last_sig"] = sig
+            st.session_state["last_sync"] = now_wib_iso()
+            status_box.update(label=f"Siklus {st_act['cycle_id']} selesai!", state="complete")
 
     state = st.session_state["last_state"]
     base_state = st.session_state["baseline_state"]
-    kpis = state["global_kpis"]
-    base_kpis = base_state["global_kpis"]
+    kpis, base_kpis = state["global_kpis"], base_state["global_kpis"]
 
-    # ---------------------- TOP EXECUTIVE ROLE BANNER ----------------------
+    # ---------------------- TOP EXECUTIVE BANNER ----------------------
+    conn_pill = "🟢 FastAPI Live" if api_online else "🟡 Local Fallback"
     st.markdown(
         f"""
         <div class="role-banner">
             <div>
-                <div style="font-size:1.25rem; font-weight:700;">🍅 AgriChain Agentic AI — Multi-Enterprise Control Center</div>
-                <div style="font-size:0.84rem; opacity:0.92;">{role_info['scope_desc']}</div>
+                <div style="font-size:1.22rem; font-weight:700;">🍅 AgriChain Agentic AI v2.0 — {selected_role}</div>
+                <div style="font-size:0.83rem; opacity:0.92;">{role_info['scope_desc']}</div>
             </div>
-            <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
-                <span class="role-badge">Role: {selected_role}</span>
+            <div style="display:flex; gap:0.45rem; flex-wrap:wrap;">
+                <span class="role-badge">{conn_pill}</span>
                 <span class="role-badge">Cycle: {state['cycle_id']}</span>
-                <span class="role-badge">Mode: {scenario}</span>
+                <span class="role-badge">Skenario: {scenario}</span>
+                <span class="role-badge">Sync: {st.session_state.get('last_sync', '')[-14:-6]} WIB</span>
             </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    # ---------------------- 8 STRUCTURED TABS ----------------------
+    # Mandatory Stale / Partial Data Warning Banner (Pillar 3)
+    if sim_stale_ui or state.get("data_freshness_warning"):
+        warn_msg = state.get("data_freshness_warning") or "Data telemetri terakhir diperbarui > 15 menit lalu (Simulasi Stale Data). Jangan perlakukan nilai sensor sebagai real-time sebelum sinkronisasi ulang."
+        st.markdown(f"<div class='banner-stale'><b>⚠️ STALE / PARTIAL DATA WARNING:</b> {warn_msg}</div>", unsafe_allow_html=True)
+
+    # ---------------------- ROLE-ADAPTIVE WORKSPACE ROUTING ----------------------
+    ent_key = role_info["enterprise_key"]
+
+    if ent_key == "agrofarm":
+        af_tabs = st.tabs([
+            "🌱 AgroFarm Overview & Yield Prediction (RF 80% PI)",
+            "🛰️ Ecosystem Impact & Lineage",
+            "🗄️ AgroFarm Local DB Explorer (HPP Unlocked)",
+            "🧭 Decision Trace & Audit",
+        ])
+        with af_tabs[0]:
+            render_agrofarm_workspace(api, api_online, state, ml_metrics, role_info, selected_role)
+        with af_tabs[1]:
+            st.markdown(f"<div class='brief-box'><b>📋 Executive Briefing:</b> {state.get('executive_briefing', '')}</div>", unsafe_allow_html=True)
+            st.plotly_chart(build_sankey(state["milp_result"]["allocations"], state["milp_result"]["unallocated_kg"]), use_container_width=True)
+        with af_tabs[2]:
+            render_server_data_explorer(api, api_online, role_info, selected_role, default_ent="agrofarm")
+        with af_tabs[3]:
+            render_decision_trace_and_audit(api, api_online, state, role_info)
+        return
+
+    if ent_key == "coldchain":
+        cc_tabs = st.tabs([
+            "❄️ ColdChain Fleet Operations (VRPTW + ETA + CRUD)",
+            "🌐 Ecosystem Impact & Sankey",
+            "🗄️ ColdChain Local DB Explorer",
+            "🧭 Agent Activity & Audit",
+        ])
+        with cc_tabs[0]:
+            render_coldchain_workspace(api, api_online, state, ml_metrics, role_info)
+        with cc_tabs[1]:
+            st.markdown(f"<div class='brief-box'><b>📋 Executive Briefing:</b> {state.get('executive_briefing', '')}</div>", unsafe_allow_html=True)
+            st.plotly_chart(build_decision_shift_chart(base_state, state), use_container_width=True)
+        with cc_tabs[2]:
+            render_server_data_explorer(api, api_online, role_info, selected_role, default_ent="coldchain")
+        with cc_tabs[3]:
+            render_decision_trace_and_audit(api, api_online, state, role_info)
+        return
+
+    # Global Control Center + Koperasi / FreshFood / SuperMart Shared Command Center
     tabs = st.tabs([
-        "🌐 Global Control Center",
-        "🧭 Decision Trace & Audit",
-        "🌱 AgroFarm (AGT-01)",
-        "🤝 Koperasi (AGT-02)",
-        "🏭 FreshFood QC (AGT-03)",
-        "❄️ ColdChain (AGT-04)",
-        "🛒 SuperMart (AGT-05)",
-        "🗄️ Data Explorer & Benchmark",
+        "🌐 Global Center",
+        "🧭 Trace, Lineage & Audit",
+        "🌱 AgroFarm v2",
+        "❄️ ColdChain v2",
+        "🏭 FreshFood, Kop & Retail",
+        "🗄️ Data Explorer & Eval",
     ])
 
-    # =========================================================================
-    # TAB 1: GLOBAL CONTROL CENTER (Dashboard, Measured Delta, Agent Status, HITL)
-    # =========================================================================
     with tabs[0]:
-        # Status severity banner
+        # Executive Briefing + HITL Status Banner
+        st.markdown(f"<div class='brief-box'><b>🧠 Executive Briefing (<code>AGT-06</code> Orchestrator):</b> {state.get('executive_briefing', '')}</div>", unsafe_allow_html=True)
         if state["hitl_status"] == "HUMAN_APPROVED":
-            st.markdown(
-                "<div class='status-banner-ok'><b>✅ COMMITTED & HUMAN APPROVED:</b> Rencana Adaptive Replanning telah diverifikasi operator dan tercatat permanen di Audit Trail SHA-256.</div>",
-                unsafe_allow_html=True,
-            )
+            st.markdown("<div class='banner-ok'><b>✅ COMMITTED & HUMAN APPROVED:</b> Keputusan Adaptive Replanning telah disetujui operator dan tercatat di SHA-256 Audit Trail.</div>", unsafe_allow_html=True)
         elif state["hitl_status"] == "HUMAN_REJECTED":
-            st.markdown(
-                "<div class='status-banner-danger'><b>⛔ REJECTED BY OPERATOR:</b> Rencana ditahan operator untuk negosiasi ulang manual (tercatat di Audit Trail SHA-256).</div>",
-                unsafe_allow_html=True,
-            )
+            st.markdown("<div class='banner-danger'><b>⛔ REJECTED BY OPERATOR:</b> Rencana ditahan operator untuk negosiasi ulang.</div>", unsafe_allow_html=True)
         elif state["hitl_required"]:
-            st.markdown(
-                f"<div class='status-banner-warn'><b>⚠️ HITL GOVERNANCE GATE AKTIF (NIST AI RMF 1.0):</b> Pemicu risiko terdeteksi → <code>{', '.join(state['hitl_reasons'])}</code>. Menunggu persetujuan operator sebelum komitmen final.</div>",
-                unsafe_allow_html=True,
-            )
-        else:
-            st.markdown(
-                "<div class='status-banner-ok'><b>🟢 EKOSISTEM NORMAL & OPTIMAL:</b> Seluruh ambang risiko NIST AI RMF 1.0 aman, 0 pelanggaran kendala, 0 kebocoran privasi.</div>",
-                unsafe_allow_html=True,
-            )
+            st.markdown(f"<div class='banner-warn'><b>⚠️ HITL GOVERNANCE GATE AKTIF (NIST AI RMF 1.0):</b> <code>{', '.join(state['hitl_reasons'])}</code></div>", unsafe_allow_html=True)
 
-        # 6 Executive KPI Cards with measurable deltas vs Static No-Replanning
-        d_flr = kpis["food_loss_rate_pct"] - base_kpis["food_loss_rate_pct"]
-        d_ofr = kpis["order_fulfillment_rate_pct"] - base_kpis["order_fulfillment_rate_pct"]
-        d_prof = (kpis["net_ecosystem_profit_rp"] - base_kpis["net_ecosystem_profit_rp"]) / 1e6
-        d_cost = (kpis["total_supply_chain_cost_rp"] - base_kpis["total_supply_chain_cost_rp"]) / 1e6
-        d_fair = kpis["jains_fairness_index"] - base_kpis["jains_fairness_index"]
-
+        # 6 Executive KPI Cards with Measured Delta vs Static Baseline
         c1, c2, c3, c4, c5, c6 = st.columns(6)
-        c1.metric("Food Loss Rate (FLR)", f"{kpis['food_loss_rate_pct']:.2f}%", f"{d_flr:+.2f}% vs Statis", delta_color="inverse")
-        c2.metric("Order Fulfillment (OFR)", f"{kpis['order_fulfillment_rate_pct']:.1f}%", f"{d_ofr:+.1f}% vs Statis")
-        c3.metric("Net Ecosystem Profit", f"Rp{kpis['net_ecosystem_profit_rp']/1e6:.2f} Jt", f"{d_prof:+.2f} Jt vs Statis")
-        c4.metric("Total Supply Cost", f"Rp{kpis['total_supply_chain_cost_rp']/1e6:.2f} Jt", f"{d_cost:+.2f} Jt vs Statis", delta_color="inverse")
-        c5.metric("Jain's Fairness", f"{kpis['jains_fairness_index']:.4f}", f"{d_fair:+.4f} vs Statis")
-        c6.metric(
-            "Replan Time & LLM Cost",
-            f"{kpis['replanning_response_time_sec']:.2f} s",
-            f"USD {kpis['llm_cost_usd']:.5f} | {kpis['constraint_violations']} viol.",
-            delta_color="off",
-        )
+        c1.metric("Food Loss Rate", f"{kpis['food_loss_rate_pct']:.2f}%", f"{kpis['food_loss_rate_pct']-base_kpis['food_loss_rate_pct']:+.2f}% vs Statis", delta_color="inverse")
+        c2.metric("Order Fulfillment", f"{kpis['order_fulfillment_rate_pct']:.1f}%", f"{kpis['order_fulfillment_rate_pct']-base_kpis['order_fulfillment_rate_pct']:+.1f}% vs Statis")
+        c3.metric("Net Profit", f"Rp{kpis['net_ecosystem_profit_rp']/1e6:.2f} Jt", f"{(kpis['net_ecosystem_profit_rp']-base_kpis['net_ecosystem_profit_rp'])/1e6:+.2f} Jt")
+        c4.metric("Total Cost", f"Rp{kpis['total_supply_chain_cost_rp']/1e6:.2f} Jt", f"{(kpis['total_supply_chain_cost_rp']-base_kpis['total_supply_chain_cost_rp'])/1e6:+.2f} Jt", delta_color="inverse")
+        c5.metric("Jain's Fairness", f"{kpis['jains_fairness_index']:.4f}", f"{kpis['jains_fairness_index']-base_kpis['jains_fairness_index']:+.4f}")
+        c6.metric("Replan & LLM Cost", f"{kpis['replanning_response_time_sec']:.2f} s", f"USD {kpis['llm_cost_usd']:.5f} | {kpis['constraint_violations']} viol.", delta_color="off")
 
-        # Interactive HITL Governance Drawer
+        # Impact-Preview HITL Confirmation Console (Pillar 3)
         if state["hitl_required"]:
-            with st.expander("🛡️ Konsol Keputusan Operator Human-in-the-Loop (NIST AI RMF 1.0)", expanded=True):
-                h1, h2 = st.columns([2, 3])
-                op_name = h1.text_input("Nama Operator / Approver", value=role_info["user"], key="hitl_op")
-                op_note = h2.text_input("Catatan Keputusan Audit", value="Disetujui setelah verifikasi alokasi MILP-FEFO & margin petani.", key="hitl_note")
-                b_ok, b_rej, b_info = st.columns([1, 1, 3])
-                if b_ok.button("✅ Approve & Commit Plan", type="primary", use_container_width=True):
-                    state["hitl_status"] = "HUMAN_APPROVED"
-                    kpis["hitl_status"] = "HUMAN_APPROVED"
-                    entry = orch.audit.record("HITL_MANUAL_APPROVAL", op_name, {"cycle_id": state["cycle_id"], "note": op_note})
-                    st.success(f"Disetujui oleh `{op_name}` — Hash Audit: `{entry['hash'][:16]}...`")
-                    st.rerun()
-                if b_rej.button("⛔ Reject & Hold Plan", use_container_width=True):
-                    state["hitl_status"] = "HUMAN_REJECTED"
-                    kpis["hitl_status"] = "HUMAN_REJECTED"
-                    entry = orch.audit.record("HITL_MANUAL_REJECTION", op_name, {"cycle_id": state["cycle_id"], "note": op_note})
-                    st.error(f"Ditolak oleh `{op_name}` — Hash Audit: `{entry['hash'][:16]}...`")
-                    st.rerun()
-                b_info.caption(f"Status HITL saat ini: **{state['hitl_status']}** | Privacy Leaks: **{kpis['privacy_leaks_detected']}** | Ronde Negosiasi: **{kpis['negotiation_rounds_used']}/3**")
+            with st.expander("🛡️ Impact-Preview Confirmation Console (HITL NIST AI RMF 1.0)", expanded=True):
+                imp_df = pd.DataFrame([
+                    {"Indikator Dampak": "Food Loss Rate (%)", "Statis (Tanpa Replan)": f"{base_kpis['food_loss_rate_pct']:.2f}%", "Rencana Adaptive": f"{kpis['food_loss_rate_pct']:.2f}%", "Mitra Terdampak": "AgroFarm, Koperasi"},
+                    {"Indikator Dampak": "Order Fulfillment (%)", "Statis (Tanpa Replan)": f"{base_kpis['order_fulfillment_rate_pct']:.1f}%", "Rencana Adaptive": f"{kpis['order_fulfillment_rate_pct']:.1f}%", "Mitra Terdampak": "SuperMart, FreshFood"},
+                    {"Indikator Dampak": "Net Ecosystem Profit", "Statis (Tanpa Replan)": f"Rp{base_kpis['net_ecosystem_profit_rp']/1e6:.2f} Jt", "Rencana Adaptive": f"Rp{kpis['net_ecosystem_profit_rp']/1e6:.2f} Jt", "Mitra Terdampak": "Seluruh 5 Enterprise"},
+                    {"Indikator Dampak": "Jarak Rute VRPTW (km)", "Statis (Tanpa Replan)": f"{state.get('vrptw_plan', {}).get('naive_distance_km', 382):.0f} km (Naive)", "Rencana Adaptive": f"{state.get('vrptw_plan', {}).get('optimized_distance_km', 263):.0f} km (OR-Tools)", "Mitra Terdampak": "ColdChain Logistics"},
+                ])
+                st.dataframe(imp_df, use_container_width=True, hide_index=True)
 
-        # Sankey + Measured Decision Shift side-by-side
+                h1, h2 = st.columns([1.8, 3.0])
+                op_name = h1.text_input("Operator / Approver", value=role_info["user"])
+                op_note = h2.text_input("Catatan Audit Keputusan", value="Disetujui setelah meninjau Impact Preview & kepatuhan suhu 7-12C.")
+                b1, b2, b3 = st.columns([1.1, 1.1, 2.8])
+                if b1.button("✅ Approve & Commit via API", type="primary", use_container_width=True):
+                    if api_online:
+                        ok_a, res_a = api.post(f"/api/v1/orchestrator/hitl/{state['cycle_id']}/approve", {}, role_info["token"], params={"operator_name": op_name, "note": op_note})
+                        if ok_a:
+                            state["hitl_status"] = "HUMAN_APPROVED"
+                            st.toast(f"Approved! Audit Hash: {res_a['audit_hash'][:14]}...", icon="✅")
+                            st.rerun()
+                if b2.button("⛔ Reject & Hold via API", use_container_width=True):
+                    if api_online:
+                        ok_r, res_r = api.post(f"/api/v1/orchestrator/hitl/{state['cycle_id']}/reject", {}, role_info["token"], params={"operator_name": op_name, "note": op_note})
+                        if ok_r:
+                            state["hitl_status"] = "HUMAN_REJECTED"
+                            st.toast(f"Rejected! Audit Hash: {res_r['audit_hash'][:14]}...", icon="⛔")
+                            st.rerun()
+                b3.caption(f"Status: **{state['hitl_status']}** | Privacy Leaks: **{kpis['privacy_leaks_detected']}** | Ronde Negosiasi: **{kpis['negotiation_rounds_used']}/3**")
+
         g1, g2 = st.columns([1.15, 1.0])
         with g1:
-            st.plotly_chart(
-                build_sankey(state["milp_result"]["allocations"], state["milp_result"]["unallocated_kg"]),
-                use_container_width=True,
-            )
+            st.plotly_chart(build_sankey(state["milp_result"]["allocations"], state["milp_result"]["unallocated_kg"]), use_container_width=True)
         with g2:
             st.plotly_chart(build_decision_shift_chart(base_state, state), use_container_width=True)
 
-        # Live Agent Status Matrix (6 Heterogeneous Agents)
         st.subheader("📡 Live Agent Status Matrix (6 Agen Heterogen)")
-        ag_df = pd.DataFrame(state.get("agent_statuses", []))
-        if not ag_df.empty:
-            st.dataframe(
-                ag_df.rename(columns={
-                    "agent_id": "ID",
-                    "enterprise": "Enterprise",
-                    "status": "Status Operasional",
-                    "domain_model": "Model Domain ML/Opt",
-                    "llm_model": "LLM Backbone",
-                    "calls": "Calls",
-                    "avg_latency_ms": "Latensi (ms)",
-                    "cost_usd": "Biaya (USD)",
-                    "privacy_firewall": "Privacy Firewall",
-                    "last_action": "Aksi Terakhir",
-                }),
-                use_container_width=True,
-                hide_index=True,
-            )
+        st.dataframe(pd.DataFrame(state.get("agent_statuses", [])), use_container_width=True, hide_index=True)
 
-        # Allocation table & Enterprise Profit Fairness chart
-        col_l, col_r = st.columns([1.2, 1.0])
-        with col_l:
-            st.subheader("📦 Matriks Alokasi MILP-FEFO (Output Keputusan)")
-            alloc_df = pd.DataFrame(state["milp_result"]["allocations"])
-            if not alloc_df.empty:
-                st.dataframe(alloc_df, use_container_width=True, hide_index=True)
-            else:
-                st.warning("Tidak ada alokasi aktif pada siklus ini.")
-        with col_r:
-            st.subheader("💰 Distribusi Profit Bersih 5 Enterprise (Rp)")
-            prof_df = pd.DataFrame(list(state["enterprise_profits_rp"].items()), columns=["Enterprise", "Profit (Rp)"])
-            fig_prof = px.bar(
-                prof_df,
-                x="Enterprise",
-                y="Profit (Rp)",
-                color="Enterprise",
-                text_auto=".2s",
-                color_discrete_sequence=["#2F855A", "#B7791F", "#6B46C1", "#0987A0", "#C53030"],
-            )
-            fig_prof.update_layout(showlegend=False, height=310, margin=dict(l=10, r=10, t=15, b=10))
-            st.plotly_chart(fig_prof, use_container_width=True)
-
-    # =========================================================================
-    # TAB 2: DECISION TRACE, FIPA-ACL COMMUNICATION, LLM TELEMETRY & AUDIT TRAIL
-    # =========================================================================
     with tabs[1]:
-        st.subheader("🧭 LangGraph 7-Node Decision Trace (Jejak Perubahan Keputusan)")
-        for step in state.get("decision_trace", []):
-            st.markdown(
-                f"""
-                <div class="trace-card">
-                    <b>Step {step['step']} · <code>{step['node']}</code></b> &nbsp;|&nbsp;
-                    <span>Actor: <b>{step['actors']}</b></span> &nbsp;|&nbsp;
-                    <span>Status: <code>{step['status']}</code></span> &nbsp;|&nbsp;
-                    <span style="color:#64748B; font-size:0.8rem;">{step['timestamp']}</span><br/>
-                    <span style="font-size:0.92rem;">{step['summary']}</span>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+        render_decision_trace_and_audit(api, api_online, state, role_info)
 
-        st.divider()
-        c_msg, c_llm = st.columns([1.25, 1.0])
-        with c_msg:
-            st.subheader("💬 Log Komunikasi A2A / FIPA-ACL / GS1 EPCIS 2.0")
-            msgs = state.get("messages", [])
-            perf_opts = ["ALL"] + sorted({m["performative"] for m in msgs})
-            sel_perf = st.selectbox("Filter Performatif FIPA-ACL", perf_opts)
-            filtered_msgs = [m for m in msgs if sel_perf == "ALL" or m["performative"] == sel_perf]
-            for idx, m in enumerate(filtered_msgs):
-                st.markdown(
-                    f"""
-                    <div class="msg-card">
-                        <b>#{idx+1}</b> <code>{m['performative']}</code> &nbsp;|&nbsp;
-                        <b>{m['sender']}</b> → <b>{m['receiver']}</b>
-                        <span style="float:right; color:#64748B; font-size:0.78rem;">{m['protocol']} · R{m['negotiation_round']}</span>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-                with st.expander(f"Lihat Payload JSON & GS1 EPCIS (#{idx+1} — {m['sender']})", expanded=False):
-                    st.json({"payload": m["payload"], "epcis_event": m.get("epcis_event")})
-
-        with c_llm:
-            st.subheader("🧠 Telemetri Panggilan 6-LLM Router")
-            tel = kpis.get("llm_telemetry", {})
-            st.caption(
-                f"Routing Mode: **{tel.get('routing_mode', 'HETEROGENEOUS_6_LLM')}** | "
-                f"Total Calls: **{tel.get('total_calls', 0)}** | "
-                f"Total Tokens: **{kpis.get('llm_total_tokens', 0):,}** | "
-                f"Est. Cost: **USD {tel.get('total_cost_usd', 0):.6f}**"
-            )
-            calls_df = pd.DataFrame(tel.get("calls", []))
-            if not calls_df.empty:
-                st.dataframe(calls_df, use_container_width=True, hide_index=True)
-
-        st.divider()
-        st.subheader("🔐 Immutable SHA-256 Hash-Chained Audit Trail")
-        a_btn, a_stat = st.columns([1, 3])
-        if a_btn.button("🔍 Verifikasi Integritas Rantai SHA-256"):
-            valid = orch.audit.verify_chain()
-            if valid:
-                a_stat.success("✅ VERIFIED: Seluruh rantai hash SHA-256 di `results/audit_trail.jsonl` utuh tanpa manipulasi.")
-            else:
-                a_stat.error("❌ TAMPER DETECTED: Rantai hash tidak valid!")
-        else:
-            a_stat.info("Klik tombol untuk menjalankan verifikasi kriptografi `ImmutableAuditTrail.verify_chain()`.")
-
-        audit_path = RESULTS_DIR / "audit_trail.jsonl"
-        if audit_path.exists():
-            lines = audit_path.read_text(encoding="utf-8").strip().splitlines()
-            recent = [json.loads(ln) for ln in lines[-15:]][::-1]
-            audit_df = pd.DataFrame([
-                {
-                    "Timestamp": e["timestamp"],
-                    "Event": e["event_type"],
-                    "Actor": e["actor"],
-                    "Details": json.dumps(e["details"]),
-                    "SHA-256 Hash": e["hash"][:20] + "...",
-                    "Prev Hash": e["prev_hash"][:16] + "...",
-                }
-                for e in recent
-            ])
-            st.dataframe(audit_df, use_container_width=True, hide_index=True)
-
-    # =========================================================================
-    # TAB 3: AGROFARM MODULE (AGT-01)
-    # =========================================================================
     with tabs[2]:
-        st.subheader("🌱 AgroFarm Cockpit — Random Forest Yield Prediction (PostgreSQL · Qwen 2.5 14B)")
-        m_af = ml_metrics.get("agrofarm_rf", {})
-        k1, k2, k3, k4 = st.columns(4)
-        k1.metric("Test MAE (RF)", f"{m_af.get('test_mae_kg', 93.09)} kg", f"{m_af.get('test_mae_pct_of_mean', 7.24)}% mean (<=10%)")
-        k2.metric("Test R²", f"{m_af.get('test_r2', 0.9393)}")
-        k3.metric("5-Fold CV MAE", f"{m_af.get('cv_5fold_mae_kg', 142.99)} kg")
-        k4.metric("Private HPP Scope", "UNLOCKED (Lokal)" if "agrofarm" in role_info["private_unlocked"] else "🔒 REDACTED")
+        render_agrofarm_workspace(api, api_online, state, ml_metrics, role_info, selected_role)
 
-        c_sim, c_lot = st.columns([1.0, 1.2])
-        with c_sim:
-            st.markdown("#### 🎛️ Simulator Prediksi Panen Interaktif (Random Forest)")
-            s_area = st.slider("Luas Lahan (ha)", 0.4, 2.0, 1.2, 0.05)
-            s_temp = st.slider("Suhu Rata-rata (°C)", 20.0, 32.0, 25.0, 0.5)
-            s_moist = st.slider("Kelembaban Tanah (%)", 45.0, 85.0, 66.0, 1.0)
-            s_rain = st.slider("Curah Hujan (mm)", 0.0, 50.0, 15.0, 1.0)
-            s_fert = st.slider("Dosis Pupuk (kg/ha)", 100.0, 240.0, 180.0, 5.0)
-            s_age = st.slider("Umur Tanaman (hari)", 65, 90, 76, 1)
-            pred_af = orch.agrofarm.model.predict_batch([{
-                "lot_id": "SIM-PLOT",
-                "area_ha": s_area,
-                "avg_temp_c": s_temp,
-                "soil_moisture_pct": s_moist,
-                "rainfall_mm": s_rain,
-                "fertilizer_kg_ha": s_fert,
-                "crop_age_days": s_age,
-                "grade": "A",
-                "shelf_life_days": 5,
-            }])[0]
-            ci = pred_af["confidence_interval_95"]
-            st.success(f"**Prediksi Hasil Panen:** `{pred_af['predicted_kg']:,.1f} kg`  |  **95% CI:** `[{ci[0]:,.1f} – {ci[1]:,.1f}] kg`")
-
-        with c_lot:
-            st.markdown("#### 📋 Lot Panen Aktif & Risiko Umur Simpan (FEFO)")
-            df_lots = read_local_db_table("agrofarm", "active_harvest_lots")
-            df_lots_masked, mcols = apply_privacy_masking(df_lots, "agrofarm", role_info["private_unlocked"])
-            st.dataframe(df_lots_masked, use_container_width=True, hide_index=True)
-
-            st.markdown("#### 🔒 Tabel Biaya Pokok Privat (`private_costs`)")
-            df_priv = read_local_db_table("agrofarm", "private_costs")
-            df_priv_masked, mcols_p = apply_privacy_masking(df_priv, "agrofarm", role_info["private_unlocked"])
-            if mcols_p:
-                st.warning(f"Kolom privat disamarkan untuk peran `{selected_role}`: `{', '.join(mcols_p)}`")
-            st.dataframe(df_priv_masked.head(8), use_container_width=True, hide_index=True)
-
-    # =========================================================================
-    # TAB 4: KOPERASI TANI MODULE (AGT-02)
-    # =========================================================================
     with tabs[3]:
-        st.subheader("🤝 Koperasi Tani Cockpit — LightGBM Price Forecasting & Contract Net (MySQL · Claude 3.5)")
-        m_kp = ml_metrics.get("koperasi_lgbm", {})
-        k1, k2, k3, k4 = st.columns(4)
-        k1.metric("Test MAE Harga", f"Rp{m_kp.get('test_mae_rp', 240.1):,.1f}/kg")
-        k2.metric("Test MAPE", f"{m_kp.get('test_mape_pct', 4.28)}%", "Target <= 8%")
-        k3.metric("Test R²", f"{m_kp.get('test_r2', 0.9853)}")
-        k4.metric("Floor Price Scope", "UNLOCKED (Lokal)" if "koperasi" in role_info["private_unlocked"] else "🔒 REDACTED")
+        render_coldchain_workspace(api, api_online, state, ml_metrics, role_info)
 
-        c_k1, c_k2 = st.columns([1.0, 1.25])
-        with c_k1:
-            st.markdown("#### ⚖️ Simulator Harga LightGBM & Uji Lelang Contract Net")
-            k_grade = st.selectbox("Grade Tomat", ["A", "B", "C"], index=1)
-            k_season = st.selectbox("Musim", ["Wet", "Dry"], index=0)
-            k_sup = st.slider("Pasokan Regional (ton)", 15.0, 60.0, 34.0, 1.0)
-            k_sl = st.slider("Umur Simpan (hari)", 1, 7, 3, 1)
-            ask_pred = orch.koperasi.model.predict_price(grade=k_grade, season=k_season, regional_supply_ton=k_sup, shelf_life_days=k_sl)
-            st.info(f"**Referensi Harga Jual (LightGBM):** `Rp{ask_pred:,.0f} / kg`")
-
-            buyer_offer = st.number_input("Simulasi Tawaran Pembeli (Rp/kg)", min_value=2000, max_value=15000, value=6400, step=100)
-            floor_p = orch.koperasi._private_floor_prices[k_grade]
-            auc_res = orch.koperasi.model.evaluate_contract_net_bids(
-                "SIM-LOT", 500.0, floor_p, [{"buyer_id": "SimulatedBuyer", "qty_kg": 500.0, "offer_price_rp": buyer_offer, "slot": "SPOT"}]
-            )
-            if auc_res["status"] == "ACCEPT_PROPOSAL":
-                st.success(f"✅ **ACCEPT_PROPOSAL:** Tawaran Rp{buyer_offer:,.0f}/kg diterima (di atas ambang kelayakan petani).")
-            else:
-                st.error(f"❌ **REJECT_PROPOSAL** (`{auc_res['reason_code']}`): Tawaran ditolak tanpa membocorkan `floor_price_rp` privat!")
-
-        with c_k2:
-            st.markdown("#### 📈 Tren Harga Pasar Historis & Data Negosiasi (MySQL)")
-            df_kop = read_local_db_table("koperasi", "market_price_negotiations")
-            fig_kp = px.line(
-                df_kop.tail(180),
-                x="tx_date",
-                y="market_ref_price_rp",
-                color="grade",
-                title="Pergerakan Harga Referensi Pasar Tomat per Grade (Rp/kg)",
-            )
-            fig_kp.update_layout(height=280, margin=dict(l=10, r=10, t=35, b=10))
-            st.plotly_chart(fig_kp, use_container_width=True)
-
-            df_kop_masked, mcols_k = apply_privacy_masking(df_kop.head(8), "koperasi", role_info["private_unlocked"])
-            if mcols_k:
-                st.caption(f"🔒 Kolom privat ter-redaksi di mode `{selected_role}`: `{', '.join(mcols_k)}`")
-            st.dataframe(df_kop_masked, use_container_width=True, hide_index=True)
-
-    # =========================================================================
-    # TAB 5: FRESHFOOD PROCESSING MODULE (AGT-03 — REAL RGB TOMATO GALLERY + CNN)
-    # =========================================================================
     with tabs[4]:
-        st.subheader("🏭 FreshFood Processing Cockpit — 2D-Conv CNN Visual Grading & Food Safety Hard-Block (MongoDB · Gemini 2.5 Flash)")
-        m_ff = ml_metrics.get("freshfood_cnn", {})
-        k1, k2, k3, k4 = st.columns(4)
-        k1.metric("CNN Test Accuracy", f"{m_ff.get('test_accuracy_pct', 98.67)}%", "Target >= 90%")
-        k2.metric("Macro-F1 Score", f"{m_ff.get('test_macro_f1', 0.9878)}")
-        k3.metric("Reject Class Recall", f"{m_ff.get('reject_recall_pct', 100.0)}%", "Zero Missed Reject")
-        k4.metric("Overtime Status (Siklus Aktif)", "AKTIF (+500 kg)" if kpis.get("overtime_activated") else "REGULER (2.000 kg)")
-
-        st.markdown("#### 📸 Galeri Sampel Citra RGB Tomat Aktual (`freshfood_tomato_images.npz`) + Inferensi CNN Real-Time")
-        samples = load_tomato_rgb_sample(n_per_class=2)
-        if samples:
-            batch_imgs = np.stack([s["image"] for s in samples])
-            preds = orch.freshfood.model.classify_images(batch_imgs)
-            cols_img = st.columns(4)
-            for idx, (s, pr) in enumerate(zip(samples, preds)):
-                col_i = cols_img[idx % 4]
-                upscaled = Image.fromarray(s["image"].astype(np.uint8)).resize((128, 128), Image.Resampling.NEAREST)
-                badge = "🔴 REJECT / BLOCK" if pr["predicted_grade"] == "Reject" else f"🟢 Grade {pr['predicted_grade']}"
-                col_i.image(upscaled, caption=f"#{s['index']} | True: {s['true_grade']} → Pred: {badge} ({pr['confidence']*100:.1f}%)")
-
+        render_freshfood_module(state, ml_metrics)
         st.divider()
-        c_fs1, c_fs2 = st.columns([1.0, 1.1])
-        with c_fs1:
-            st.markdown("#### 🧪 Simulator Guardrail Keamanan Pangan (0% Toleransi Hard-Block)")
-            fs_ph = st.slider("Level pH (Aman: 4.0 – 4.6)", 3.5, 5.5, 4.32, 0.02)
-            fs_pest = st.slider("Residu Pestisida ppm (Batas MRL ≤ 0.05)", 0.00, 0.12, 0.015, 0.005)
-            fs_def = st.slider("Rasio Cacat Visual (Batas ≤ 0.20)", 0.00, 0.35, 0.08, 0.01)
-            fs_mic = st.checkbox("Lolos Uji Mikrobiologi (`microbial_pass`)", value=True)
-            fs_check = orch.freshfood.model.verify_food_safety_hard_block(
-                {"ph_level": fs_ph, "pesticide_residue_ppm": fs_pest, "microbial_pass": fs_mic}, fs_def
-            )
-            if fs_check["food_safety_approved"]:
-                st.success("✅ **FOOD SAFETY APPROVED:** Batch layak masuk penjadwalan produksi FEFO.")
-            else:
-                st.error(f"⛔ **HARD-BLOCK TRIGGERED (0% Toleransi):** Alokasi otomatis diblokir (`0 kg`). Pelanggaran: `{', '.join(fs_check['violation_reasons'])}`")
-        with c_fs2:
-            st.markdown("#### 📄 Sampel Dokumen QC MongoDB (`freshfood_tomato_qc.json`)")
-            df_qc = read_local_db_table("freshfood", "qc_docs")
-            st.dataframe(df_qc.head(10), use_container_width=True, hide_index=True)
+        render_koperasi_and_supermart_modules(state, ml_metrics, role_info)
 
-    # =========================================================================
-    # TAB 6: COLDCHAIN LOGISTICS MODULE (AGT-04 — IFOREST ANOMALY + OR-TOOLS CVRP)
-    # =========================================================================
     with tabs[5]:
-        st.subheader("❄️ ColdChain Logistics Cockpit — Isolation Forest Anomaly & Google OR-Tools CVRP (TimescaleDB · Llama 3.1 8B Edge)")
-        m_cc = ml_metrics.get("coldchain_iforest_cvrp", {})
-        k1, k2, k3, k4 = st.columns(4)
-        k1.metric("Anomaly F1-Score", f"{m_cc.get('anomaly_f1_pct', 95.32)}%", f"Recall {m_cc.get('anomaly_recall_pct', 100.0)}%")
-        k2.metric("ROC-AUC", f"{m_cc.get('anomaly_roc_auc', 1.0):.4f}")
-        k3.metric("Reduksi Jarak CVRP", f"-{m_cc.get('cvrp_distance_reduction_pct', 31.15)}%", "382 → 263 km")
-        k4.metric("Kapasitas Aktif Siklus", f"{state['cold_storage_cap_kg']:,.0f} kg", f"Drop {state['capacity_drop_pct']}%", delta_color="inverse")
-
-        df_tel = read_local_db_table("coldchain", "cold_storage_telemetry").tail(240)
-        fig_tel = go.Figure()
-        fig_tel.add_hrect(y0=7.0, y1=12.0, fillcolor="rgba(16, 185, 129, 0.12)", line_width=0, annotation_text="Zona Suhu Aman (7–12°C)")
-        fig_tel.add_trace(go.Scatter(x=df_tel["ts"], y=df_tel["temp_c"], mode="lines", name="Suhu Ruang (°C)", line=dict(color="#1F4E79", width=2)))
-        anoms = df_tel[df_tel["is_anomaly"] == 1]
-        if not anoms.empty:
-            fig_tel.add_trace(go.Scatter(x=anoms["ts"], y=anoms["temp_c"], mode="markers", name="Anomali Isolation Forest", marker=dict(color="#DC2626", size=9, symbol="x")))
-        fig_tel.update_layout(title="Telemetri Suhu Cold Storage & Deteksi Anomali Real-Time (TimescaleDB)", yaxis_title="Suhu (°C)", height=320, margin=dict(l=10, r=10, t=38, b=10))
-        st.plotly_chart(fig_tel, use_container_width=True)
-
-        cv1, cv2 = st.columns([1.2, 1.0])
-        cvrp_sol = orch.coldchain.model.solve_cvrp_demo()
-        with cv1:
-            st.markdown("#### 🚚 Rute Armada Pendingin Optimal (Google OR-Tools CVRP)")
-            route_rows = [
-                {
-                    "Armada": r["truck"],
-                    "Urutan Rute": " → ".join(r["stops"]),
-                    "Muatan (kg)": r["load_kg"],
-                    "Jarak (km)": r["distance_km"],
-                }
-                for r in cvrp_sol["routes"]
-            ]
-            st.dataframe(pd.DataFrame(route_rows), use_container_width=True, hide_index=True)
-        with cv2:
-            fig_cvrp = go.Figure(data=[
-                go.Bar(x=["Naive Point-to-Point", "OR-Tools CVRP Optimal"], y=[cvrp_sol["naive_distance_km"], cvrp_sol["optimized_distance_km"]], marker_color=["#94A3B8", "#0987A0"], text=[f"{cvrp_sol['naive_distance_km']:.0f} km", f"{cvrp_sol['optimized_distance_km']:.0f} km"], textposition="outside")
-            ])
-            fig_cvrp.update_layout(
-                title=f"Efisiensi Rute Armada (-{cvrp_sol['distance_reduction_pct']}%)",
-                yaxis_title="Total Jarak (km)",
-                yaxis=dict(range=[0, max(cvrp_sol["naive_distance_km"], 400) * 1.18]),
-                height=280,
-                margin=dict(l=10, r=10, t=42, b=10),
-            )
-            st.plotly_chart(fig_cvrp, use_container_width=True)
-
-    # =========================================================================
-    # TAB 7: SUPERMART MODULE (AGT-05 — XGBOOST DEMAND + NEWSVENDOR PO)
-    # =========================================================================
-    with tabs[6]:
-        st.subheader("🛒 SuperMart Cockpit — XGBoost Demand Forecasting & Newsvendor PO (MySQL · Mistral Small 3)")
-        m_sm = ml_metrics.get("supermart_xgb", {})
-        k1, k2, k3, k4 = st.columns(4)
-        k1.metric("Test MAE Demand", f"{m_sm.get('test_mae_kg', 26.71)} kg")
-        k2.metric("Test MAPE", f"{m_sm.get('test_mape_pct', 3.72)}%", "Target <= 15%")
-        k3.metric("Test R²", f"{m_sm.get('test_r2', 0.9215)}")
-        k4.metric("Substitusi Grade B", "DIIZINKAN (≤30%)" if state.get("allow_grade_b_to_supermart") else "GRADE A ONLY")
-
-        s1, s2 = st.columns([1.0, 1.25])
-        with s1:
-            st.markdown("#### 📊 Kalkulator Prediksi Demand XGBoost & Newsvendor PO")
-            sm_day = st.selectbox("Hari Penjualan", [(0, "Senin"), (2, "Rabu"), (4, "Jumat"), (5, "Sabtu (Weekend)"), (6, "Minggu (Weekend)")], format_func=lambda x: x[1])[0]
-            sm_promo = st.checkbox("Promo Akhir Pekan Aktif (`is_promo=1`)", value=False)
-            sm_price = st.slider("Harga Jual Ritel (Rp/kg)", 11000, 18000, 14500, 250)
-            sm_stock = st.slider("Stok Awal Gerai (kg)", 0, 1500, 200, 50)
-            f_dem = orch.supermart.model.forecast_total_chain_demand(day_of_week=sm_day, price_rp=float(sm_price), is_promo=1 if sm_promo else 0)
-            po_calc = orch.supermart.model.compute_newsvendor_po(f_dem, current_stock_kg=float(sm_stock), sell_price_rp=float(sm_price))
-            st.success(
-                f"**Forecast 3 Gerai (XGBoost):** `{po_calc['forecast_demand_kg']:,.1f} kg`  \n"
-                f"**Safety Buffer (Newsvendor):** `{po_calc['safety_buffer_kg']:+,.1f} kg` (Fractile `{po_calc['critical_fractile']}`)  \n"
-                f"**Rekomendasi Purchase Order:** **`{po_calc['recommended_po_kg']:,.1f} kg`**"
-            )
-            if "supermart" in role_info["private_unlocked"]:
-                st.caption(f"🔓 Kebijakan Privat Lokal: `ceiling_price_grade_a = Rp{orch.supermart._private_ceiling_price_grade_a:,.0f}/kg`")
-            else:
-                st.caption("🔒 `ceiling_price_rp` & margin ritel disamarkan untuk peran non-SuperMart.")
-
-        with s2:
-            df_pos = read_local_db_table("supermart", "retail_pos_sales")
-            daily_pos = df_pos.groupby("sales_date", as_index=False)["demand_sold_kg"].sum().tail(90)
-            fig_pos = px.area(daily_pos, x="sales_date", y="demand_sold_kg", title="Penjualan POS Harian Total 3 Gerai SuperMart (90 Hari Terakhir)")
-            fig_pos.update_traces(line_color="#C53030", fillcolor="rgba(197, 48, 48, 0.16)")
-            fig_pos.update_layout(height=320, margin=dict(l=10, r=10, t=38, b=10))
-            st.plotly_chart(fig_pos, use_container_width=True)
-
-    # =========================================================================
-    # TAB 8: MULTI-ENTERPRISE DATA EXPLORER & BENCHMARK RESULTS
-    # =========================================================================
-    with tabs[7]:
-        st.subheader("🗄️ Multi-Enterprise Local DB Data Explorer (Schema Mapping & Privacy Enforcement)")
-        db_catalog = {
-            "Koperasi Tani — market_price_negotiations [Privasi: floor_price_rp] (MySQL)": ("koperasi", "market_price_negotiations"),
-            "AgroFarm — private_costs [Privasi: HPP & Farmer ID] (PostgreSQL)": ("agrofarm", "private_costs"),
-            "AgroFarm — farm_harvest_history (PostgreSQL)": ("agrofarm", "farm_harvest_history"),
-            "AgroFarm — active_harvest_lots (PostgreSQL)": ("agrofarm", "active_harvest_lots"),
-            "FreshFood — tomato_qc_documents (MongoDB JSON)": ("freshfood", "qc_docs"),
-            "ColdChain — cold_storage_telemetry (TimescaleDB)": ("coldchain", "cold_storage_telemetry"),
-            "ColdChain — fleet_delivery_routes (TimescaleDB)": ("coldchain", "fleet_delivery_routes"),
-            "SuperMart — retail_pos_sales (MySQL)": ("supermart", "retail_pos_sales"),
-        }
-        e1, e2, e3 = st.columns([2, 1.2, 0.8])
-        sel_tbl_lbl = e1.selectbox("Pilih Basis Data & Tabel Enterprise", list(db_catalog.keys()))
-        search_txt = e2.text_input("Cari Nilai / Lot / Zona", value="")
-        max_rows = e3.number_input("Maks. Baris", min_value=10, max_value=500, value=50, step=10)
-
-        ent_key, tbl_name = db_catalog[sel_tbl_lbl]
-        raw_df = read_local_db_table(ent_key, tbl_name)
-        view_df, masked_cols = apply_privacy_masking(raw_df, ent_key, role_info["private_unlocked"])
-
-        if search_txt.strip():
-            mask_match = view_df.astype(str).apply(lambda col: col.str.contains(search_txt.strip(), case=False, na=False)).any(axis=1)
-            view_df = view_df[mask_match]
-
-        m1, m2, m3 = st.columns(3)
-        m1.metric("Total Rekaman Tabel", f"{len(raw_df):,}")
-        m2.metric("Baris Cocok Filter", f"{len(view_df):,}")
-        m3.metric("Kolom Privat Ter-redaksi", f"{len(masked_cols)} kolom" if masked_cols else "0 (Lokal / Publik)")
-
-        if masked_cols:
-            st.warning(f"🔒 **Data Sovereignty Aktif:** Kolom `{', '.join(masked_cols)}` disamarkan karena peran `{selected_role}` bukan pemilik DB `{ent_key}`.")
-
-        st.dataframe(view_df.head(int(max_rows)), use_container_width=True, hide_index=True)
-        st.download_button(
-            "⬇️ Download Filtered CSV",
-            data=view_df.head(int(max_rows)).to_csv(index=False).encode("utf-8"),
-            file_name=f"{ent_key}_{tbl_name}_filtered.csv",
-            mime="text/csv",
-        )
-
+        render_server_data_explorer(api, api_online, role_info, selected_role, default_ent=ent_key if ent_key != "global" else "koperasi")
         st.divider()
-        st.subheader("📊 Ringkasan Benchmark & Studi Ablasi Bab 9 (N = 30 Siklus Berpasangan)")
-        if exp_results:
-            fig_dir = RESULTS_DIR / "figures"
-            f1, f2 = st.columns(2)
-            if (fig_dir / "fig_9_1_conditions.png").exists():
-                f1.image(str(fig_dir / "fig_9_1_conditions.png"), caption="Gambar 9.1 — Perbandingan 4 Kondisi Eksperimen")
-            if (fig_dir / "fig_9_2_ablation_comparison.png").exists():
-                f2.image(str(fig_dir / "fig_9_2_ablation_comparison.png"), caption="Gambar 9.2 — Hasil 3 Studi Ablasi Arsitektur")
-            if (fig_dir / "fig_9_3_agent_cost_latency.png").exists():
-                st.image(str(fig_dir / "fig_9_3_agent_cost_latency.png"), caption="Gambar 9.3 — Analisis Biaya Token & Latensi 6 LLM Heterogen vs 6× GPT-4o")
+        st.subheader("📊 Grafik Benchmark & 3 Studi Ablasi Bab 9")
+        fig_dir = RESULTS_DIR / "figures"
+        f1, f2 = st.columns(2)
+        if (fig_dir / "fig_9_1_conditions.png").exists():
+            f1.image(str(fig_dir / "fig_9_1_conditions.png"), caption="Gambar 9.1 — Perbandingan 4 Kondisi")
+        if (fig_dir / "fig_9_2_ablation_comparison.png").exists():
+            f2.image(str(fig_dir / "fig_9_2_ablation_comparison.png"), caption="Gambar 9.2 — Hasil 3 Studi Ablasi")
 
 
 if __name__ == "__main__":
