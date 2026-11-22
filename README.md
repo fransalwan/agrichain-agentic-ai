@@ -5,7 +5,7 @@
 ![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
 ![LangGraph](https://img.shields.io/badge/Orchestration-LangGraph%20StateGraph-1F4E79)
 ![Optimization](https://img.shields.io/badge/Optimization-PuLP%20MILP--FEFO%20%2B%20OR--Tools%20VRPTW-2B6CB0)
-![Tests](https://img.shields.io/badge/Pytest-14%2F14%20Passed-2E7D32)
+![Tests](https://img.shields.io/badge/Pytest-15%2F15%20Passed-2E7D32)
 ![Standards](https://img.shields.io/badge/Standards-A2A%20%7C%20FIPA--ACL%20%7C%20GS1%20EPCIS%202.0%20%7C%20NIST%20AI%20RMF%201.0-0F766E)
 
 > **Program Studi:** Magister Kecerdasan Artifisial  
@@ -41,11 +41,11 @@
 | ID Agen | Enterprise / Layer | Primary Stakeholder (1 per Enterprise) | Model Domain AI / Optimasi (v2.2) | Mesin Penalaran / LLM | Basis Data Lokal |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `AGT-01` | **AgroFarm** | **Farm Manager** | Random Forest 250 Trees + NDVI + 80% Quantile PI + 14d ± 2σ Monitor | **No LLM** *(Deterministic ML + Rules · 0 token)* | PostgreSQL (`agrofarm_pg.sqlite`) |
-| `AGT-02` | **Koperasi Tani** | **Cooperative Manager** | LightGBM + Contract Net Auction | **Claude 3.5 Sonnet** *(LLM Negosiasi)* | MySQL (`koperasi_mysql.sqlite`) |
-| `AGT-03` | **FreshFood Processing** | **Quality Control & Production Manager** | 2D-Conv Visual CNN + Food Safety Hard-Block + FEFO | **Gemini 2.5 Flash** *(Multimodal VLM)* | MongoDB (`freshfood_tomato_qc.json` + RGB NPZ) |
+| `AGT-02` | **Koperasi Tani** | **Cooperative Manager** | LightGBM + Contract Net Auction | **Groq Llama 3.3 70B *(Free)*** / Claude 3.5 Sonnet *(LLM Negosiasi)* | MySQL (`koperasi_mysql.sqlite`) |
+| `AGT-03` | **FreshFood Processing** | **Quality Control & Production Manager** | 2D-Conv Visual CNN + Food Safety Hard-Block + FEFO | **Google Gemini 2.5 Flash *(Free)*** *(Multimodal VLM)* | MongoDB (`freshfood_tomato_qc.json` + RGB NPZ) |
 | `AGT-04` | **ColdChain Logistics** | **Fleet & Cold Chain Manager** | Isolation Forest (7–12°C) + XGBoost ETA + OR-Tools VRPTW | **No LLM** *(Deterministic Edge ML + VRPTW · 0 token)* | TimescaleDB (`coldchain_timescaledb.sqlite`) |
 | `AGT-05` | **SuperMart** | **Purchasing Manager** | XGBoost 7-Day + Newsvendor PO + Goods Receipt SLA | **No LLM** *(Deterministic ML + Policy Rules · 0 token)* | MySQL (`supermart_mysql.sqlite`) |
-| `AGT-06` | **Global Control Center** | **Global Control Center Operator** | MILP-FEFO Solver (PuLP / CBC) + Cross-Enterprise Lineage | **GPT-4o** *(LangGraph Orchestrator)* | Redis + SHA-256 Audit Trail |
+| `AGT-06` | **Global Control Center** | **Global Control Center Operator** | MILP-FEFO Solver (PuLP / CBC) + Cross-Enterprise Lineage | **Groq GPT-OSS-120B *(Free)*** / GPT-4o *(LangGraph Orchestrator)* | Redis + SHA-256 Audit Trail |
 
 ---
 
@@ -135,8 +135,11 @@ Proyek ini sudah dilengkapi konfigurasi siap pakai di [`.vscode/launch.json`](./
      ```
 5. **Jalankan Pengujian & Reproduksi Eksperimen:**
    ```bash
-   # Pengujian otomatis (14/14 unit + closed-loop parity + selective 3-LLM + server-side RBAC + FastAPI tests)
+   # Pengujian otomatis (15/15 unit + closed-loop parity + selective 3-LLM + free-tier live routing + server-side RBAC + FastAPI tests)
    pytest tests/test_ecosystem.py -v
+
+   # Verifikasi koneksi 3-LLM eksternal gratis (Groq + Google Gemini + fallback lintas provider)
+   python src/llm/test_free_llms.py
 
    # Latih ulang 5 model ML v2.1 (termasuk NDVI 80% PI & XGBoost ETA + VRPTW)
    python src/models/train_all.py
@@ -144,7 +147,13 @@ Proyek ini sudah dilengkapi konfigurasi siap pakai di [`.vscode/launch.json`](./
    # Jalankan seluruh eksperimen Bab 9 (4 kondisi x 30 siklus + 3 ablasi + 3 grafik)
    python src/experiments/run_experiments.py
    ```
-6. *(Opsional)* Mode **LIVE 3-LLM API**: salin `.env.example` menjadi `.env`, ubah `LLM_EXECUTION_MODE=LIVE`, dan isi kredensial untuk 3 agen ber-LLM (`ANTHROPIC_API_KEY` untuk Koperasi, `GEMINI_API_KEY` untuk FreshFood, dan `OPENAI_API_KEY` untuk Global Orchestrator). Agen AgroFarm, ColdChain, dan SuperMart berjalan 100% lokal tanpa membutuhkan API LLM.
+6. **Aktivasi Mode LIVE 3-LLM Eksternal 100% Gratis (Tanpa Kartu Kredit):**
+   - Daftar & ambil kunci gratis (tanpa kartu kredit):
+     - **Groq Cloud** (`AGT-02 Koperasi` → `llama-3.3-70b-versatile`, `AGT-06 Global` → `openai/gpt-oss-120b`): `https://console.groq.com/keys`
+     - **Google AI Studio** (`AGT-03 FreshFood` → `gemini-2.5-flash`): `https://aistudio.google.com/apikey`
+     - *(Opsional cadangan)* **OpenRouter Free Tier**: `https://openrouter.ai/keys`
+   - Salin `.env.example` menjadi `.env` (file `.env` sudah masuk `.gitignore`), set `LLM_EXECUTION_MODE=LIVE`, lalu tempelkan `GROQ_API_KEY` dan `GEMINI_API_KEY` *(mengisi 1 kunci saja sudah mengaktifkan seluruh 3 agen LLM melalui cross-provider fallback otomatis)*.
+   - Uji koneksi dengan `python src/llm/test_free_llms.py`, lalu *restart* FastAPI & Streamlit — banner atas otomatis menampilkan **`⚡ 3-LLM LIVE (Free API)`**. Agen AgroFarm, ColdChain, dan SuperMart tetap berjalan 100% lokal deterministik (`0 token`).
 
 ---
 
@@ -163,7 +172,7 @@ Dashboard dilengkapi **`🎬 Mode Presentasi (1-Klik Storyboard)`** di baris pal
 5. **`5️⃣ Frans · SuperMart` (`Frans Alwan Purba — AGT-05`):**
    - Otomatis masuk sebagai *Purchasing Manager* (`DEMAND_SURGE`): **Proyeksi 7-Hari XGBoost (`H+1..H+7`)** ke hulu, tab **PO CRUD** (guardrail Grade C ditolak, substitusi Grade B ≤ 30% & `ceiling_price` terbuka lokal), serta tab **Goods Receipt SLA 7–12°C**.
 6. **`6️⃣ Frans · Global HITL` (`Frans Alwan Purba — AGT-06`) & Swagger 20 Endpoint:**
-   - Otomatis masuk sebagai *Global Control Center Operator* (`COMPOUND`): tampilkan **Live 5-Enterprise Closed-Loop Strip**, grafik **Sankey & Decision Shift** *above-the-fold*, klik **`✅ Approve & Commit`** pada *HITL Quick Bar*, verifikasi rantai **SHA-256 (`VERIFIED ✅`)** & telemetri *Selective 3-LLM Hybrid* di tab *Trace, Lineage & Audit*, serta tunjukkan `http://127.0.0.1:8000/docs` (**20 endpoint**) & `pytest tests/test_ecosystem.py -v` (**14/14 PASSED**).
+   - Otomatis masuk sebagai *Global Control Center Operator* (`COMPOUND`): tampilkan **Live 5-Enterprise Closed-Loop Strip**, grafik **Sankey & Decision Shift** *above-the-fold*, klik **`✅ Approve & Commit`** pada *HITL Quick Bar*, verifikasi rantai **SHA-256 (`VERIFIED ✅`)** & telemetri *Selective 3-LLM Hybrid* di tab *Trace, Lineage & Audit*, serta tunjukkan `http://127.0.0.1:8000/docs` (**20 endpoint**) & `pytest tests/test_ecosystem.py -v` (**15/15 PASSED**).
 
 ---
 
@@ -203,21 +212,21 @@ agrichain-agentic-ai/
 ├── .vscode/
 │   ├── launch.json                      # 1-klik Run & Debug VS Code (FastAPI, Streamlit, Train, Experiments)
 │   └── tasks.json                       # Task otomatis VS Code (Install, Pytest, Servers)
-├── config/settings.py                   # Registri 6 profil LLM, SOP suhu 7–12°C, ambang HITL & deviasi 2σ
+├── config/settings.py                   # Registri 3 LLM + 3 Non-LLM, provider gratis (Groq/Gemini/OpenRouter), SOP suhu 7–12°C, ambang HITL & deviasi 2σ
 ├── src/
 │   ├── data/                            # Generator 19.575 rekaman + 3.000 citra RGB + Adapter 5 DB lokal
 │   ├── protocols/                       # A2A, FIPA-ACL, GS1 EPCIS 2.0, Server-Side RBAC Firewall, SHA-256 Audit
 │   ├── models/                          # 5 model ML v2.1 (RF+NDVI+PI80, LightGBM, CNN, IF+XGB-ETA+VRPTW, XGB 7d) + MILP-FEFO
-│   ├── llm/                             # System Prompts (3 Agen LLM) + Hybrid Selective-LLM Router (3 LLM + 3 ML)
+│   ├── llm/                             # System Prompts (3 Agen LLM), Free-Tier Router (Groq/Gemini/OpenRouter), & test_free_llms.py
 │   ├── agents/                          # 5 Enterprise Agents + LangGraph Orchestrator v2.2 (Closed-Loop Lineage & Briefing)
 │   ├── api/main.py                      # FastAPI Decoupled Gateway v2.2 (20 Endpoint + Full 5-Enterprise Parity)
 │   ├── experiments/run_experiments.py   # Benchmark 4 Kondisi x 30 siklus + 3 Ablasi + 3 Failure Cases
 │   └── dashboard/app.py                 # Streamlit Demo-Ready Role-Adaptive Light-Mode Cockpit v2.2 (6 Role Views)
-├── tests/test_ecosystem.py              # 14 Automated Unit, RBAC, Closed-Loop, Selective-LLM & FastAPI Tests
+├── tests/test_ecosystem.py              # 15 Automated Unit, RBAC, Closed-Loop, Selective-LLM, Free-Tier Live & FastAPI Tests
 ├── docs/screenshots/                    # 7 Screenshot aktual aplikasi v2.1 (Light Mode) & FastAPI Swagger UI
 ├── data/                                # Dataset dummy tergenerasi & 5 database lokal terisolasi
 ├── results/                             # Model terlatih (.pkl), metrik JSON, audit_trail.jsonl, & 3 grafik Bab 9
 ├── docker-compose.yml                   # Stack PostgreSQL 16, MySQL 8, MongoDB 7, TimescaleDB, Redis 7
-├── Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.{md,docx,pdf}    # Laporan Lengkap v2.1 (Bab 1–11, 54 halaman)
+├── Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.{md,docx,pdf}    # Laporan Lengkap v2.2 (Bab 1–11, 54 halaman)
 └── Presentasi_AgriChain_Agentic_AI_v2.1.{pptx,pdf}               # Slide Presentasi Kelompok (14 slide, 4 presenter)
 ```

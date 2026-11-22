@@ -197,10 +197,19 @@ class GoodsReceiptSLARequest(BaseModel):
 @app.get("/api/v1/health", tags=["Global Control Center"])
 def health_check() -> Dict[str, Any]:
     orch = get_orchestrator()
+    free_provs = [
+        name for name, key in [
+            ("groq", settings.groq_api_key),
+            ("gemini", settings.gemini_api_key),
+            ("openrouter", settings.openrouter_api_key),
+        ] if key
+    ]
     return {
         "status": "healthy",
-        "ecosystem": "AgriChain Multi-Enterprise Agentic AI v2.0",
+        "ecosystem": "AgriChain Multi-Enterprise Agentic AI v2.2 (Selective 3-LLM Hybrid)",
         "agents": 6,
+        "llm_execution_mode": settings.llm_execution_mode.upper(),
+        "configured_free_providers": free_provs,
         "audit_chain_valid": orch.audit.verify_chain(),
         "tomato_safe_temp_c": [settings.tomato_safe_temp_min_c, settings.tomato_safe_temp_max_c],
         "server_timestamp": now_wib_iso(),

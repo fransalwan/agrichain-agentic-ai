@@ -418,3 +418,56 @@ def test_selective_llm_architecture_only_global_koperasi_freshfood_use_llm():
             assert call["mode"] in ("POLICY_GROUNDED_SIMULATED", "LIVE_API", "POLICY_GROUNDED_FALLBACK")
             assert call["input_tokens"] > 0
             assert call["cost_usd"] > 0.0
+
+
+def test_free_tier_groq_and_gemini_live_routing_and_schema_merge(monkeypatch):
+    import httpx
+    from config.settings import settings as cfg
+    from src.llm.router import HeterogeneousLLMRouter
+
+    class DummyResp:
+        def __init__(self, status_code: int, payload: dict):
+            self.status_code = status_code
+            self._payload = payload
+
+        def json(self):
+            return self._payload
+
+    def fake_post(url, *args, **kwargs):
+        if "api.groq.com" in url:
+            mdl = kwargs["json"]["model"]
+            return DummyResp(200, {
+                "choices": [{"message": {"content": f"```json\n{{\"llm_rationale\": \"Live Groq {mdl} OK\"}}\n```"}}],
+                "usage": {"prompt_tokens": 120, "completion_tokens": 35},
+            })
+        if "generativelanguage.googleapis.com" in url:
+            return DummyResp(200, {
+                "candidates": [{"content": {"parts": [{"text": "{\"llm_rationale\": \"Live Gemini 2.5 Flash OK\"}"}]}}],
+                "usageMetadata": {"promptTokenCount": 140, "candidatesTokenCount": 40},
+            })
+        return DummyResp(404, {})
+
+    monkeypatch.setattr(httpx, "post", fake_post)
+    monkeypatch.setattr(cfg, "llm_execution_mode", "LIVE")
+    monkeypatch.setattr(cfg, "groq_api_key", "gsk_dummy_free_test_key")
+    monkeypatch.setattr(cfg, "gemini_api_key", "AIza_dummy_free_test_key")
+    monkeypatch.setattr(cfg, "openai_api_key", "")
+    monkeypatch.setattr(cfg, "anthropic_api_key", "")
+
+    router = HeterogeneousLLMRouter(homogeneous_frontier=False)
+    out_kp = router.invoke_structured("AGT-02", "neg_test", {"offer": 6800}, lambda c: {"decision": "ACCEPT", "price": 6800})
+    out_ff = router.invoke_structured("AGT-03", "qc_test", {"lot": "H003"}, lambda c: {"approved": True})
+    out_gl = router.invoke_structured("AGT-06", "orch_test", {"flr": 0.0}, lambda c: {"status": "OPTIMIZED"})
+    out_af = router.invoke_structured("AGT-01", "af_test", {"blk": "BLK-07"}, lambda c: {"yield_kg": 2000.0})
+
+    # All 3 cognitive agents hit FREE external APIs (Groq + Gemini) at $0.00 cost while preserving policy schema!
+    assert out_kp["decision"] == "ACCEPT" and "Live Groq" in out_kp["llm_rationale"]
+    assert out_ff["approved"] is True and "Live Gemini" in out_ff["llm_rationale"]
+    assert out_gl["status"] == "OPTIMIZED" and "Live Groq" in out_gl["llm_rationale"]
+    assert out_af["yield_kg"] == 2000.0
+
+    rec_by_id = {r.agent_id: r for r in router.call_log}
+    assert rec_by_id["AGT-02"].mode == "LIVE_API" and rec_by_id["AGT-02"].provider == "groq" and rec_by_id["AGT-02"].cost_usd == 0.0
+    assert rec_by_id["AGT-03"].mode == "LIVE_API" and rec_by_id["AGT-03"].provider == "gemini" and rec_by_id["AGT-03"].cost_usd == 0.0
+    assert rec_by_id["AGT-06"].mode == "LIVE_API" and rec_by_id["AGT-06"].provider == "groq" and rec_by_id["AGT-06"].cost_usd == 0.0
+    assert rec_by_id["AGT-01"].mode == "DETERMINISTIC_ML_RULE" and rec_by_id["AGT-01"].input_tokens == 0

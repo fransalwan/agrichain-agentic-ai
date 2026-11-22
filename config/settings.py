@@ -151,9 +151,21 @@ class Settings(BaseSettings):
 
     llm_execution_mode: str = "SIMULATED"
     ollama_base_url: str = "http://localhost:11434/v1"
+
+    # Free-Tier External LLM Providers (0 USD, No Credit Card Required)
+    groq_api_key: str = ""
+    gemini_api_key: str = ""
+    openrouter_api_key: str = ""
+
+    # Configurable Free-Tier Model IDs (3 Heterogeneous Models for AGT-02, AGT-03, AGT-06)
+    groq_model_koperasi: str = "llama-3.3-70b-versatile"
+    gemini_model_freshfood: str = "gemini-2.5-flash"
+    groq_model_global: str = "openai/gpt-oss-120b"
+    openrouter_model_fallback: str = "meta-llama/llama-3.3-70b-instruct:free"
+
+    # Optional Paid Cloud Providers (if user chooses paid frontier models)
     openai_api_key: str = ""
     anthropic_api_key: str = ""
-    gemini_api_key: str = ""
     mistral_api_key: str = ""
 
     # NIST AI RMF 1.0 HITL Escalation Thresholds (Tabel 7.2)

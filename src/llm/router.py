@@ -60,31 +60,95 @@ class HeterogeneousLLMRouter:
         # Standard ~4 chars/token approximation for multilingual/JSON prompts
         return max(24, int(round(len(text) / 3.8)))
 
-    def _try_live_provider_call(self, profile: ModelProfile, system_prompt: str, user_prompt: str) -> Optional[str]:
-        """Attempt a real LLM API completion ONLY for LLM-enabled agents (AGT-02, AGT-03, AGT-06) when LIVE mode & keys exist."""
+    @staticmethod
+    def _strip_json_fences(raw_text: str) -> str:
+        txt = raw_text.strip()
+        if txt.startswith("```"):
+            lines = txt.splitlines()
+            if lines and lines[0].startswith("```"):
+                lines = lines[1:]
+            if lines and lines[-1].strip() == "```":
+                lines = lines[:-1]
+            txt = "\n".join(lines).strip()
+        return txt
+
+    def _call_openai_compat(
+        self, url: str, api_key: str, model: str, system_prompt: str, user_prompt: str,
+        temperature: float, extra_headers: Optional[Dict[str, str]] = None,
+    ) -> Optional[tuple[str, Optional[Dict[str, int]]]]:
+        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+        if extra_headers:
+            headers.update(extra_headers)
+        resp = httpx.post(
+            url,
+            headers=headers,
+            json={
+                "model": model,
+                "temperature": temperature,
+                "max_tokens": 512,
+                "response_format": {"type": "json_object"},
+                "messages": [
+                    {"role": "system", "content": system_prompt + " Respond strictly in valid JSON object."},
+                    {"role": "user", "content": user_prompt},
+                ],
+            },
+            timeout=18.0,
+        )
+        if resp.status_code == 200:
+            body = resp.json()
+            content = body["choices"][0]["message"]["content"]
+            usage = body.get("usage")
+            return content, usage
+        return None
+
+    def _call_gemini(
+        self, api_key: str, model: str, system_prompt: str, user_prompt: str, temperature: float,
+    ) -> Optional[tuple[str, Optional[Dict[str, int]]]]:
+        resp = httpx.post(
+            f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}",
+            json={
+                "systemInstruction": {"parts": [{"text": system_prompt + " Respond strictly in valid JSON object."}]},
+                "contents": [{"parts": [{"text": user_prompt}]}],
+                "generationConfig": {
+                    "temperature": temperature,
+                    "responseMimeType": "application/json",
+                },
+            },
+            timeout=18.0,
+        )
+        if resp.status_code == 200:
+            body = resp.json()
+            content = body["candidates"][0]["content"]["parts"][0]["text"]
+            meta = body.get("usageMetadata", {})
+            usage = {
+                "prompt_tokens": int(meta.get("promptTokenCount", 0)),
+                "completion_tokens": int(meta.get("candidatesTokenCount", 0)),
+            } if meta else None
+            return content, usage
+        return None
+
+    def _try_live_provider_call(
+        self, profile: ModelProfile, system_prompt: str, user_prompt: str
+    ) -> Optional[tuple[str, str, Optional[Dict[str, int]]]]:
+        """Attempt a real external LLM API call ONLY for LLM-enabled agents (AGT-02, AGT-03, AGT-06).
+
+        Supports 100% FREE-tier heterogeneous routing (Groq + Google Gemini + OpenRouter :free)
+        as well as optional paid frontier APIs (OpenAI / Anthropic), with automatic cross-provider fallback.
+        """
         if not profile.uses_llm or self.mode != "LIVE":
             return None
+
+        aid = profile.agent_id
+        # 1. Optional Paid Native Providers (if explicitly configured)
         try:
-            # 1. OpenAI (AGT-06: GPT-4o, or All-LLM Homogeneous Ablation)
-            if profile.provider == "openai" and settings.openai_api_key:
-                resp = httpx.post(
-                    "https://api.openai.com/v1/chat/completions",
-                    headers={"Authorization": f"Bearer {settings.openai_api_key}"},
-                    json={
-                        "model": "gpt-4o",
-                        "temperature": profile.temperature,
-                        "response_format": {"type": "json_object"},
-                        "messages": [
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": user_prompt},
-                        ],
-                    },
-                    timeout=15.0,
+            if aid == "AGT-06" and settings.openai_api_key:
+                res = self._call_openai_compat(
+                    "https://api.openai.com/v1/chat/completions", settings.openai_api_key,
+                    "gpt-4o", system_prompt, user_prompt, profile.temperature,
                 )
-                if resp.status_code == 200:
-                    return resp.json()["choices"][0]["message"]["content"]
-            # 2. Anthropic (AGT-02: Claude 3.5 Sonnet)
-            elif profile.provider == "anthropic" and settings.anthropic_api_key:
+                if res:
+                    return res[0], "openai/gpt-4o", res[1]
+            if aid == "AGT-02" and settings.anthropic_api_key:
                 resp = httpx.post(
                     "https://api.anthropic.com/v1/messages",
                     headers={
@@ -99,28 +163,67 @@ class HeterogeneousLLMRouter:
                         "system": system_prompt + " Respond strictly in valid JSON.",
                         "messages": [{"role": "user", "content": user_prompt}],
                     },
-                    timeout=15.0,
+                    timeout=18.0,
                 )
                 if resp.status_code == 200:
-                    return resp.json()["content"][0]["text"]
-            # 3. Google Gemini (AGT-03: Gemini 2.5 Flash Multimodal)
-            elif profile.provider == "gemini" and settings.gemini_api_key:
-                resp = httpx.post(
-                    f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={settings.gemini_api_key}",
-                    json={
-                        "systemInstruction": {"parts": [{"text": system_prompt}]},
-                        "contents": [{"parts": [{"text": user_prompt}]}],
-                        "generationConfig": {
-                            "temperature": profile.temperature,
-                            "responseMimeType": "application/json",
-                        },
-                    },
-                    timeout=15.0,
-                )
-                if resp.status_code == 200:
-                    return resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+                    b = resp.json()
+                    u = b.get("usage", {})
+                    return (
+                        b["content"][0]["text"],
+                        "anthropic/claude-3-5-sonnet",
+                        {"prompt_tokens": u.get("input_tokens", 0), "completion_tokens": u.get("output_tokens", 0)},
+                    )
         except Exception:
-            return None
+            pass
+
+        # 2. 100% FREE-TIER HETEROGENEOUS ROUTING (Groq Cloud + Google Gemini AI Studio + OpenRouter :free)
+        #    - AGT-03 FreshFood -> Gemini Free Tier first, then Groq, then OpenRouter
+        #    - AGT-02 Koperasi  -> Groq (Llama 3.3 70B / Qwen / GPT-OSS) first, then Gemini, then OpenRouter
+        #    - AGT-06 Global    -> Groq (GPT-OSS 120B / Llama 3.3 70B) first, then Gemini, then OpenRouter
+        groq_candidates = (
+            list(dict.fromkeys([settings.groq_model_global, "openai/gpt-oss-120b", "llama-3.3-70b-versatile", "openai/gpt-oss-20b"]))
+            if aid == "AGT-06"
+            else list(dict.fromkeys([settings.groq_model_koperasi, "llama-3.3-70b-versatile", "openai/gpt-oss-20b", "llama-3.1-8b-instant"]))
+        )
+        gemini_candidates = list(dict.fromkeys([settings.gemini_model_freshfood, "gemini-2.5-flash", "gemini-2.5-flash-lite"]))
+
+        provider_order = ("gemini", "groq", "openrouter") if aid == "AGT-03" else ("groq", "gemini", "openrouter")
+
+        for prov in provider_order:
+            if prov == "groq" and settings.groq_api_key:
+                for model_id in groq_candidates:
+                    try:
+                        res = self._call_openai_compat(
+                            "https://api.groq.com/openai/v1/chat/completions",
+                            settings.groq_api_key, model_id, system_prompt, user_prompt, profile.temperature,
+                        )
+                        if res:
+                            return res[0], f"groq/{model_id}", res[1]
+                    except Exception:
+                        continue
+            elif prov == "gemini" and settings.gemini_api_key:
+                for model_id in gemini_candidates:
+                    try:
+                        res = self._call_gemini(
+                            settings.gemini_api_key, model_id, system_prompt, user_prompt, profile.temperature,
+                        )
+                        if res:
+                            return res[0], f"gemini/{model_id}", res[1]
+                    except Exception:
+                        continue
+            elif prov == "openrouter" and settings.openrouter_api_key:
+                try:
+                    res = self._call_openai_compat(
+                        "https://openrouter.ai/api/v1/chat/completions",
+                        settings.openrouter_api_key,
+                        settings.openrouter_model_fallback,
+                        system_prompt, user_prompt, profile.temperature,
+                        extra_headers={"HTTP-Referer": "https://github.com/fransalwan/agrichain-agentic-ai", "X-Title": "AgriChain Agentic AI"},
+                    )
+                    if res:
+                        return res[0], f"openrouter/{settings.openrouter_model_fallback}", res[1]
+                except Exception:
+                    continue
         return None
 
     def invoke_structured(
@@ -131,7 +234,7 @@ class HeterogeneousLLMRouter:
         policy_resolver: Callable[[Dict[str, Any]], Dict[str, Any]],
     ) -> Dict[str, Any]:
         """Execute agent's reasoning engine: Deterministic ML/Rules (0 tokens) for AGT-01/04/05,
-        or LLM reasoning (Claude 3.5 / Gemini 2.5 Flash / GPT-4o) for AGT-02/03/06."""
+        or LLM reasoning (Free Groq/Gemini/OpenRouter or Paid APIs) for AGT-02/03/06."""
         profile = self.get_profile(agent_id)
         t0 = time.perf_counter()
 
@@ -160,47 +263,81 @@ class HeterogeneousLLMRouter:
 
         # Cognitive LLM path (AGT-02 Koperasi, AGT-03 FreshFood, AGT-06 Global, or All-LLM Ablation)
         sys_prompt = AGENT_SYSTEM_PROMPTS[agent_id]
-        user_prompt = json.dumps({"task": task_label, "context": context_payload}, default=str)
+        base_result = policy_resolver(context_payload)
+        user_prompt = json.dumps(
+            {
+                "task": task_label,
+                "context": context_payload,
+                "required_json_keys": list(base_result.keys()) + ["llm_rationale"],
+            },
+            default=str,
+        )
 
-        live_raw = self._try_live_provider_call(profile, sys_prompt, user_prompt)
-        if live_raw is not None:
+        live_out = self._try_live_provider_call(profile, sys_prompt, user_prompt)
+        live_model_label = profile.llm_model
+        live_provider = profile.provider
+        real_usage: Optional[Dict[str, int]] = None
+
+        if live_out is not None:
+            live_raw, live_model_label, real_usage = live_out
+            live_provider = live_model_label.split("/")[0]
             try:
-                result = json.loads(live_raw)
-                exec_mode = "LIVE_API"
+                parsed = json.loads(self._strip_json_fences(live_raw))
+                if isinstance(parsed, dict):
+                    # Schema-safe merge: preserve deterministic safety/MILP invariants while incorporating live LLM reasoning
+                    merged = dict(base_result)
+                    for k, v in parsed.items():
+                        if k in ("llm_rationale", "summary", "reasoning", "recommendation") and isinstance(v, str):
+                            merged[k] = v
+                    merged["llm_live_model"] = live_model_label
+                    result = merged
+                    exec_mode = "LIVE_API"
+                else:
+                    result = base_result
+                    exec_mode = "POLICY_GROUNDED_FALLBACK"
             except Exception:
-                result = policy_resolver(context_payload)
+                result = base_result
                 exec_mode = "POLICY_GROUNDED_FALLBACK"
         else:
-            result = policy_resolver(context_payload)
+            result = base_result
             exec_mode = "POLICY_GROUNDED_SIMULATED"
         actual_ms = (time.perf_counter() - t0) * 1000.0
 
         out_str = json.dumps(result, default=str)
-        in_toks = self._estimate_tokens(sys_prompt + user_prompt)
-        out_toks = self._estimate_tokens(out_str)
+        if real_usage and real_usage.get("prompt_tokens", 0) > 0:
+            in_toks = int(real_usage["prompt_tokens"])
+            out_toks = int(real_usage.get("completion_tokens", 0)) or self._estimate_tokens(out_str)
+        else:
+            in_toks = self._estimate_tokens(sys_prompt + user_prompt)
+            out_toks = self._estimate_tokens(out_str)
 
-        cost_usd = (in_toks / 1_000_000.0) * profile.input_cost_per_1m_usd + (
-            out_toks / 1_000_000.0
-        ) * profile.output_cost_per_1m_usd
-
-        # Calibrated realistic cloud API inference latency (base + token generation + small jitter)
-        jitter = float(self.rng.normal(1.0, 0.06))
-        sim_latency_ms = max(
-            35.0,
-            (profile.base_latency_ms + out_toks * profile.ms_per_output_token) * jitter,
+        is_free_live = exec_mode == "LIVE_API" and live_provider in ("groq", "gemini", "openrouter")
+        cost_usd = 0.0 if is_free_live else (
+            (in_toks / 1_000_000.0) * profile.input_cost_per_1m_usd
+            + (out_toks / 1_000_000.0) * profile.output_cost_per_1m_usd
         )
+
+        # Use real network latency when LIVE_API succeeds; calibrated profile latency in SIMULATED benchmark
+        if exec_mode == "LIVE_API":
+            effective_latency_ms = actual_ms
+        else:
+            jitter = float(self.rng.normal(1.0, 0.06))
+            effective_latency_ms = max(
+                35.0,
+                (profile.base_latency_ms + out_toks * profile.ms_per_output_token) * jitter,
+            )
 
         self.call_log.append(
             LLMCallRecord(
                 agent_id=agent_id,
-                llm_model=profile.llm_model,
-                provider=profile.provider,
-                deployment=profile.deployment,
+                llm_model=live_model_label if exec_mode == "LIVE_API" else profile.llm_model,
+                provider=live_provider,
+                deployment="free-cloud-api" if is_free_live else profile.deployment,
                 task_label=task_label,
                 input_tokens=in_toks,
                 output_tokens=out_toks,
                 cost_usd=cost_usd,
-                simulated_api_latency_ms=round(sim_latency_ms, 2),
+                simulated_api_latency_ms=round(effective_latency_ms, 2),
                 actual_compute_ms=round(actual_ms, 3),
                 mode=exec_mode,
             )

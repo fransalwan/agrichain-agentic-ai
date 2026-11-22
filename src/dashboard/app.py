@@ -1392,15 +1392,19 @@ def main() -> None:
 
     # ---------------------- TOP EXECUTIVE BANNER ----------------------
     conn_pill = "🟢 FastAPI Live" if api_online else "🟡 Local Fallback"
+    tel_calls = kpis.get("llm_telemetry", {}).get("calls", [])
+    has_live_llm = any(c.get("mode") == "LIVE_API" for c in tel_calls)
+    llm_pill = "⚡ 3-LLM LIVE (Free API)" if has_live_llm else "🧪 3-LLM Simulated + 3 ML"
     st.markdown(
         f"""
         <div class="role-banner">
             <div>
-                <div style="font-size:1.18rem; font-weight:700;">🍅 AgriChain Agentic AI v2.1 — {selected_role}</div>
+                <div style="font-size:1.18rem; font-weight:700;">🍅 AgriChain Agentic AI v2.2 — {selected_role}</div>
                 <div style="font-size:0.82rem; opacity:0.92;">{role_info['scope_desc']}</div>
             </div>
             <div style="display:flex; gap:0.42rem; flex-wrap:wrap;">
                 <span class="role-badge">{conn_pill}</span>
+                <span class="role-badge">{llm_pill}</span>
                 <span class="role-badge">Cycle: {state['cycle_id']}</span>
                 <span class="role-badge">Skenario: {scenario}</span>
                 <span class="role-badge">Sync: {st.session_state.get('last_sync', '')[-14:-6]} WIB</span>
