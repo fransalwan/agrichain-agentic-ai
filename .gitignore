@@ -12,3 +12,5 @@ data/generated_images/
 *.log
 *.lock
 *_submission.zip
+Submit_Google_Drive/
+Submit_Google_Drive_*.zip

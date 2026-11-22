@@ -1007,28 +1007,30 @@ Karena keputusan rantai pasok pangan menyangkut keamanan pangan (*food safety*),
 
 ## 8.1 Teknologi dan Lingkungan Eksekusi
 
-Seluruh arsitektur yang dirancang pada Bab 5 sampai Bab 7 beserta **4 Pilar Peningkatan v2.0** (*Server-Side RBAC & Lineage*, *AgroFarm v2 NDVI/PI80*, *ColdChain v2 VRPTW + XGBoost ETA + Fleet/Shipments CRUD*, dan *Decoupled Role-Adaptive Cockpit*) telah diimplementasikan secara penuh ke dalam repositori perangkat lunak **`agrichain-agentic-ai` (v2.0)**. Implementasi dilakukan menggunakan **Python 3.11.9** di lingkungan Windows 11 dengan konfigurasi 1-klik Visual Studio Code (`.vscode/launch.json` dan `.vscode/tasks.json`), serta siap dijalankan baik dalam mode lokal terisolasi maupun kontainer **Docker Compose** (PostgreSQL 16, MySQL 8, MongoDB 7, TimescaleDB, dan Redis 7).
+Seluruh arsitektur yang dirancang pada Bab 5 sampai Bab 7 beserta **4 Pilar Peningkatan v2.0** dan **Kesetaraan Penuh 5 Enterprise (*Full 5-Enterprise Parity*) & Demo-Ready UI v2.1** (*Server-Side RBAC & Lineage*, *AgroFarm v2 NDVI/PI80*, *ColdChain v2 VRPTW + XGBoost ETA + Fleet/Shipments CRUD*, *FreshFood QC Feedback/FEFO/Valorization*, *SuperMart 7-Day Horizon/PO/SLA*, *Koperasi Price API*, serta *Decoupled Role-Adaptive Light-Mode Cockpit*) telah diimplementasikan secara penuh ke dalam repositori perangkat lunak **`agrichain-agentic-ai` (v2.1)**. Implementasi dilakukan menggunakan **Python 3.11.9** di lingkungan Windows 11 dengan konfigurasi 1-klik Visual Studio Code (`.vscode/launch.json` dan `.vscode/tasks.json`), serta siap dijalankan baik dalam mode lokal terisolasi maupun kontainer **Docker Compose** (PostgreSQL 16, MySQL 8, MongoDB 7, TimescaleDB, dan Redis 7).
 
-**Tabel 8.1.** Ringkasan Teknologi, Versi Aktual, dan Fungsi Modul pada Implementasi v2.0
+**Tabel 8.1.** Ringkasan Teknologi, Versi Aktual, dan Fungsi Modul pada Implementasi v2.1
 
 | Lapisan Sistem | Teknologi & Versi Terpasang | Modul Implementasi | Fungsi Utama |
 | :--- | :--- | :--- | :--- |
 | **Runtime & Validasi** | Python 3.11.9, Pydantic 2.13.5, Pydantic-Settings | `config/settings.py`, `src/protocols/fipa_epcis.py` | Validasi skema A2A/FIPA-ACL/GS1 EPCIS 2.0, SOP suhu `7,0–12,0°C`, ambang HITL & deviasi `2σ` |
-| **Keamanan & RBAC** | SHA-256 Hash-Chain, Server-Side Scoped Token | `src/protocols/security.py` | `resolve_token_scope()`, `redact_records_for_scope()` (Server-Side Firewall), & *concurrency-safe* audit trail |
-| **Orkestrasi Multi-Agent** | **LangGraph 1.2.19**, LangChain Core 1.7.4 | `src/agents/orchestrator.py` | *Stateful cyclic graph* (`AGT-06`), 8 skenario gangguan, *canonical lineage*, *Executive Briefing*, & HITL |
-| **Optimasi Matematis** | **PuLP 2.8.0 (CBC)**, **Google OR-Tools** | `src/models/milp_fefo.py`, `src/models/coldchain_iforest_cvrp.py` | *Solver* MILP-FEFO global dan optimasi rute berjendela waktu **VRPTW** lintas 4 skenario gangguan |
-| **Machine Learning & Visi** | Scikit-learn 1.5.2, **LightGBM**, **XGBoost**, SciPy 1.13.0, Pillow 10.4.0 | `src/models/*.py` | RF 250 Trees + NDVI/PI80 (`AGT-01`), LightGBM (`AGT-02`), 2D-Conv CNN (`AGT-03`), IF + **XGBoost ETA** (`AGT-04`), XGBoost (`AGT-05`) |
-| **API Gateway v2.0** | **FastAPI 0.141.1**, Uvicorn 0.52.4, HTTPX 0.28.1 | `src/api/main.py` | 14 *endpoint* REST terpisah (*Discovery, Local Services, AgroFarm, ColdChain CRUD/VRPTW/ETA, Server-Side Data Explorer, Orchestrator, HITL, Audit*) |
-| **Cockpit & Visualisasi** | **Streamlit 1.39.0**, Plotly 5.19.0 (*Scattermapbox & Sankey*), Matplotlib 3.11.1 | `src/dashboard/app.py`, `src/experiments/run_experiments.py` | *Decoupled Role-Adaptive Cockpit* (`ApiBridge`), **5 UI States**, *Impact-Preview HITL Console*, & peta geospasial VRPTW |
+| **Keamanan & RBAC** | SHA-256 Hash-Chain, Server-Side Scoped Token, `msvcrt` Lock | `src/protocols/security.py` | `resolve_token_scope()`, `redact_records_for_scope()` (Server-Side Firewall), & *cross-process concurrency-safe* audit trail |
+| **Orkestrasi Multi-Agent** | **LangGraph 1.2.19**, LangChain Core 1.7.4 | `src/agents/orchestrator.py` | *Stateful cyclic graph* (`AGT-06`), 8 skenario gangguan, *closed-loop handshakes*, *canonical lineage*, *Executive Briefing*, & HITL |
+| **Optimasi Matematis** | **PuLP 2.8.0 (CBC)**, **Google OR-Tools** | `src/models/milp_fefo.py`, `src/models/coldchain_iforest_cvrp.py` | *Solver* MILP-FEFO global dan optimasi rute **VRPTW** tersinkron dinamis dengan *dock window* FreshFood & SuperMart |
+| **Machine Learning & Visi** | Scikit-learn 1.5.2, **LightGBM**, **XGBoost**, SciPy 1.13.0, Pillow 10.4.0 | `src/models/*.py` | RF 250 Trees + NDVI/PI80 (`AGT-01`), LightGBM (`AGT-02`), 2D-Conv CNN (`AGT-03`), IF + **XGBoost ETA** (`AGT-04`), XGBoost 7-Day (`AGT-05`) |
+| **API Gateway v2.1** | **FastAPI 0.141.1**, Uvicorn 0.52.4, HTTPX 0.28.1 | `src/api/main.py` | **20 endpoint REST** terpisah (*Full 5-Enterprise Parity*: AgroFarm, Koperasi, FreshFood, ColdChain CRUD/VRPTW/ETA, SuperMart 7d/PO/SLA, Privacy Explorer, Orchestrator, HITL, Audit) |
+| **Cockpit & Visualisasi** | **Streamlit 1.39.0**, Plotly 5.19.0 (*Scattermapbox & Sankey*), Matplotlib 3.11.1 | `src/dashboard/app.py`, `src/experiments/run_experiments.py` | *Decoupled Role-Adaptive Light-Mode Cockpit* (`ApiBridge`), 6 *dedicated role views*, **1-Klik Storyboard**, **Live Closed-Loop Strip**, **Side-by-Side RBAC Proof**, & peta VRPTW |
 | **Basis Data Heterogen** | SQLAlchemy 2.0.52, PyMongo 4.19.0, SQLite3, Docker Compose | `src/data/db_adapter.py`, `docker-compose.yml` | Isolasi 5 basis data lokal (*PostgreSQL, MySQL, MongoDB JSON, TimescaleDB*) |
-| **Pengujian Otomatis** | Pytest 8.3.3, FastAPI `TestClient`, Playwright | `tests/test_ecosystem.py` | **10 pengujian otomatis** (Firewall, MILP, Hard-Block, Deadlock, AgroFarm v2, ColdChain VRPTW/ETA/CRUD, Server-Side RBAC) |
+| **Pengujian Otomatis** | Pytest 8.3.3, FastAPI `TestClient`, Playwright | `tests/test_ecosystem.py` | **13 pengujian otomatis** (Firewall, MILP, Hard-Block, Deadlock, AgroFarm v2, ColdChain VRPTW/ETA/CRUD, FreshFood/SuperMart/Koperasi v2.1, Closed-Loop VRPTW Sync, Server-Side RBAC) |
 
-## 8.2 Struktur Kode, Organisasi Repositori, dan Kontrak API v2.0 (`agrichain-agentic-ai`)
+## 8.2 Struktur Kode, Organisasi Repositori, dan Kontrak API v2.1 (`agrichain-agentic-ai`)
 
-Struktur proyek dirancang modular untuk memisahkan secara tegas lapisan data, protokol keamanan, model domain ML/optimasi v2.0, *LLM router*, agen otonom, *API Gateway* 14 *endpoint*, eksperimen evaluasi, dan antarmuka kokpit:
+Struktur proyek dirancang modular untuk memisahkan secara tegas lapisan data, protokol keamanan, model domain ML/optimasi, *LLM router*, agen otonom, *API Gateway* **20 endpoint**, eksperimen evaluasi, antarmuka kokpit, serta artefak dokumentasi & presentasi:
 
 ```text
 agrichain-agentic-ai/
+├── .streamlit/
+│   └── config.toml                      # Tema High-Contrast Light Mode (WCAG AAA, navy #1F4E79)
 ├── .vscode/
 │   ├── launch.json                      # 1-klik Run & Debug VS Code (FastAPI, Streamlit, Train, Experiments)
 │   └── tasks.json                       # Otomasi Task VS Code (Install, Pytest, Servers)
@@ -1040,46 +1042,48 @@ agrichain-agentic-ai/
 │   │   └── db_adapter.py                # Materialisasi 5 basis data lokal terisolasi
 │   ├── protocols/
 │   │   ├── fipa_epcis.py                # Skema A2A, FIPA-ACL performatives, GS1 EPCIS 2.0, AgentCard
-│   │   └── security.py                  # Server-Side RBAC Firewall, X-Scoped-Token, Concurrency-Safe Audit
+│   │   └── security.py                  # Server-Side RBAC Firewall, X-Scoped-Token, msvcrt-Locked SHA-256 Audit
 │   ├── models/
 │   │   ├── agrofarm_rf.py               # AGT-01 v2: RF 250 Trees + NDVI + 80% PI + 14d +/- 2-sigma + Fallback
 │   │   ├── koperasi_lgbm.py             # AGT-02: LightGBM Regressor + Contract Net Auction
 │   │   ├── freshfood_cnn.py             # AGT-03: 2D-Conv Visual Grading + Food Safety Hard-Block + FEFO
-│   │   ├── coldchain_iforest_cvrp.py    # AGT-04 v2: Isolation Forest (7-12 C) + XGBoost ETA + OR-Tools VRPTW
-│   │   ├── supermart_xgb.py             # AGT-05: XGBoost Demand Forecasting + Newsvendor PO
+│   │   ├── coldchain_iforest_cvrp.py    # AGT-04 v2: Isolation Forest (7-12 C) + XGBoost ETA + Dynamic OR-Tools VRPTW
+│   │   ├── supermart_xgb.py             # AGT-05: XGBoost 7-Day Horizon + Newsvendor PO + Goods Receipt SLA
 │   │   ├── milp_fefo.py                 # AGT-06: PuLP CBC MILP-FEFO Global Allocation Solver
-│   │   └── train_all.py                 # Orkestrasi generasi data, pelatihan 5 ML v2.0, & verifikasi MILP
+│   │   └── train_all.py                 # Orkestrasi generasi data, pelatihan 5 model ML, & verifikasi MILP
 │   ├── llm/
 │   │   ├── prompts.py                   # 6 System Prompts terstruktur sesuai Bab 6.3
 │   │   └── router.py                    # LiteLLM-compatible Heterogeneous 6-LLM Router & Telemetry
 │   ├── agents/
 │   │   ├── base.py                      # BaseEnterpriseAgent + Outbound Privacy Sanitizer
-│   │   ├── enterprise_agents.py         # Implementasi 5 Enterprise Agents (AGT-01 s.d. AGT-05)
-│   │   └── orchestrator.py              # LangGraph Orchestrator v2.0 (8 Skenario, Lineage, Executive Briefing)
+│   │   ├── enterprise_agents.py         # Implementasi 5 Enterprise Agents v2.1 (Closed-Loop Handshakes)
+│   │   └── orchestrator.py              # LangGraph Orchestrator v2.1 (8 Skenario, Lineage, VRPTW Sync, SLA)
 │   ├── api/
-│   │   └── main.py                      # FastAPI Decoupled Gateway v2.0 (14 REST Endpoints + RBAC Firewall)
+│   │   └── main.py                      # FastAPI Decoupled Gateway v2.1 (20 REST Endpoints + RBAC Firewall)
 │   ├── experiments/
 │   │   └── run_experiments.py           # Benchmark 4 Kondisi x 30 siklus + 3 Ablasi + Failure Cases
 │   └── dashboard/
-│       └── app.py                       # Decoupled Role-Adaptive Cockpit v2.0 (ApiBridge + 5 UI States + Map)
+│       └── app.py                       # Demo-Ready Role-Adaptive Light-Mode Cockpit v2.1 (6 Role Views)
 ├── tests/
-│   └── test_ecosystem.py                # 10 Automated Unit, RBAC, AgroFarm/ColdChain v2 & FastAPI Tests
-├── docs/screenshots/                    # 7 Screenshot aktual aplikasi v2.0 & Swagger UI
+│   └── test_ecosystem.py                # 13 Automated Unit, RBAC, Closed-Loop Parity & FastAPI Tests
+├── docs/screenshots/                    # 7 Screenshot aktual aplikasi v2.1 (Light Mode) & Swagger UI
 ├── docker-compose.yml                   # Stack 5 kontainer DB heterogen + Redis
 ├── requirements.txt                     # Daftar dependensi Python
-└── results/                             # Model terlatih v2.0 (.pkl), metrik JSON, audit_trail.jsonl, & grafik
+├── results/                             # Model terlatih (.pkl), metrik JSON, audit_trail.jsonl, & grafik Bab 9
+├── Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.{md,docx,pdf}  # Laporan Lengkap Bab 1-11 (54 halaman)
+└── Presentasi_AgriChain_Agentic_AI_v2.1.{pptx,pdf}             # Slide Presentasi Kelompok (14 slide)
 ```
 
-**Tabel 8.2.** Pemetaan Modul Kode terhadap Spesifikasi Arsitektur Bab 5–7 dan 4 Pilar v2.0
+**Tabel 8.2.** Pemetaan Modul Kode terhadap Spesifikasi Arsitektur Bab 5–7 dan Peningkatan v2.1
 
 | Komponen Arsitektur | Berkas Sumber Utama | Mekanisme Kunci yang Diimplementasikan |
 | :--- | :--- | :--- |
 | **Server-Side RBAC & Zero-Direct-DB Firewall** | `src/protocols/security.py`, `src/api/main.py`, `src/agents/base.py` | `sanitize_outbound_payload()` dan `redact_records_for_scope()` memblokir 15 atribut privat langsung di server FastAPI berdasarkan `X-Scoped-Token` pemanggil sebelum data dikirim ke antarmuka UI. |
-| **LangGraph Orchestrator v2.0 & Lineage** | `src/agents/orchestrator.py` | 7 node terhubung kondisional dengan batas keras $R_{\max} = 3$, 8 skenario lingkungan, pembangunan rantai *canonical lineage* (`block_id → po_ref`), dan ringkasan *Executive Briefing*. |
+| **LangGraph Orchestrator v2.1 & Closed-Loop Sync** | `src/agents/orchestrator.py`, `src/agents/enterprise_agents.py` | 7 node terhubung kondisional dengan batas keras $R_{\max} = 3$, 8 skenario gangguan, sinkronisasi dinamis *dock window* ke OR-Tools VRPTW, *QC Feedback → AgroFarm*, *7-Day Horizon → Hulu*, *Goods Receipt SLA*, dan *canonical lineage*. |
 | **AgroFarm v2 (NDVI, 80% PI & Fallback)** | `src/models/agrofarm_rf.py` | Random Forest 250 pohon dengan fitur NDVI, interval kuantil 80% (`p10–p90`), mesin deviasi 14-hari ± 2σ, pergeseran panen `-2 hari` saat hujan ekstrem, serta mode aman `FALLBACK_HISTORICAL_MEAN`. |
-| **ColdChain v2 (VRPTW, XGBoost ETA & CRUD)** | `src/models/coldchain_iforest_cvrp.py`, `src/api/main.py` | OR-Tools VRPTW (4 skenario, koordinat Yogyakarta/Sleman/Bantul, 0 *TW violations*), **XGBoost ETA Regressor**, SOP `7,0–12,0°C`, serta validasi CRUD *Master Fleet* & *Shipments Inbox*. |
-| **Decoupled Role-Adaptive Cockpit & 5 UI States** | `src/dashboard/app.py` | Klien HTTP `ApiBridge` ke FastAPI, navigasi adaptif 6 peran, 5 *UI states* wajib (*Loading, Empty, Error, Stale Warning, Success*), *Impact-Preview HITL Console*, dan peta *Scattermapbox*. |
-| **Concurrency-Safe SHA-256 Audit Trail** | `src/protocols/security.py` | Penautan ulang `_load_last_hash()` sebelum setiap penulisan ke `results/audit_trail.jsonl` sehingga rantai kriptografi tetap valid 100% meski ditulis serentak oleh FastAPI, Streamlit, dan Pytest. |
+| **ColdChain v2 (VRPTW, XGBoost ETA & CRUD)** | `src/models/coldchain_iforest_cvrp.py`, `src/api/main.py` | OR-Tools VRPTW (4 skenario, koordinat Yogyakarta/Sleman/Bantul, sinkronisasi *external time windows*, 0 *TW violations*), **XGBoost ETA Regressor**, SOP `7,0–12,0°C`, serta validasi CRUD *Master Fleet* & *Shipments Inbox*. |
+| **Demo-Ready Role-Adaptive Cockpit v2.1** | `src/dashboard/app.py`, `.streamlit/config.toml` | Klien HTTP `ApiBridge` ke FastAPI, tema *High-Contrast Light Mode*, 6 *dedicated role views*, **1-Klik Presenter Storyboard**, **Live 5-Enterprise Closed-Loop Strip**, **Side-by-Side Live RBAC Proof**, *HITL Quick-Action Bar*, dan *Auto-Sync* skenario. |
+| **Concurrency-Safe SHA-256 Audit Trail** | `src/protocols/security.py` | Penguncian ganda `threading.Lock` + *OS file lock* `msvcrt.locking` disertai pembacaan ulang `_load_last_hash()` pada `results/audit_trail.jsonl` sehingga rantai kriptografi tetap valid 100% pada akses paralel. |
 
 Untuk membuktikan pemisahan lapisan *backend* dan *frontend* sekaligus **kesetaraan penuh 5 enterprise (*Full 5-Enterprise Parity v2.1*)**, **Tabel 8.3** merangkum seluruh **20 *endpoint* REST** yang diekspos oleh `src/api/main.py`.
 
@@ -1116,15 +1120,15 @@ Untuk membuktikan pemisahan lapisan *backend* dan *frontend* sekaligus **kesetar
    - **Mode `POLICY_GROUNDED_SIMULATED` (Default Benchmark Reprodusibel):** Mengeksekusi logika penalaran terstruktur berbasis kebijakan masing-masing agen yang terikat pada keluaran deterministik model ML/MILP, seraya mencatat secara presisi estimasi token *prompt/completion*, biaya USD per model, dan profil latensi terkalibrasi. Desain ini memungkinkan eksekusi eksperimen skala besar (> 200 siklus lintas kondisi dan ablasi) secara deterministik, bebas fluktuasi jaringan, dan dapat direproduksi oleh evaluator tanpa memerlukan kunci API berbayar.
 3. **Verifikasi Otomatis (*Automated Testing* — 13/13 Passed):** Seluruh skenario kritis telah diverifikasi menggunakan `pytest tests/test_ecosystem.py -v` dengan hasil **13 dari 13 pengujian lulus (100% PASSED dalam 42,39 detik)**, mencakup: (1–10) verifikasi *privacy firewall*, MILP-FEFO, *hard-block*, *Cold Storage Failure* + audit SHA-256 terkunci lintas proses (`msvcrt.locking`), 3-ronde *deadlock*, *endpoint* Global & lokal, perubahan keputusan terukur, AgroFarm v2 (`EXTREME_RAIN` & `SENSOR_OUTAGE`), ColdChain v2 (`VRPTW`, `XGBoost ETA`, CRUD Fleet/Shipments), dan *Server-Side RBAC Data Explorer*; ditambah (11) FreshFood v2.1 (*QC Feedback → AgroFarm*, *Compost/Biogas Valorization*, & *FEFO Dock Extension*), (12) SuperMart & Koperasi v2.1 (*7-Day Forecast*, *Flash-Promo Pull*, *Server-Side Ceiling/Floor Redaction*, PO *Guardrails* menolak Grade C / sub Grade B > 30% / harga > *ceiling*, & *Goods Receipt SLA* `7–12°C`), serta (13) **Closed-Loop Cross-Enterprise VRPTW Dock Sync** (`FreshFood_Plant` + `SuperMart_DC` tersinkron dinamis ke solver OR-Tools dengan 0 pelanggaran jendela waktu).
 
-## 8.4 Implementasi Antarmuka Aktual (*Role-Adaptive Cockpit v2.0* & FastAPI Swagger)
+## 8.4 Implementasi Antarmuka Aktual (*Demo-Ready Role-Adaptive Cockpit v2.1* & FastAPI Swagger)
 
-Seluruh layar antarmuka telah dijalankan secara langsung pada server aktif (`Streamlit :8501` terhubung via HTTP ke `FastAPI :8000`) dan diaudit otomatis menggunakan headless Chrome (*Playwright*) dengan hasil **0 galat *runtime* (`stException = 0`)**. Lima tangkapan layar utama disajikan pada **Gambar 8.1** hingga **Gambar 8.5**.
+Seluruh layar antarmuka telah dijalankan secara langsung pada server aktif (`Streamlit :8501` terhubung via HTTP ke `FastAPI :8000`) dan diaudit otomatis menggunakan headless Chrome (*Playwright*) termasuk seluruh 6 tombol preset *1-Klik Presenter Storyboard* dan tombol *Reset* dengan hasil **0 galat *runtime* (`stException = 0`)**. Lima tangkapan layar utama disajikan pada **Gambar 8.1** hingga **Gambar 8.5**.
 
 ```image
 docs/screenshots/01_global_control_center.png
 ```
 
-**Gambar 8.1.** *Global Command Center v2.0* — *Executive Briefing*, *Impact-Preview HITL Console*, dan 6 Kartu KPI Delta Terukur
+**Gambar 8.1.** *Global Command Center v2.1* — *1-Klik Presenter Storyboard*, *Live 5-Enterprise Closed-Loop Strip*, *HITL Quick-Action Bar*, 6 Kartu KPI, dan Grafik *Sankey* & *Decision Shift*
 
 ```image
 docs/screenshots/03_agrofarm_v2_ndvi_pi80.png
@@ -1136,13 +1140,13 @@ docs/screenshots/03_agrofarm_v2_ndvi_pi80.png
 docs/screenshots/04_coldchain_anomaly_cvrp.png
 ```
 
-**Gambar 8.3.** Modul ColdChain v2 (`AGT-04`) — Peta Geospasial OR-Tools VRPTW Yogyakarta/Sleman/Bantul dan Pembandingan Skenario
+**Gambar 8.3.** Modul ColdChain v2 (`AGT-04`) — Peta Geospasial OR-Tools VRPTW (*Auto-Sync* `COLD_STORAGE_DROP`) dan Ringkasan Jadwal Armada
 
 ```image
 docs/screenshots/06_data_explorer_privacy.png
 ```
 
-**Gambar 8.4.** *Server-Side Privacy-Enforced Data Explorer* — Redaksi Otomatis `floor_price_rp` di Server FastAPI (`X-Scoped-Token`)
+**Gambar 8.4.** *Server-Side Privacy-Enforced Data Explorer* — Bukti Langsung *Side-by-Side* 1-Layar (`Token Global → 🔒 REDACTED` vs `Pemilik DB Koperasi → 🔓 Terbuka`)
 
 ```image
 docs/screenshots/07_fastapi_swagger_gateway.png
@@ -1324,7 +1328,7 @@ Penerapan sistem *Multi-Agent AI* lintas perusahaan membuka permukaan serangan (
 
 - **Dampak Ekonomi Ekosistem:** Pada skala satu koperasi regional berkapasitas 4,5 ton tomat/hari, penurunan *food loss* sebesar 13,38%–15,47% setara dengan penyelamatan **~600–700 kg tomat per hari** atau **~220 ton/tahun**, yang menghasilkan peningkatan nilai tambah bersih ekosistem sekitar **Rp5,6–7,9 juta per siklus harian** (lebih dari **Rp2 miliar/tahun** per klaster koperasi), dengan biaya operasional komputasi LLM yang dapat diabaikan (~Rp60.000/tahun pada 1 siklus/hari).
 - **Dampak Keberlanjutan & Ketahanan Pangan:** Pengurangan susut pangan pascapanen berkontribusi langsung pada target **Sustainable Development Goals (SDG) 12.3** (mengurangi separuh kehilangan dan limbah pangan global) serta menekan emisi gas rumah kaca dari pembusukan organik dan jarak tempuh truk pendingin (**-31,15%** jarak rute OR-Tools VRPTW dengan 0 pelanggaran jendela waktu).
-- **Dampak Akademis:** Repositori terbuka `agrichain-agentic-ai` (v2.0) menyediakan *testbed* reprodusibel bagi peneliti kecerdasan artifisial untuk mengeksplorasi arsitektur *neuro-symbolic multi-enterprise agents*, *heterogeneous LLM routing*, *server-side RBAC data sovereignty*, dan tata kelola risiko AI berbasis standar industri (GS1 EPCIS 2.0 & NIST AI RMF 1.0).
+- **Dampak Akademis:** Repositori terbuka `agrichain-agentic-ai` (v2.1) menyediakan *testbed* reprodusibel bagi peneliti kecerdasan artifisial untuk mengeksplorasi arsitektur *neuro-symbolic multi-enterprise agents*, *heterogeneous LLM routing*, *server-side RBAC data sovereignty*, dan tata kelola risiko AI berbasis standar industri (GS1 EPCIS 2.0 & NIST AI RMF 1.0).
 
 ---
 
@@ -1336,7 +1340,7 @@ Berdasarkan perancangan, implementasi penuh repositori **`agrichain-agentic-ai` 
 
 1. **Arsitektur Ekosistem *Multi-Enterprise* Berdaulat Data (*Server-Side RBAC* & *Closed-Loop Parity*):** Ekosistem berhasil diimplementasikan dengan memisahkan secara tegas **Local Enterprise Intelligence** (5 perusahaan independen dengan basis data heterogen terisolasi & 1 stakeholder utama per enterprise) dan **Global Ecosystem Intelligence** melalui *FastAPI Multi-Enterprise Gateway v2.1* (**20 endpoint**) berprinsip *Zero-Direct-DB-Access* dan **Server-Side Privacy Redaction** berbasis `X-Scoped-Token`, dilengkapi *canonical cross-enterprise lineage* (`block_id → po_ref`), *QC Feedback → AgroFarm*, *7-Day Demand Horizon → Hulu*, *VRPTW Dynamic Dock Sync*, dan *Goods Receipt SLA*. Hasil pengujian otomatis dan Ablasi 1 memverifikasi **0 kebocoran atribut privat** (100% *data sovereignty* vs 15 field terekspos pada *Single-Agent*) sekaligus meningkatkan keadilan distribusi keuntungan antarperusahaan (*Jain's Fairness Index* naik dari **0,8355 → 0,9332**).
 2. **Efektivitas Global Orchestrator Berbasis MILP-FEFO dan Negosiasi Terbatas:** Rancangan **Global Orchestrator Agent (`AGT-06`)** berbasis **LangGraph `StateGraph`** dengan pola *Propose–Validate–Negotiate–Commit*, formulasi **MILP-FEFO** (PuLP CBC, solve `20,67 ms`), *bounded negotiation* ($R_{\max}=3$), 8 skenario lingkungan adaptif, dan *Impact-Preview HITL Console* (NIST AI RMF 1.0) terbukti sangat tangguh. Pada 30 siklus gangguan, sistem menekan *Food Loss Rate* dari **15,47% → 0,00%**, memulihkan *Order Fulfillment Rate* dari **92,92% → 98,25%**, menurunkan biaya total **-7,35%**, menaikkan profit bersih **+39,3%**, dan mempertahankan **0,0% pelanggaran kendala** (dibanding 100,0% pelanggaran pada *Pure LLM* tanpa MILP) dalam waktu *replanning* **4,23 detik**.
-3. **Keunggulan Arsitektur 6 Agen dengan Model AI v2.0 & LLM Heterogen:** Pemaduan **6 klaster model domain AI/optimasi berbeda**—AgroFarm v2 (**Random Forest 250 Trees + NDVI + 80% Quantile PI**, MAE **6,83%**, $R^2 = \mathbf{0,9449}$, PI80 Cov **91,67%**), Koperasi (**LightGBM** MAPE **4,28%**), FreshFood (**2D-Conv CNN** Akurasi **98,67%**, *Reject Recall* **100%**), ColdChain v2 (**Isolation Forest SOP `7–12°C`** F1 **95,32%** + **XGBoost ETA** MAE **7,66 menit** + **OR-Tools VRPTW** reduksi jarak **-31,15%** dengan **0 pelanggaran jendela waktu**), SuperMart (**XGBoost** MAPE **3,72%**), dan Global Control Center (**PuLP MILP-FEFO**)—bersama **6 keluarga LLM berbeda** (*Qwen 2.5 14B, Claude 3.5 Sonnet, Gemini 2.5 Flash, Llama 3.1 8B, Mistral Small 3, GPT-4o*) lulus seluruh target KPI lokal sekaligus menghemat biaya token **41,71%** dan menurunkan latensi respons **10,19%** (hingga **-78,2%** pada *edge alert* ColdChain) dibandingkan arsitektur homogen 6× GPT-4o.
+3. **Keunggulan Arsitektur 6 Agen dengan Model AI v2.1 & LLM Heterogen:** Pemaduan **6 klaster model domain AI/optimasi berbeda**—AgroFarm v2 (**Random Forest 250 Trees + NDVI + 80% Quantile PI**, MAE **6,83%**, $R^2 = \mathbf{0,9449}$, PI80 Cov **91,67%**), Koperasi (**LightGBM** MAPE **4,28%**), FreshFood (**2D-Conv CNN** Akurasi **98,67%**, *Reject Recall* **100%**), ColdChain v2 (**Isolation Forest SOP `7–12°C`** F1 **95,32%** + **XGBoost ETA** MAE **7,66 menit** + **OR-Tools VRPTW** reduksi jarak **-31,15%** dengan **0 pelanggaran jendela waktu**), SuperMart (**XGBoost** MAPE **3,72%**), dan Global Control Center (**PuLP MILP-FEFO**)—bersama **6 keluarga LLM berbeda** (*Qwen 2.5 14B, Claude 3.5 Sonnet, Gemini 2.5 Flash, Llama 3.1 8B, Mistral Small 3, GPT-4o*) lulus seluruh target KPI lokal sekaligus menghemat biaya token **41,71%** dan menurunkan latensi respons **10,19%** (hingga **-78,2%** pada *edge alert* ColdChain) dibandingkan arsitektur homogen 6× GPT-4o.
 4. **Kesiapan Dataset Dummy, Protokol Standar, dan Ketangguhan Kondisi Ekstrem:** Generator dataset dummy telah menghasilkan **19.575 rekaman koheren lintas 5 perusahaan + 3.000 citra RGB tomat + 600 riwayat trip ETA**, seluruh komunikasi terstandarisasi dalam amplop **A2A + FIPA-ACL + GS1 EPCIS 2.0**, integritas *OS-locked concurrency-safe SHA-256 audit trail* terverifikasi 100%, **13/13 pengujian `pytest` lulus**, serta seluruh **5 skenario uji kegagalan & kondisi ekstrem** (*Food Safety Hard Block*, *3-Round Deadlock*, *Compound Disruption*, *AgroFarm Extreme Rain*, dan *Sensor Outage Fallback*) tertangani secara *fail-safe* dengan eskalasi HITL.
 
 ## 11.2 Saran dan Pekerjaan Lanjutan (*Future Work*)

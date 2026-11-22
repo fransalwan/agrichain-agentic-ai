@@ -10,7 +10,8 @@
 
 > **Program Studi:** Magister Kecerdasan Artifisial  
 > **Mata Kuliah:** Agent Enterprise  
-> **Laporan Lengkap v2.1 (Bab 1–11, 54 Halaman):** [`Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.pdf`](./Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.pdf) · [`DOCX`](./Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.docx) · [`Markdown`](./Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.md)
+> **Laporan Lengkap v2.1 (Bab 1–11, 54 Halaman):** [`Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.pdf`](./Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.pdf) · [`DOCX`](./Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.docx) · [`Markdown`](./Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.md)  
+> **Slide Presentasi Kelompok (14 Slide, 4 Presenter):** [`Presentasi_AgriChain_Agentic_AI_v2.1.pptx`](./Presentasi_AgriChain_Agentic_AI_v2.1.pptx) · [`PDF`](./Presentasi_AgriChain_Agentic_AI_v2.1.pdf)
 
 ---
 
@@ -35,7 +36,7 @@
    - **AgroFarm v2 (`rf-v2.0`):** Random Forest 250 pohon + fitur **NDVI** + **80% Quantile Prediction Interval (`p10–p90`)** + *Feature Importance* + pembanding *baseline* (*Hist Mean* & *Linear Reg*) + *Crop Monitoring Deviation Engine* (**14 hari ± 2σ**) + *Sensor Outage Safety Fallback* (offline ≥ 3 hari → `FALLBACK_HISTORICAL_MEAN`) + skenario **`EXTREME_RAIN`** (jendela panen maju `-2 hari`).
    - **ColdChain v2 (`iforest-vrptw-v2.0`):** Google OR-Tools **VRPTW (*Time Windows*)** dengan 4 skenario (`NORMAL`, `ROAD_DISRUPTION`, `VEHICLE_BREAKDOWN`, `COLD_STORAGE_DROP`) & koordinat geospasial Yogyakarta/Sleman/Bantul + **XGBoost ETA Regressor** (`MAE 7,66 menit`) + deteksi anomali suhu **Isolation Forest** berbasis SOP `7–12°C`.
 3. **Pilar 3 — *Decoupled FastAPI Multi-Enterprise Gateway v2.1 (Full 5-Enterprise Parity, 20 Endpoint)*:** Endpoint REST lokal lengkap untuk **seluruh 5 enterprise** — AgroFarm (`/monitoring`, `/predict`), Koperasi (`/price-forecast`), FreshFood (`/qc-inspect`, `/schedule`), ColdChain (`/fleet` & `/shipments` CRUD, `/vrptw`, `/eta`), SuperMart (`/forecast-7d`, `/po` CRUD, `/goods-receipt-sla`), *Server-Side Privacy Data Explorer*, serta LangGraph Orchestrator dengan *Closed-Loop Handshakes* (VRPTW *dynamic dock sync*, *QC Feedback → AgroFarm*, *7-Day Demand Horizon → Hulu*, *Flash-Promo Absorption*, & *Goods Receipt SLA*).
-4. **Pilar 4 — *Role-Adaptive Enterprise Cockpit v2.1 (High-Contrast Light Mode)*:** UI terpisah via HTTP (`ApiBridge` + `X-Scoped-Token`), tema **Light Mode berkontras tinggi** (`.streamlit/config.toml` + WCAG AAA `#0F172A` di atas `#F8FAFC`/`#FFFFFF`), *dedicated workspace* untuk **seluruh 6 peran** (1 stakeholder utama per enterprise + 1 operator global), **5 UI State Wajib**, **Impact-Preview HITL Confirmation Console**, dan **Peta Geospasial VRPTW Interaktif**.
+4. **Pilar 4 — *Demo-Ready Role-Adaptive Enterprise Cockpit v2.1 (High-Contrast Light Mode)*:** UI terpisah via HTTP (`ApiBridge` + `X-Scoped-Token`), tema **Light Mode berkontras tinggi** (`.streamlit/config.toml` + WCAG AAA `#0F172A` di atas `#F8FAFC`/`#FFFFFF`), *dedicated workspace* untuk **seluruh 6 peran** (1 stakeholder utama per enterprise + 1 operator global), **Mode Presentasi 1-Klik Storyboard** per presenter kelompok, **Live 5-Enterprise Closed-Loop Strip**, **Side-by-Side Live RBAC Proof** (1 layar: Global 🔒 REDACTED vs Owner 🔓 UNLOCKED), **Auto-Sync skenario ke modul lokal**, **5 UI State Wajib**, **HITL Quick-Action Bar & Impact-Preview Console**, dan **Peta Geospasial VRPTW Interaktif**.
 
 | ID Agen | Enterprise / Layer | Primary Stakeholder (1 per Enterprise) | Model Domain AI / Optimasi (v2.1) | Model LLM Backbone | Basis Data Lokal |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -73,12 +74,12 @@
 
 ---
 
-## Hasil Evaluasi Empiris (Aktual dari Eksekusi Kode v2.0)
+## Hasil Evaluasi Empiris (Aktual dari Eksekusi Kode v2.1)
 
 Seluruh angka terekam langsung dari [`src/models/train_all.py`](./src/models/train_all.py) (`results/ml_metrics.json`) dan [`src/experiments/run_experiments.py`](./src/experiments/run_experiments.py) (`results/experiment_results.json`, `seed = 42`, 30 siklus berpasangan per kondisi).
 
-### 1. Kinerja 5 Model AI Domain Lokal & Optimasi (v2.0)
-| Agen & Enterprise | Model | Hasil Uji Aktual (v2.0) | Target KPI | Status |
+### 1. Kinerja 5 Model AI Domain Lokal & Optimasi (v2.1)
+| Agen & Enterprise | Model | Hasil Uji Aktual (v2.1) | Target KPI | Status |
 | :--- | :--- | :--- | :--- | :---: |
 | `AGT-01` AgroFarm | Random Forest 250 Trees + NDVI + 80% PI | MAE **87,84 kg (6,83% mean)**, RMSE 114,47 kg, R² **0,9449**, PI80 Cov **91,67%** (unggul vs Hist Mean 421,47 kg & LinReg 125,00 kg) | MAE ≤ 10% | Lulus |
 | `AGT-02` Koperasi Tani | LightGBM Regressor | MAE **Rp240,1/kg**, MAPE **4,28%**, R² **0,9853** | MAPE ≤ 8% | Lulus |
@@ -123,13 +124,13 @@ Proyek ini sudah dilengkapi konfigurasi siap pakai di [`.vscode/launch.json`](./
      ```
 4. **Jalankan Server dengan 1 Klik via *Run & Debug* (`Ctrl + Shift + D`):**
    - Jalankan **`AgriChain: FastAPI Gateway (Port 8000)`** terlebih dahulu (`F5`) → Swagger UI aktif di `http://127.0.0.1:8000/docs`.
-   - Jalankan **`AgriChain: Streamlit Control Center (Port 8501)`** (`F5`) → Dashboard v2.0 terhubung penuh ke FastAPI di `http://127.0.0.1:8501`.
+   - Jalankan **`AgriChain: Streamlit Control Center (Port 8501)`** (`F5`) → Dashboard v2.1 terhubung penuh ke FastAPI di `http://127.0.0.1:8501`.
    - *(Opsional via Terminal Split)*:
      ```bash
-     # Terminal 1 — FastAPI Multi-Enterprise Gateway v2.0
+     # Terminal 1 — FastAPI Multi-Enterprise Gateway v2.1 (20 Endpoint)
      python -m uvicorn src.api.main:app --reload --port 8000
 
-     # Terminal 2 — Streamlit Decoupled Multi-Enterprise Cockpit v2.0
+     # Terminal 2 — Streamlit Demo-Ready Role-Adaptive Cockpit v2.1
      python -m streamlit run src/dashboard/app.py --server.port 8501
      ```
 5. **Jalankan Pengujian & Reproduksi Eksperimen:**
@@ -137,7 +138,7 @@ Proyek ini sudah dilengkapi konfigurasi siap pakai di [`.vscode/launch.json`](./
    # Pengujian otomatis (13/13 unit + closed-loop parity + server-side RBAC + FastAPI integration tests)
    pytest tests/test_ecosystem.py -v
 
-   # Latih ulang 5 model ML v2.0 (termasuk NDVI 80% PI & XGBoost ETA + VRPTW)
+   # Latih ulang 5 model ML v2.1 (termasuk NDVI 80% PI & XGBoost ETA + VRPTW)
    python src/models/train_all.py
 
    # Jalankan seluruh eksperimen Bab 9 (4 kondisi x 30 siklus + 3 ablasi + 3 grafik)
@@ -217,5 +218,6 @@ agrichain-agentic-ai/
 ├── data/                                # Dataset dummy tergenerasi & 5 database lokal terisolasi
 ├── results/                             # Model terlatih (.pkl), metrik JSON, audit_trail.jsonl, & 3 grafik Bab 9
 ├── docker-compose.yml                   # Stack PostgreSQL 16, MySQL 8, MongoDB 7, TimescaleDB, Redis 7
-└── Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.{md,docx,pdf}    # Laporan Lengkap v2.1 (Bab 1–11, 54 halaman)
+├── Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.{md,docx,pdf}    # Laporan Lengkap v2.1 (Bab 1–11, 54 halaman)
+└── Presentasi_AgriChain_Agentic_AI_v2.1.{pptx,pdf}               # Slide Presentasi Kelompok (14 slide, 4 presenter)
 ```
