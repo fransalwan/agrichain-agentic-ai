@@ -259,19 +259,19 @@ def _plot_figures(results: Dict[str, Any]) -> None:
         axes[0].text(idx_v + w / 2, v2 + 2.0, f"{v2:.1f}", ha="center", va="bottom", fontsize=8, fontweight="bold")
     axes[0].set_ylim(0, 128)
 
-    # Panel B: Homogeneous 6xGPT-4o vs Heterogeneous 6-LLM
+    # Panel B: All-LLM Homogeneous (6x GPT-4o) vs Selective Hybrid (3 LLM + 3 ML)
     a2_ho = results["ablations"]["ablation2_homogeneous_gpt4o"]
     a2_he = results["ablations"]["ablation2_heterogeneous_6llm"]
     cost_ho_1k = a2_ho["llm_cost_usd"]["mean"] * 1000.0
     cost_he_1k = a2_he["llm_cost_usd"]["mean"] * 1000.0
     lat_ho = a2_ho["replanning_response_time_sec"]["mean"]
     lat_he = a2_he["replanning_response_time_sec"]["mean"]
-    axes[1].bar(x - w / 2, [cost_ho_1k, lat_ho], w, label="Homogeneous (6x GPT-4o)", color=red, edgecolor="#1E293B")
-    axes[1].bar(x + w / 2, [cost_he_1k, lat_he], w, label="Heterogeneous (6 LLM)", color=teal, edgecolor="#1E293B")
+    axes[1].bar(x - w / 2, [cost_ho_1k, lat_ho], w, label="All-LLM (6x GPT-4o)", color=red, edgecolor="#1E293B")
+    axes[1].bar(x + w / 2, [cost_he_1k, lat_he], w, label="Selective Hybrid (3 LLM + 3 ML)", color=teal, edgecolor="#1E293B")
     axes[1].set_xticks(x)
     axes[1].set_xticklabels(["Biaya / 1.000\nSiklus (USD)", "Replanning\nTime (detik)"])
-    axes[1].set_title("(b) Homogeneous vs Heterogeneous LLM\n(Efisiensi Biaya & Latensi)", fontsize=9.5, fontweight="bold", color=navy)
-    axes[1].legend(fontsize=7.8)
+    axes[1].set_title("(b) All-LLM vs Selective 3-LLM Hybrid\n(Efisiensi Biaya & Latensi)", fontsize=9.5, fontweight="bold", color=navy)
+    axes[1].legend(fontsize=7.4)
     axes[1].grid(axis="y", linestyle="--", alpha=0.35)
     for idx_v, (v1, v2) in enumerate([(cost_ho_1k, cost_he_1k), (lat_ho, lat_he)]):
         axes[1].text(idx_v - w / 2, v1 + 0.5, f"{v1:.2f}", ha="center", va="bottom", fontsize=8, fontweight="bold")
@@ -299,15 +299,15 @@ def _plot_figures(results: Dict[str, Any]) -> None:
     plt.close(fig)
 
     # ---------------------------------------------------------
-    # Figure 9.3: Per-Agent Latency & Cost Breakdown (Hetero vs Homo)
+    # Figure 9.3: Per-Agent Latency & Cost Breakdown (Selective 3-LLM vs All-LLM 6x GPT-4o)
     # ---------------------------------------------------------
     bd = results["per_agent_cost_latency"]
     agent_labels = [
-        "AGT-01\nAgroFarm\n(Qwen 2.5)",
+        "AGT-01\nAgroFarm\n(ML+Rules)",
         "AGT-02\nKoperasi\n(Claude 3.5)",
         "AGT-03\nFreshFood\n(Gemini 2.5)",
-        "AGT-04\nColdChain\n(Llama 3.1)",
-        "AGT-05\nSuperMart\n(Mistral 3)",
+        "AGT-04\nColdChain\n(ML+VRPTW)",
+        "AGT-05\nSuperMart\n(XGB+Rules)",
         "AGT-06\nOrchestrator\n(GPT-4o)",
     ]
     aids = ["AGT-01", "AGT-02", "AGT-03", "AGT-04", "AGT-05", "AGT-06"]
@@ -320,25 +320,25 @@ def _plot_figures(results: Dict[str, Any]) -> None:
     idx = np.arange(len(aids))
     w = 0.36
 
-    ax1.bar(idx - w / 2, lat_ho_arr, w, label="Homogeneous (GPT-4o)", color="#CBD5E1", edgecolor="#475569")
-    ax1.bar(idx + w / 2, lat_he_arr, w, label="Heterogeneous (6 LLM)", color=blue, edgecolor="#1E293B")
+    ax1.bar(idx - w / 2, lat_ho_arr, w, label="All-LLM (6x GPT-4o)", color="#CBD5E1", edgecolor="#475569")
+    ax1.bar(idx + w / 2, lat_he_arr, w, label="Selective Hybrid (3 LLM + 3 ML)", color=blue, edgecolor="#1E293B")
     ax1.set_xticks(idx)
     ax1.set_xticklabels(agent_labels, fontsize=7.6)
     ax1.set_ylabel("Latensi Rata-rata per Panggilan (ms)", fontsize=9)
-    ax1.set_title("Latensi Inferensi per Agen (Edge vs Frontier)", fontsize=10, fontweight="bold", color=navy)
-    ax1.legend(fontsize=8)
+    ax1.set_title("Latensi Inferensi per Agen (Non-LLM ML vs Cloud LLM)", fontsize=9.8, fontweight="bold", color=navy)
+    ax1.legend(fontsize=7.6)
     ax1.grid(axis="y", linestyle="--", alpha=0.35)
 
-    ax2.bar(idx - w / 2, cost_ho_arr, w, label="Homogeneous (GPT-4o)", color="#FCA5A5", edgecolor="#9B2C2C")
-    ax2.bar(idx + w / 2, cost_he_arr, w, label="Heterogeneous (6 LLM)", color=green, edgecolor="#1E293B")
+    ax2.bar(idx - w / 2, cost_ho_arr, w, label="All-LLM (6x GPT-4o)", color="#FCA5A5", edgecolor="#9B2C2C")
+    ax2.bar(idx + w / 2, cost_he_arr, w, label="Selective Hybrid (3 LLM + 3 ML)", color=green, edgecolor="#1E293B")
     ax2.set_xticks(idx)
     ax2.set_xticklabels(agent_labels, fontsize=7.6)
     ax2.set_ylabel("Estimasi Biaya per 1.000 Siklus (USD)", fontsize=9)
-    ax2.set_title("Distribusi Biaya Token per Agen (1.000 Siklus)", fontsize=10, fontweight="bold", color=navy)
-    ax2.legend(fontsize=8)
+    ax2.set_title("Distribusi Biaya Token per Agen (0 USD utk Non-LLM)", fontsize=9.8, fontweight="bold", color=navy)
+    ax2.legend(fontsize=7.6)
     ax2.grid(axis="y", linestyle="--", alpha=0.35)
 
-    fig.suptitle("Analisis Biaya Token dan Latensi per Agen: Heterogeneous 6-LLM Routing vs Homogeneous GPT-4o", fontsize=11.2, fontweight="bold", color="#0F2C4C")
+    fig.suptitle("Analisis Biaya Token dan Latensi: Selective 3-LLM Hybrid vs All-LLM Homogeneous (6x GPT-4o)", fontsize=11.0, fontweight="bold", color="#0F2C4C")
     plt.tight_layout(rect=[0, 0, 1, 0.94])
     fig.savefig(FIG_DIR / "fig_9_3_agent_cost_latency.png", dpi=300)
     plt.close(fig)
@@ -515,7 +515,7 @@ def run_full_experimental_suite() -> Dict[str, Any]:
     print(f"  * Cond 1 (Normal)   : FLR={results['conditions']['cond1_normal_agentic']['food_loss_rate_pct']['mean']}%, OFR={results['conditions']['cond1_normal_agentic']['order_fulfillment_rate_pct']['mean']}%, Fairness={results['conditions']['cond1_normal_agentic']['jains_fairness_index']['mean']}")
     print(f"  * Cond 2 (No-Replan): FLR={results['conditions']['cond2_disruption_no_replan']['food_loss_rate_pct']['mean']}%, OFR={results['conditions']['cond2_disruption_no_replan']['order_fulfillment_rate_pct']['mean']}%, Fairness={results['conditions']['cond2_disruption_no_replan']['jains_fairness_index']['mean']}")
     print(f"  * Cond 3 (Adaptive) : FLR={results['conditions']['cond3_disruption_adaptive']['food_loss_rate_pct']['mean']}%, OFR={results['conditions']['cond3_disruption_adaptive']['order_fulfillment_rate_pct']['mean']}%, Fairness={results['conditions']['cond3_disruption_adaptive']['jains_fairness_index']['mean']}")
-    print(f"  * Ablation 2 (6-LLM vs 6xGPT-4o): Cost Saving={cost_saving_pct}%, Latency Reduction={lat_saving_pct}%")
+    print(f"  * Ablation 2 (Selective 3-LLM vs All-LLM 6xGPT-4o): Cost Saving={cost_saving_pct}%, Latency Reduction={lat_saving_pct}%")
     print(f"  * Ablation 3 (Pure LLM vs MILP): Constraint Violation Rate={results['ablations']['ablation3_pure_llm_no_milp']['constraint_violation_rate_pct']}% vs {results['ablations']['ablation3_neuro_symbolic_milp']['constraint_violation_rate_pct']}%")
     return results
 

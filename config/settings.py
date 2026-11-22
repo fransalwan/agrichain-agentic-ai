@@ -17,7 +17,8 @@ class ModelProfile(BaseModel):
     domain_model: str
     llm_model: str
     provider: str
-    deployment: str  # "on-premise" or "cloud-api"
+    deployment: str  # "on-premise-ml", "edge-ml", or "cloud-api"
+    uses_llm: bool = True
     temperature: float
     input_cost_per_1m_usd: float
     output_cost_per_1m_usd: float
@@ -25,21 +26,30 @@ class ModelProfile(BaseModel):
     ms_per_output_token: float
 
 
-# Heterogeneous 6-Agent Model Routing Registry (Bab 6.1)
+# Hybrid Selective-LLM Routing Registry (3 Cognitive LLM Agents + 3 Deterministic ML/Symbolic Agents)
+# LLM applied ONLY where open-ended negotiation, multimodal synthesis, or cross-enterprise orchestration is required:
+#   - AGT-02 Koperasi Tani (Claude 3.5 Sonnet)
+#   - AGT-03 FreshFood Processing (Gemini 2.5 Flash Multimodal)
+#   - AGT-06 Global Orchestrator (GPT-4o)
+# Non-LLM Deterministic ML/Optimization Agents (0 LLM tokens, ultra-low latency, zero hallucination risk):
+#   - AGT-01 AgroFarm (Random Forest 250 Trees + NDVI + 80% PI + 14d +/- 2sigma Rule Engine)
+#   - AGT-04 ColdChain Logistics (Isolation Forest 7-12C + XGBoost ETA + Google OR-Tools VRPTW)
+#   - AGT-05 SuperMart (XGBoost 7-Day + Newsvendor PO + Deterministic Policy/SLA Rules)
 AGENT_MODEL_PROFILES: Dict[str, ModelProfile] = {
     "AGT-01": ModelProfile(
         agent_id="AGT-01",
         agent_name="AgroFarm Yield & Harvest Agent",
         enterprise="AgroFarm",
-        domain_model="Random Forest Regression",
-        llm_model="Qwen 2.5 14B Instruct",
-        provider="ollama",
-        deployment="on-premise",
-        temperature=0.1,
-        input_cost_per_1m_usd=0.05,   # Amortized local GPU/compute cost
-        output_cost_per_1m_usd=0.10,
-        base_latency_ms=180.0,
-        ms_per_output_token=1.8,
+        domain_model="Random Forest 250 Trees + NDVI + 80% PI + 14d ± 2σ Rules",
+        llm_model="None (Deterministic ML + Rules)",
+        provider="deterministic",
+        deployment="on-premise-ml",
+        uses_llm=False,
+        temperature=0.0,
+        input_cost_per_1m_usd=0.0,
+        output_cost_per_1m_usd=0.0,
+        base_latency_ms=8.5,
+        ms_per_output_token=0.0,
     ),
     "AGT-02": ModelProfile(
         agent_id="AGT-02",
@@ -49,6 +59,7 @@ AGENT_MODEL_PROFILES: Dict[str, ModelProfile] = {
         llm_model="Claude 3.5 Sonnet",
         provider="anthropic",
         deployment="cloud-api",
+        uses_llm=True,
         temperature=0.3,
         input_cost_per_1m_usd=3.00,
         output_cost_per_1m_usd=15.00,
@@ -59,10 +70,11 @@ AGENT_MODEL_PROFILES: Dict[str, ModelProfile] = {
         agent_id="AGT-03",
         agent_name="FreshFood Quality & Production Agent",
         enterprise="FreshFood Processing",
-        domain_model="CNN MobileNetV2-Feature Classifier + FEFO Scheduler",
+        domain_model="2D-Conv CNN + Food Safety Hard-Block + FEFO Scheduler",
         llm_model="Gemini 2.5 Flash (Multimodal)",
         provider="gemini",
         deployment="cloud-api",
+        uses_llm=True,
         temperature=0.1,
         input_cost_per_1m_usd=0.15,
         output_cost_per_1m_usd=0.60,
@@ -73,29 +85,31 @@ AGENT_MODEL_PROFILES: Dict[str, ModelProfile] = {
         agent_id="AGT-04",
         agent_name="ColdChain Logistics & Monitoring Agent",
         enterprise="ColdChain Logistics",
-        domain_model="Isolation Forest + Google OR-Tools CVRP",
-        llm_model="Llama 3.1 8B Instruct",
-        provider="ollama",
-        deployment="on-premise",
-        temperature=0.1,
-        input_cost_per_1m_usd=0.02,   # Ultra-low edge compute cost
-        output_cost_per_1m_usd=0.05,
-        base_latency_ms=95.0,
-        ms_per_output_token=1.1,
+        domain_model="Isolation Forest (7–12°C) + XGBoost ETA + OR-Tools VRPTW",
+        llm_model="None (Deterministic ML + OR-Tools)",
+        provider="deterministic",
+        deployment="edge-ml",
+        uses_llm=False,
+        temperature=0.0,
+        input_cost_per_1m_usd=0.0,
+        output_cost_per_1m_usd=0.0,
+        base_latency_ms=14.0,
+        ms_per_output_token=0.0,
     ),
     "AGT-05": ModelProfile(
         agent_id="AGT-05",
         agent_name="SuperMart Demand & Procurement Agent",
         enterprise="SuperMart",
-        domain_model="XGBoost Regression + Newsvendor Safety-Stock",
-        llm_model="Mistral Small 3 (24B)",
-        provider="mistral",
-        deployment="cloud-api",
-        temperature=0.1,
-        input_cost_per_1m_usd=0.10,
-        output_cost_per_1m_usd=0.30,
-        base_latency_ms=260.0,
-        ms_per_output_token=1.9,
+        domain_model="XGBoost 7-Day + Newsvendor PO + Deterministic SLA Rules",
+        llm_model="None (Deterministic ML + Rules)",
+        provider="deterministic",
+        deployment="on-premise-ml",
+        uses_llm=False,
+        temperature=0.0,
+        input_cost_per_1m_usd=0.0,
+        output_cost_per_1m_usd=0.0,
+        base_latency_ms=11.0,
+        ms_per_output_token=0.0,
     ),
     "AGT-06": ModelProfile(
         agent_id="AGT-06",
@@ -105,6 +119,7 @@ AGENT_MODEL_PROFILES: Dict[str, ModelProfile] = {
         llm_model="GPT-4o",
         provider="openai",
         deployment="cloud-api",
+        uses_llm=True,
         temperature=0.1,
         input_cost_per_1m_usd=2.50,
         output_cost_per_1m_usd=10.00,
@@ -113,15 +128,16 @@ AGENT_MODEL_PROFILES: Dict[str, ModelProfile] = {
     ),
 }
 
-# Frontier baseline profile used for Homogeneous Ablation (all 6 agents use GPT-4o)
+# Frontier baseline profile used for All-LLM Homogeneous Ablation (all 6 agents forced onto GPT-4o)
 HOMOGENEOUS_FRONTIER_PROFILE = ModelProfile(
     agent_id="HOMO",
     agent_name="Homogeneous Frontier Agent",
     enterprise="All",
     domain_model="Per-Agent ML",
-    llm_model="GPT-4o (Homogeneous)",
+    llm_model="GPT-4o (All-LLM Homogeneous)",
     provider="openai",
     deployment="cloud-api",
+    uses_llm=True,
     temperature=0.1,
     input_cost_per_1m_usd=2.50,
     output_cost_per_1m_usd=10.00,

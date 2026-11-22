@@ -23,7 +23,7 @@ from src.protocols.fipa_epcis import (
 
 
 class AgroFarmAgent(BaseEnterpriseAgent):
-    """AGT-01: Qwen 2.5 14B Instruct + Random Forest Regression (PostgreSQL)."""
+    """AGT-01: Deterministic ML + Rule Engine (No LLM) — Random Forest 250 Trees + NDVI + 80% PI (PostgreSQL)."""
 
     def __init__(self, router: HeterogeneousLLMRouter, model: AgroFarmYieldModel):
         super().__init__("AGT-01", router)
@@ -400,7 +400,7 @@ class FreshFoodAgent(BaseEnterpriseAgent):
 
 
 class ColdChainAgent(BaseEnterpriseAgent):
-    """AGT-04: Llama 3.1 8B Instruct (Edge) + Isolation Forest + Google OR-Tools CVRP (TimescaleDB)."""
+    """AGT-04: Deterministic ML + OR-Tools Optimization (No LLM) — Isolation Forest 7-12C + XGBoost ETA + VRPTW (TimescaleDB)."""
 
     def __init__(self, router: HeterogeneousLLMRouter, model: ColdChainMonitoringAndRouting):
         super().__init__("AGT-04", router)
@@ -472,7 +472,7 @@ class ColdChainAgent(BaseEnterpriseAgent):
 
 
 class SuperMartAgent(BaseEnterpriseAgent):
-    """AGT-05: Mistral Small 3 (24B) + XGBoost Demand Forecaster + Newsvendor PO (MySQL)."""
+    """AGT-05: Deterministic ML + Policy Rules (No LLM) — XGBoost 7-Day + Newsvendor PO + SLA Gate (MySQL)."""
 
     def __init__(self, router: HeterogeneousLLMRouter, model: SuperMartDemandModel):
         super().__init__("AGT-05", router)

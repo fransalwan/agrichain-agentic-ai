@@ -373,7 +373,7 @@ def reset_demo_state() -> None:
     st.session_state["sim_stale_ui"] = False
     st.session_state["use_sliders"] = False
     st.session_state["adaptive_toggle"] = True
-    st.session_state["routing_choice"] = "Heterogeneous (6 LLM)"
+    st.session_state["routing_choice"] = "Selective Hybrid (3 LLM + 3 ML)"
     st.session_state["solver_choice"] = "Neuro-Symbolic MILP-FEFO"
     st.session_state.pop("last_sig", None)
 
@@ -1281,7 +1281,7 @@ def render_decision_trace_and_audit(api: ApiBridge, api_online: bool, state: Dic
             with st.expander(f"Payload JSON (#{idx+1})"):
                 st.json({"payload": m["payload"], "epcis_event": m.get("epcis_event")})
     with c_l:
-        st.markdown("#### 🧠 Telemetri 6-LLM Router")
+        st.markdown("#### 🧠 Telemetri Hybrid Router (3 LLM + 3 Deterministic ML)")
         tel = state["global_kpis"].get("llm_telemetry", {})
         calls_df = pd.DataFrame(tel.get("calls", []))
         if not calls_df.empty:
@@ -1317,7 +1317,7 @@ def main() -> None:
     st.session_state.setdefault("sim_stale_ui", False)
     st.session_state.setdefault("use_sliders", False)
     st.session_state.setdefault("adaptive_toggle", True)
-    st.session_state.setdefault("routing_choice", "Heterogeneous (6 LLM)")
+    st.session_state.setdefault("routing_choice", "Selective Hybrid (3 LLM + 3 ML)")
     st.session_state.setdefault("solver_choice", "Neuro-Symbolic MILP-FEFO")
 
     # ---------------------- COMPACT DEMO-READY SIDEBAR ----------------------
@@ -1345,7 +1345,7 @@ def main() -> None:
 
         with st.expander("⚙️ Opsi Ablasi, Override & Token", expanded=False):
             adaptive = st.toggle("Adaptive Replanning & Contract Net", key="adaptive_toggle")
-            routing_choice = st.radio("LLM Routing", ["Heterogeneous (6 LLM)", "Homogeneous (6× GPT-4o)"], key="routing_choice")
+            routing_choice = st.radio("Arsitektur LLM", ["Selective Hybrid (3 LLM + 3 ML)", "All-LLM Homogeneous (6× GPT-4o)"], key="routing_choice")
             solver_choice = st.radio("Mesin Alokasi", ["Neuro-Symbolic MILP-FEFO", "Pure LLM Heuristic"], key="solver_choice")
             sim_stale_ui = st.checkbox("Simulasikan Stale Data (>15 mnt)", key="sim_stale_ui")
             use_sliders = st.checkbox("Override Kapasitas / Demand Manual", key="use_sliders")

@@ -1,16 +1,16 @@
-# 🍅 agrichain-agentic-ai (v2.1)
+# 🍅 agrichain-agentic-ai (v2.2 — Selective-LLM Hybrid)
 
-**Smart Agriculture & Food Supply Chain — *Heterogeneous Multi-Enterprise Agentic AI Ecosystem* untuk Optimasi Produksi Pertanian, Distribusi Pangan, Negosiasi Lintas Perusahaan, dan *Adaptive Replanning***
+**Smart Agriculture & Food Supply Chain — *Heterogeneous Multi-Enterprise Agentic AI Ecosystem* (3 Cognitive LLM Agents + 3 Deterministic ML/Optimization Agents) untuk Optimasi Produksi Pertanian, Distribusi Pangan, Negosiasi Lintas Perusahaan, dan *Adaptive Replanning***
 
 ![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
 ![LangGraph](https://img.shields.io/badge/Orchestration-LangGraph%20StateGraph-1F4E79)
 ![Optimization](https://img.shields.io/badge/Optimization-PuLP%20MILP--FEFO%20%2B%20OR--Tools%20VRPTW-2B6CB0)
-![Tests](https://img.shields.io/badge/Pytest-13%2F13%20Passed-2E7D32)
+![Tests](https://img.shields.io/badge/Pytest-14%2F14%20Passed-2E7D32)
 ![Standards](https://img.shields.io/badge/Standards-A2A%20%7C%20FIPA--ACL%20%7C%20GS1%20EPCIS%202.0%20%7C%20NIST%20AI%20RMF%201.0-0F766E)
 
 > **Program Studi:** Magister Kecerdasan Artifisial  
 > **Mata Kuliah:** Agent Enterprise  
-> **Laporan Lengkap v2.1 (Bab 1–11, 54 Halaman):** [`Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.pdf`](./Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.pdf) · [`DOCX`](./Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.docx) · [`Markdown`](./Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.md)  
+> **Laporan Lengkap v2.2 (Bab 1–11, 54 Halaman):** [`Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.pdf`](./Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.pdf) · [`DOCX`](./Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.docx) · [`Markdown`](./Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.md)  
 > **Slide Presentasi Kelompok (14 Slide, 4 Presenter):** [`Presentasi_AgriChain_Agentic_AI_v2.1.pptx`](./Presentasi_AgriChain_Agentic_AI_v2.1.pptx) · [`PDF`](./Presentasi_AgriChain_Agentic_AI_v2.1.pdf)
 
 ---
@@ -26,9 +26,9 @@
 
 ---
 
-## Ringkasan Proyek & Peningkatan v2.1 (Full 5-Enterprise Parity)
+## Ringkasan Proyek & Arsitektur Selective-LLM Hybrid (v2.2)
 
-`agrichain-agentic-ai` mengoordinasikan **5 perusahaan independen** (*AgroFarm, Koperasi Tani, FreshFood Processing, ColdChain Logistics, SuperMart*) melalui **Global Agentic Control Center** menggunakan **6 agen otonom** dengan **heterogenitas model ganda** (6 model domain ML/optimasi berbeda + 6 keluarga LLM berbeda) serta prinsip **Zero-Direct-DB-Access (*Data Sovereignty*)**.
+`agrichain-agentic-ai` mengoordinasikan **5 perusahaan independen** (*AgroFarm, Koperasi Tani, FreshFood Processing, ColdChain Logistics, SuperMart*) melalui **Global Agentic Control Center** menggunakan **6 agen otonom** berarsitektur **Selective 3-LLM Hybrid** — **LLM hanya diterapkan pada 3 agen kognitif** yang membutuhkan negosiasi strategis, sintesis multimodal, atau orkestrasi lintas enterprise (**Koperasi Tani**, **FreshFood Processing**, dan **Global Control Center**), sedangkan 3 agen operasional berjalur kritis deterministik (**AgroFarm**, **ColdChain Logistics**, dan **SuperMart**) dieksekusi murni sebagai **Deterministic ML + Rule/Optimization Engine (`0 token LLM`, `~8–14 ms`, bebas halusinasi)** dengan prinsip **Zero-Direct-DB-Access (*Data Sovereignty*)**.
 
 ### Peningkatan Utama Versi 2.0 → 2.1
 1. **Pilar 1 — Arsitektur, Kontrak Data & *Server-Side RBAC*:** Standarisasi suhu aman tomat **`7,0–12,0°C`** lintas modul, pelacakan *canonical cross-enterprise lineage* (`block_id → lot_id → qc_doc_id → shipment_id → trip_id → vehicle_id → po_ref`), redaksi data privat di **server FastAPI** berbasis header `X-Scoped-Token`, serta rantai audit kriptografi **SHA-256** (*concurrency-safe*).
@@ -38,13 +38,13 @@
 3. **Pilar 3 — *Decoupled FastAPI Multi-Enterprise Gateway v2.1 (Full 5-Enterprise Parity, 20 Endpoint)*:** Endpoint REST lokal lengkap untuk **seluruh 5 enterprise** — AgroFarm (`/monitoring`, `/predict`), Koperasi (`/price-forecast`), FreshFood (`/qc-inspect`, `/schedule`), ColdChain (`/fleet` & `/shipments` CRUD, `/vrptw`, `/eta`), SuperMart (`/forecast-7d`, `/po` CRUD, `/goods-receipt-sla`), *Server-Side Privacy Data Explorer*, serta LangGraph Orchestrator dengan *Closed-Loop Handshakes* (VRPTW *dynamic dock sync*, *QC Feedback → AgroFarm*, *7-Day Demand Horizon → Hulu*, *Flash-Promo Absorption*, & *Goods Receipt SLA*).
 4. **Pilar 4 — *Demo-Ready Role-Adaptive Enterprise Cockpit v2.1 (High-Contrast Light Mode)*:** UI terpisah via HTTP (`ApiBridge` + `X-Scoped-Token`), tema **Light Mode berkontras tinggi** (`.streamlit/config.toml` + WCAG AAA `#0F172A` di atas `#F8FAFC`/`#FFFFFF`), *dedicated workspace* untuk **seluruh 6 peran** (1 stakeholder utama per enterprise + 1 operator global), **Mode Presentasi 1-Klik Storyboard** per presenter kelompok, **Live 5-Enterprise Closed-Loop Strip**, **Side-by-Side Live RBAC Proof** (1 layar: Global 🔒 REDACTED vs Owner 🔓 UNLOCKED), **Auto-Sync skenario ke modul lokal**, **5 UI State Wajib**, **HITL Quick-Action Bar & Impact-Preview Console**, dan **Peta Geospasial VRPTW Interaktif**.
 
-| ID Agen | Enterprise / Layer | Primary Stakeholder (1 per Enterprise) | Model Domain AI / Optimasi (v2.1) | Model LLM Backbone | Basis Data Lokal |
+| ID Agen | Enterprise / Layer | Primary Stakeholder (1 per Enterprise) | Model Domain AI / Optimasi (v2.2) | Mesin Penalaran / LLM | Basis Data Lokal |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `AGT-01` | **AgroFarm** | **Farm Manager** | Random Forest 250 Trees + NDVI + 80% Quantile PI + 14d ± 2σ Monitor | **Qwen 2.5 14B Instruct** *(On-Premise)* | PostgreSQL (`agrofarm_pg.sqlite`) |
-| `AGT-02` | **Koperasi Tani** | **Cooperative Manager** | LightGBM + Contract Net Auction | **Claude 3.5 Sonnet** | MySQL (`koperasi_mysql.sqlite`) |
+| `AGT-01` | **AgroFarm** | **Farm Manager** | Random Forest 250 Trees + NDVI + 80% Quantile PI + 14d ± 2σ Monitor | **No LLM** *(Deterministic ML + Rules · 0 token)* | PostgreSQL (`agrofarm_pg.sqlite`) |
+| `AGT-02` | **Koperasi Tani** | **Cooperative Manager** | LightGBM + Contract Net Auction | **Claude 3.5 Sonnet** *(LLM Negosiasi)* | MySQL (`koperasi_mysql.sqlite`) |
 | `AGT-03` | **FreshFood Processing** | **Quality Control & Production Manager** | 2D-Conv Visual CNN + Food Safety Hard-Block + FEFO | **Gemini 2.5 Flash** *(Multimodal VLM)* | MongoDB (`freshfood_tomato_qc.json` + RGB NPZ) |
-| `AGT-04` | **ColdChain Logistics** | **Fleet & Cold Chain Manager** | Isolation Forest (7–12°C) + XGBoost ETA + OR-Tools VRPTW | **Llama 3.1 8B Instruct** *(Edge)* | TimescaleDB (`coldchain_timescaledb.sqlite`) |
-| `AGT-05` | **SuperMart** | **Purchasing Manager** | XGBoost Regression + Newsvendor Safety-Stock | **Mistral Small 3 (24B)** | MySQL (`supermart_mysql.sqlite`) |
+| `AGT-04` | **ColdChain Logistics** | **Fleet & Cold Chain Manager** | Isolation Forest (7–12°C) + XGBoost ETA + OR-Tools VRPTW | **No LLM** *(Deterministic Edge ML + VRPTW · 0 token)* | TimescaleDB (`coldchain_timescaledb.sqlite`) |
+| `AGT-05` | **SuperMart** | **Purchasing Manager** | XGBoost 7-Day + Newsvendor PO + Goods Receipt SLA | **No LLM** *(Deterministic ML + Policy Rules · 0 token)* | MySQL (`supermart_mysql.sqlite`) |
 | `AGT-06` | **Global Control Center** | **Global Control Center Operator** | MILP-FEFO Solver (PuLP / CBC) + Cross-Enterprise Lineage | **GPT-4o** *(LangGraph Orchestrator)* | Redis + SHA-256 Audit Trail |
 
 ---
@@ -96,12 +96,12 @@ Seluruh angka terekam langsung dari [`src/models/train_all.py`](./src/models/tra
 | **Total Supply Chain Cost (Rp Juta)** | 29,58 ± 1,25 | 29,52 ± 1,51 | 31,36 ± 1,78 | **29,06 ± 1,72** | **-Rp2,31 Jt (-7,35%)** |
 | **Net Ecosystem Profit (Rp Juta)** | 21,74 ± 1,01 | **27,38 ± 1,16** | 20,21 ± 1,64 | **28,16 ± 1,51** | **+Rp7,94 Jt (+39,3%)** |
 | **Jain's Fairness Index** | 0,9367 | **0,9607** | 0,8286 | **0,9332** | **+0,1046 (+12,6%)** |
-| **Replanning Time (dtk)** | — | 2,24 ± 0,06 | — | **4,23 ± 0,09** | **< 5 detik** |
+| **Replanning Time (dtk)** | — | 2,50 ± 0,10 | — | **4,50 ± 0,09** | **< 5 detik** |
 | **Privacy Leaks (Field Privat)** | 0 | **0** | 0 | **0** | **Zero Leak** |
 
-- **Ablasi 1 (*Multi-Agent 6 Agen* vs *Single-Agent Monolitik*):** Menjaga **0 kebocoran data privat** (vs **15 field privat terekspos**) dan menaikkan *Jain's Fairness Index* dari **0,8355 → 0,9332**.
-- **Ablasi 2 (*Heterogeneous 6-LLM* vs *Homogeneous 6× GPT-4o*):** Menghemat biaya token **41,71%** (`USD 17,50` → `USD 10,20` per 1.000 siklus) dan mempercepat *replanning* **10,19%** (`4,71 s` → `4,23 s`; *edge alert* ColdChain turun **-78,2%**).
-- **Ablasi 3 (*Neuro-Symbolic MILP-FEFO + LLM* vs *Pure LLM*):** Menurunkan pelanggaran kendala dari **100,0% → 0,0%** dan menekan FLR dari **1,52% → 0,00%**.
+- **Ablasi 1 (*Multi-Agent 6 Agen* vs *Single-Agent Monolitik*):** Menjaga **0 kebocoran data privat** (vs **15 field privat terekspos**), menaikkan *Jain's Fairness Index* dari **0,8355 → 0,9332**, serta lebih hemat biaya (`USD 10,20` vs `USD 20,60`).
+- **Ablasi 2 (*Selective 3-LLM Hybrid* vs *All-LLM Homogeneous 6× GPT-4o*):** Menghemat biaya token **62,64%** (`USD 27,30` → `USD 10,20` per 1.000 siklus) dan mempercepat *replanning* **29,58%** (`6,39 s` → `4,50 s`; latensi lokal AgroFarm, ColdChain, dan SuperMart turun **-98,3% s.d. -99,5%** dengan `0 token`).
+- **Ablasi 3 (*Neuro-Symbolic MILP-FEFO + Selective LLM* vs *Pure LLM*):** Menurunkan pelanggaran kendala dari **100,0% → 0,0%** dan menekan FLR dari **1,52% → 0,00%**.
 
 ![Perbandingan Kinerja Ekosistem pada 4 Kondisi Eksperimen](./results/figures/fig_9_1_conditions.png)
 ![Hasil Tiga Studi Ablasi Arsitektur Multi-Agent](./results/figures/fig_9_2_ablation_comparison.png)
@@ -135,7 +135,7 @@ Proyek ini sudah dilengkapi konfigurasi siap pakai di [`.vscode/launch.json`](./
      ```
 5. **Jalankan Pengujian & Reproduksi Eksperimen:**
    ```bash
-   # Pengujian otomatis (13/13 unit + closed-loop parity + server-side RBAC + FastAPI integration tests)
+   # Pengujian otomatis (14/14 unit + closed-loop parity + selective 3-LLM + server-side RBAC + FastAPI tests)
    pytest tests/test_ecosystem.py -v
 
    # Latih ulang 5 model ML v2.1 (termasuk NDVI 80% PI & XGBoost ETA + VRPTW)
@@ -144,7 +144,7 @@ Proyek ini sudah dilengkapi konfigurasi siap pakai di [`.vscode/launch.json`](./
    # Jalankan seluruh eksperimen Bab 9 (4 kondisi x 30 siklus + 3 ablasi + 3 grafik)
    python src/experiments/run_experiments.py
    ```
-6. *(Opsional)* Mode **LIVE 6-LLM API**: salin `.env.example` menjadi `.env`, ubah `LLM_EXECUTION_MODE=LIVE`, dan isi kredensial OpenAI / Anthropic / Gemini / Mistral / Ollama lokal.
+6. *(Opsional)* Mode **LIVE 3-LLM API**: salin `.env.example` menjadi `.env`, ubah `LLM_EXECUTION_MODE=LIVE`, dan isi kredensial untuk 3 agen ber-LLM (`ANTHROPIC_API_KEY` untuk Koperasi, `GEMINI_API_KEY` untuk FreshFood, dan `OPENAI_API_KEY` untuk Global Orchestrator). Agen AgroFarm, ColdChain, dan SuperMart berjalan 100% lokal tanpa membutuhkan API LLM.
 
 ---
 
@@ -163,7 +163,7 @@ Dashboard dilengkapi **`🎬 Mode Presentasi (1-Klik Storyboard)`** di baris pal
 5. **`5️⃣ Frans · SuperMart` (`Frans Alwan Purba — AGT-05`):**
    - Otomatis masuk sebagai *Purchasing Manager* (`DEMAND_SURGE`): **Proyeksi 7-Hari XGBoost (`H+1..H+7`)** ke hulu, tab **PO CRUD** (guardrail Grade C ditolak, substitusi Grade B ≤ 30% & `ceiling_price` terbuka lokal), serta tab **Goods Receipt SLA 7–12°C**.
 6. **`6️⃣ Frans · Global HITL` (`Frans Alwan Purba — AGT-06`) & Swagger 20 Endpoint:**
-   - Otomatis masuk sebagai *Global Control Center Operator* (`COMPOUND`): tampilkan **Live 5-Enterprise Closed-Loop Strip**, grafik **Sankey & Decision Shift** *above-the-fold*, klik **`✅ Approve & Commit`** pada *HITL Quick Bar*, verifikasi rantai **SHA-256 (`VERIFIED ✅`)** di tab *Trace, Lineage & Audit*, serta tunjukkan `http://127.0.0.1:8000/docs` (**20 endpoint**) & `pytest tests/test_ecosystem.py -v` (**13/13 PASSED**).
+   - Otomatis masuk sebagai *Global Control Center Operator* (`COMPOUND`): tampilkan **Live 5-Enterprise Closed-Loop Strip**, grafik **Sankey & Decision Shift** *above-the-fold*, klik **`✅ Approve & Commit`** pada *HITL Quick Bar*, verifikasi rantai **SHA-256 (`VERIFIED ✅`)** & telemetri *Selective 3-LLM Hybrid* di tab *Trace, Lineage & Audit*, serta tunjukkan `http://127.0.0.1:8000/docs` (**20 endpoint**) & `pytest tests/test_ecosystem.py -v` (**14/14 PASSED**).
 
 ---
 
@@ -208,12 +208,12 @@ agrichain-agentic-ai/
 │   ├── data/                            # Generator 19.575 rekaman + 3.000 citra RGB + Adapter 5 DB lokal
 │   ├── protocols/                       # A2A, FIPA-ACL, GS1 EPCIS 2.0, Server-Side RBAC Firewall, SHA-256 Audit
 │   ├── models/                          # 5 model ML v2.1 (RF+NDVI+PI80, LightGBM, CNN, IF+XGB-ETA+VRPTW, XGB 7d) + MILP-FEFO
-│   ├── llm/                             # 6 System Prompts + Multi-Provider 6-LLM Router (LIVE & SIMULATED)
-│   ├── agents/                          # 5 Enterprise Agents + LangGraph Orchestrator v2.1 (Closed-Loop Lineage & Briefing)
-│   ├── api/main.py                      # FastAPI Decoupled Gateway v2.1 (20 Endpoint + Full 5-Enterprise Parity)
+│   ├── llm/                             # System Prompts (3 Agen LLM) + Hybrid Selective-LLM Router (3 LLM + 3 ML)
+│   ├── agents/                          # 5 Enterprise Agents + LangGraph Orchestrator v2.2 (Closed-Loop Lineage & Briefing)
+│   ├── api/main.py                      # FastAPI Decoupled Gateway v2.2 (20 Endpoint + Full 5-Enterprise Parity)
 │   ├── experiments/run_experiments.py   # Benchmark 4 Kondisi x 30 siklus + 3 Ablasi + 3 Failure Cases
-│   └── dashboard/app.py                 # Streamlit Role-Adaptive Light-Mode Cockpit v2.1 (6 Dedicated Role Views)
-├── tests/test_ecosystem.py              # 13 Automated Unit, RBAC, Closed-Loop Parity & FastAPI Integration Tests
+│   └── dashboard/app.py                 # Streamlit Demo-Ready Role-Adaptive Light-Mode Cockpit v2.2 (6 Role Views)
+├── tests/test_ecosystem.py              # 14 Automated Unit, RBAC, Closed-Loop, Selective-LLM & FastAPI Tests
 ├── docs/screenshots/                    # 7 Screenshot aktual aplikasi v2.1 (Light Mode) & FastAPI Swagger UI
 ├── data/                                # Dataset dummy tergenerasi & 5 database lokal terisolasi
 ├── results/                             # Model terlatih (.pkl), metrik JSON, audit_trail.jsonl, & 3 grafik Bab 9

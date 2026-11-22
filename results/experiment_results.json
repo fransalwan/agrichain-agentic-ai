@@ -83,11 +83,11 @@
         "std": 0.0
       },
       "replanning_response_time_sec": {
-        "mean": 2.24,
-        "std": 0.06
+        "mean": 2.5,
+        "std": 0.1
       },
       "llm_cost_usd": {
-        "mean": 0.0062,
+        "mean": 0.0063,
         "std": 0.0001
       },
       "privacy_leaks_detected": {
@@ -179,7 +179,7 @@
         "std": 0.0
       },
       "replanning_response_time_sec": {
-        "mean": 4.23,
+        "mean": 4.5,
         "std": 0.09
       },
       "llm_cost_usd": {
@@ -229,12 +229,12 @@
         "std": 0.0
       },
       "replanning_response_time_sec": {
-        "mean": 2.54,
-        "std": 0.08
+        "mean": 3.55,
+        "std": 0.1
       },
       "llm_cost_usd": {
-        "mean": 0.0108,
-        "std": 0.0
+        "mean": 0.0206,
+        "std": 0.0001
       },
       "privacy_leaks_detected": {
         "mean": 15.0,
@@ -277,7 +277,7 @@
         "std": 0.0
       },
       "replanning_response_time_sec": {
-        "mean": 4.23,
+        "mean": 4.5,
         "std": 0.09
       },
       "llm_cost_usd": {
@@ -325,11 +325,11 @@
         "std": 0.0
       },
       "replanning_response_time_sec": {
-        "mean": 4.71,
-        "std": 0.09
+        "mean": 6.39,
+        "std": 0.13
       },
       "llm_cost_usd": {
-        "mean": 0.0175,
+        "mean": 0.0273,
         "std": 0.0001
       },
       "privacy_leaks_detected": {
@@ -373,7 +373,7 @@
         "std": 0.0
       },
       "replanning_response_time_sec": {
-        "mean": 4.23,
+        "mean": 4.5,
         "std": 0.09
       },
       "llm_cost_usd": {
@@ -390,8 +390,8 @@
       },
       "constraint_violation_rate_pct": 0.0
     },
-    "ablation2_cost_saving_pct": 41.71,
-    "ablation2_latency_reduction_pct": 10.19,
+    "ablation2_cost_saving_pct": 62.64,
+    "ablation2_latency_reduction_pct": 29.58,
     "ablation3_pure_llm_no_milp": {
       "n_cycles": 30,
       "food_loss_rate_pct": {
@@ -423,11 +423,11 @@
         "std": 0.0
       },
       "replanning_response_time_sec": {
-        "mean": 4.22,
+        "mean": 4.48,
         "std": 0.08
       },
       "llm_cost_usd": {
-        "mean": 0.0102,
+        "mean": 0.0103,
         "std": 0.0001
       },
       "privacy_leaks_detected": {
@@ -471,7 +471,7 @@
         "std": 0.0
       },
       "replanning_response_time_sec": {
-        "mean": 4.23,
+        "mean": 4.5,
         "std": 0.09
       },
       "llm_cost_usd": {
@@ -492,9 +492,9 @@
   "per_agent_cost_latency": {
     "heterogeneous": {
       "AGT-01": {
-        "avg_latency_ms": 354.78,
-        "cost_per_cycle_usd": 4.4e-05,
-        "cost_per_1k_cycles_usd": 0.044
+        "avg_latency_ms": 8.49,
+        "cost_per_cycle_usd": 0.0,
+        "cost_per_1k_cycles_usd": 0.0
       },
       "AGT-02": {
         "avg_latency_ms": 864.12,
@@ -502,31 +502,31 @@
         "cost_per_1k_cycles_usd": 7.455
       },
       "AGT-03": {
-        "avg_latency_ms": 592.18,
-        "cost_per_cycle_usd": 0.000235,
-        "cost_per_1k_cycles_usd": 0.235
+        "avg_latency_ms": 841.3,
+        "cost_per_cycle_usd": 0.000386,
+        "cost_per_1k_cycles_usd": 0.386
       },
       "AGT-04": {
-        "avg_latency_ms": 181.02,
-        "cost_per_cycle_usd": 9e-06,
-        "cost_per_1k_cycles_usd": 0.009
+        "avg_latency_ms": 14.09,
+        "cost_per_cycle_usd": 0.0,
+        "cost_per_1k_cycles_usd": 0.0
       },
       "AGT-05": {
-        "avg_latency_ms": 344.74,
-        "cost_per_cycle_usd": 3.6e-05,
-        "cost_per_1k_cycles_usd": 0.036
+        "avg_latency_ms": 10.8,
+        "cost_per_cycle_usd": 0.0,
+        "cost_per_1k_cycles_usd": 0.0
       },
       "AGT-06": {
-        "avg_latency_ms": 630.85,
-        "cost_per_cycle_usd": 0.002395,
-        "cost_per_1k_cycles_usd": 2.395
+        "avg_latency_ms": 631.21,
+        "cost_per_cycle_usd": 0.002399,
+        "cost_per_1k_cycles_usd": 2.399
       }
     },
     "homogeneous": {
       "AGT-01": {
-        "avg_latency_ms": 909.76,
-        "cost_per_cycle_usd": 0.003175,
-        "cost_per_1k_cycles_usd": 3.175
+        "avg_latency_ms": 1413.16,
+        "cost_per_cycle_usd": 0.006481,
+        "cost_per_1k_cycles_usd": 6.481
       },
       "AGT-02": {
         "avg_latency_ms": 758.92,
@@ -534,24 +534,24 @@
         "cost_per_1k_cycles_usd": 5.641
       },
       "AGT-03": {
-        "avg_latency_ms": 1013.21,
-        "cost_per_cycle_usd": 0.003917,
-        "cost_per_1k_cycles_usd": 3.917
+        "avg_latency_ms": 1479.66,
+        "cost_per_cycle_usd": 0.006429,
+        "cost_per_1k_cycles_usd": 6.429
       },
       "AGT-04": {
         "avg_latency_ms": 829.29,
-        "cost_per_cycle_usd": 0.001365,
-        "cost_per_1k_cycles_usd": 1.365
+        "cost_per_cycle_usd": 0.001388,
+        "cost_per_1k_cycles_usd": 1.388
       },
       "AGT-05": {
-        "avg_latency_ms": 731.06,
-        "cost_per_cycle_usd": 0.001013,
-        "cost_per_1k_cycles_usd": 1.013
+        "avg_latency_ms": 2227.6,
+        "cost_per_cycle_usd": 0.004917,
+        "cost_per_1k_cycles_usd": 4.917
       },
       "AGT-06": {
-        "avg_latency_ms": 634.36,
-        "cost_per_cycle_usd": 0.002395,
-        "cost_per_1k_cycles_usd": 2.395
+        "avg_latency_ms": 634.73,
+        "cost_per_cycle_usd": 0.002399,
+        "cost_per_1k_cycles_usd": 2.399
       }
     }
   },
@@ -589,7 +589,7 @@
         "CAPACITY_DROP_66.7%_EXCEEDS_40%",
         "RETAIL_GRADE_B_SUBSTITUTION_REQUIRES_APPROVAL"
       ],
-      "replanning_time_sec": 4.31
+      "replanning_time_sec": 4.568
     }
   },
   "audit_chain_verified": true

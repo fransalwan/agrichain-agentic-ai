@@ -1,5 +1,14 @@
-"""System Prompts for all 6 Heterogeneous Autonomous Agents (Bab 6.3)."""
+"""System Prompts for Selective-LLM Cognitive Agents (AGT-02, AGT-03, AGT-06).
+
+In the production Selective-LLM Hybrid Architecture (v2.2):
+  - ACTIVE LLM Agents (3): AGT-02 (Koperasi / Claude 3.5), AGT-03 (FreshFood / Gemini 2.5 Flash), AGT-06 (Global / GPT-4o)
+  - DETERMINISTIC Non-LLM Agents (3): AGT-01 (AgroFarm), AGT-04 (ColdChain), AGT-05 (SuperMart)
+    -> Their prompt specs below are used ONLY when running Ablation 2 (All-LLM Homogeneous 6x GPT-4o baseline).
+"""
 from typing import Dict
+
+ACTIVE_LLM_AGENT_IDS = ("AGT-02", "AGT-03", "AGT-06")
+DETERMINISTIC_AGENT_IDS = ("AGT-01", "AGT-04", "AGT-05")
 
 AGENT_SYSTEM_PROMPTS: Dict[str, str] = {
     "AGT-01": (

@@ -389,3 +389,32 @@ def test_cross_enterprise_closed_loop_vrptw_dock_sync():
     st_fail = orch.run_cycle(trigger_mode="FOOD_SAFETY_FAIL", failed_food_safety_lots=["H003"])
     assert len(st_fail["freshfood_qc_feedback"]["feedback_to_agrofarm"]) >= 1
     assert len(st_fail["freshfood_qc_feedback"]["waste_valorization_plan"]) >= 1
+
+
+def test_selective_llm_architecture_only_global_koperasi_freshfood_use_llm():
+    from config.settings import AGENT_MODEL_PROFILES
+
+    # Only AGT-02 (Koperasi), AGT-03 (FreshFood), and AGT-06 (Global) use LLM
+    for aid in ("AGT-02", "AGT-03", "AGT-06"):
+        assert AGENT_MODEL_PROFILES[aid].uses_llm is True
+    for aid in ("AGT-01", "AGT-04", "AGT-05"):
+        assert AGENT_MODEL_PROFILES[aid].uses_llm is False
+        assert AGENT_MODEL_PROFILES[aid].provider == "deterministic"
+
+    orch = AgriChainOrchestrator(homogeneous_frontier=False)
+    st = orch.run_cycle(trigger_mode="COLD_STORAGE_FAILURE", adaptive_replanning=True)
+    tel = st["global_kpis"]["llm_telemetry"]
+    assert tel["routing_mode"] == "SELECTIVE_3_LLM_HYBRID"
+    assert tel["llm_agents_active"] == ["AGT-02", "AGT-03", "AGT-06"]
+    assert tel["deterministic_ml_agents"] == ["AGT-01", "AGT-04", "AGT-05"]
+
+    for call in tel["calls"]:
+        if call["agent_id"] in ("AGT-01", "AGT-04", "AGT-05"):
+            assert call["mode"] == "DETERMINISTIC_ML_RULE"
+            assert call["input_tokens"] == 0
+            assert call["output_tokens"] == 0
+            assert call["cost_usd"] == 0.0
+        else:
+            assert call["mode"] in ("POLICY_GROUNDED_SIMULATED", "LIVE_API", "POLICY_GROUNDED_FALLBACK")
+            assert call["input_tokens"] > 0
+            assert call["cost_usd"] > 0.0

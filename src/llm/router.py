@@ -1,9 +1,15 @@
-"""LiteLLM-Compatible Heterogeneous 6-LLM Router with Token, Cost, and Latency Telemetry.
+"""Hybrid Selective-LLM Router (3 Cognitive LLM Agents + 3 Deterministic ML/Rule Agents).
 
-Supports dual execution:
-- LIVE mode: invokes real cloud/Ollama API endpoints when keys/endpoints are configured.
-- SIMULATED mode (default offline benchmark): executes deterministic policy-grounded
-  structured reasoning with calibrated per-model token accounting & latency profiles.
+LLM Reasoning is strictly applied ONLY where open-ended negotiation, multimodal synthesis,
+or cross-enterprise orchestration is required:
+  - AGT-02 Koperasi Tani       -> Claude 3.5 Sonnet (Anthropic API)
+  - AGT-03 FreshFood Processing -> Gemini 2.5 Flash Multimodal (Google Gemini API)
+  - AGT-06 Global Control Center-> GPT-4o (OpenAI API)
+
+Deterministic ML / Rule / Optimization Agents (0 LLM tokens, ~8-15 ms local execution):
+  - AGT-01 AgroFarm            -> Random Forest + NDVI + 14-Day +/- 2sigma Rule Engine
+  - AGT-04 ColdChain Logistics -> Isolation Forest (7-12C) + XGBoost ETA + OR-Tools VRPTW
+  - AGT-05 SuperMart           -> XGBoost 7-Day + Newsvendor PO + Deterministic SLA Rules
 """
 from __future__ import annotations
 
@@ -55,11 +61,11 @@ class HeterogeneousLLMRouter:
         return max(24, int(round(len(text) / 3.8)))
 
     def _try_live_provider_call(self, profile: ModelProfile, system_prompt: str, user_prompt: str) -> Optional[str]:
-        """Attempt a real LLM API completion across all 6 configured providers when LIVE mode & keys exist."""
-        if self.mode != "LIVE":
+        """Attempt a real LLM API completion ONLY for LLM-enabled agents (AGT-02, AGT-03, AGT-06) when LIVE mode & keys exist."""
+        if not profile.uses_llm or self.mode != "LIVE":
             return None
         try:
-            # 1. OpenAI (AGT-06: GPT-4o) or Local Ollama (AGT-01: Qwen 2.5, AGT-04: Llama 3.1)
+            # 1. OpenAI (AGT-06: GPT-4o, or All-LLM Homogeneous Ablation)
             if profile.provider == "openai" and settings.openai_api_key:
                 resp = httpx.post(
                     "https://api.openai.com/v1/chat/completions",
@@ -74,23 +80,6 @@ class HeterogeneousLLMRouter:
                         ],
                     },
                     timeout=15.0,
-                )
-                if resp.status_code == 200:
-                    return resp.json()["choices"][0]["message"]["content"]
-            elif profile.provider == "ollama":
-                model_name = "qwen2.5:14b" if "Qwen" in profile.llm_model else "llama3.1:8b"
-                resp = httpx.post(
-                    f"{settings.ollama_base_url.rstrip('/')}/chat/completions",
-                    json={
-                        "model": model_name,
-                        "temperature": profile.temperature,
-                        "response_format": {"type": "json_object"},
-                        "messages": [
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": user_prompt},
-                        ],
-                    },
-                    timeout=12.0,
                 )
                 if resp.status_code == 200:
                     return resp.json()["choices"][0]["message"]["content"]
@@ -114,7 +103,7 @@ class HeterogeneousLLMRouter:
                 )
                 if resp.status_code == 200:
                     return resp.json()["content"][0]["text"]
-            # 3. Google Gemini (AGT-03: Gemini 2.5 Flash)
+            # 3. Google Gemini (AGT-03: Gemini 2.5 Flash Multimodal)
             elif profile.provider == "gemini" and settings.gemini_api_key:
                 resp = httpx.post(
                     f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={settings.gemini_api_key}",
@@ -130,24 +119,6 @@ class HeterogeneousLLMRouter:
                 )
                 if resp.status_code == 200:
                     return resp.json()["candidates"][0]["content"]["parts"][0]["text"]
-            # 4. Mistral AI (AGT-05: Mistral Small 3)
-            elif profile.provider == "mistral" and settings.mistral_api_key:
-                resp = httpx.post(
-                    "https://api.mistral.ai/v1/chat/completions",
-                    headers={"Authorization": f"Bearer {settings.mistral_api_key}"},
-                    json={
-                        "model": "mistral-small-latest",
-                        "temperature": profile.temperature,
-                        "response_format": {"type": "json_object"},
-                        "messages": [
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": user_prompt},
-                        ],
-                    },
-                    timeout=15.0,
-                )
-                if resp.status_code == 200:
-                    return resp.json()["choices"][0]["message"]["content"]
         except Exception:
             return None
         return None
@@ -159,12 +130,38 @@ class HeterogeneousLLMRouter:
         context_payload: Dict[str, Any],
         policy_resolver: Callable[[Dict[str, Any]], Dict[str, Any]],
     ) -> Dict[str, Any]:
-        """Invoke agent's assigned LLM model with structured JSON output and telemetry logging."""
+        """Execute agent's reasoning engine: Deterministic ML/Rules (0 tokens) for AGT-01/04/05,
+        or LLM reasoning (Claude 3.5 / Gemini 2.5 Flash / GPT-4o) for AGT-02/03/06."""
         profile = self.get_profile(agent_id)
+        t0 = time.perf_counter()
+
+        # Non-LLM Deterministic ML / Optimization / Rule Engine path (0 LLM tokens, $0.00 cost)
+        if not profile.uses_llm:
+            result = policy_resolver(context_payload)
+            actual_ms = (time.perf_counter() - t0) * 1000.0
+            jitter = float(self.rng.normal(1.0, 0.05))
+            det_latency_ms = max(4.0, profile.base_latency_ms * jitter)
+            self.call_log.append(
+                LLMCallRecord(
+                    agent_id=agent_id,
+                    llm_model=profile.llm_model,
+                    provider=profile.provider,
+                    deployment=profile.deployment,
+                    task_label=task_label,
+                    input_tokens=0,
+                    output_tokens=0,
+                    cost_usd=0.0,
+                    simulated_api_latency_ms=round(det_latency_ms, 2),
+                    actual_compute_ms=round(actual_ms, 3),
+                    mode="DETERMINISTIC_ML_RULE",
+                )
+            )
+            return result
+
+        # Cognitive LLM path (AGT-02 Koperasi, AGT-03 FreshFood, AGT-06 Global, or All-LLM Ablation)
         sys_prompt = AGENT_SYSTEM_PROMPTS[agent_id]
         user_prompt = json.dumps({"task": task_label, "context": context_payload}, default=str)
 
-        t0 = time.perf_counter()
         live_raw = self._try_live_provider_call(profile, sys_prompt, user_prompt)
         if live_raw is not None:
             try:
@@ -186,7 +183,7 @@ class HeterogeneousLLMRouter:
             out_toks / 1_000_000.0
         ) * profile.output_cost_per_1m_usd
 
-        # Calibrated realistic API/Edge inference latency (base + token generation + small jitter)
+        # Calibrated realistic cloud API inference latency (base + token generation + small jitter)
         jitter = float(self.rng.normal(1.0, 0.06))
         sim_latency_ms = max(
             35.0,
@@ -244,7 +241,9 @@ class HeterogeneousLLMRouter:
             b["total_latency_ms"] = round(b["total_latency_ms"], 2)
 
         return {
-            "routing_mode": "HOMOGENEOUS_GPT4O" if self.homogeneous_frontier else "HETEROGENEOUS_6_LLM",
+            "routing_mode": "ALL_LLM_HOMOGENEOUS_GPT4O" if self.homogeneous_frontier else "SELECTIVE_3_LLM_HYBRID",
+            "llm_agents_active": ["AGT-01", "AGT-02", "AGT-03", "AGT-04", "AGT-05", "AGT-06"] if self.homogeneous_frontier else ["AGT-02", "AGT-03", "AGT-06"],
+            "deterministic_ml_agents": [] if self.homogeneous_frontier else ["AGT-01", "AGT-04", "AGT-05"],
             "total_calls": len(self.call_log),
             "total_input_tokens": total_in,
             "total_output_tokens": total_out,
