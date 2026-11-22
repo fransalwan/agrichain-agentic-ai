@@ -10,7 +10,7 @@
 
 > **Proyek Magister Ilmu Komputer (S2 — Konsentrasi Kecerdasan Artifisial)**  
 > **Mata Kuliah:** *AI Agentic Technology Systems for Digital Enterprise Ecosystem*  
-> **Laporan Lengkap v2.0 (Bab 1–11, 53 Halaman):** [`Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.pdf`](./Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.pdf) · [`DOCX`](./Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.docx) · [`Markdown`](./Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.md)  
+> **Laporan Lengkap v2.0 (Bab 1–11, 54 Halaman):** [`Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.pdf`](./Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.pdf) · [`DOCX`](./Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.docx) · [`Markdown`](./Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.md)  
 > **Rancangan & Analisis Arsitektur v2.0:** [`Analisis_Insight_ColdChain_AgroFarm_UIUX.md`](./Analisis_Insight_ColdChain_AgroFarm_UIUX.md) · [`Rancangan_Improvement_Proper_AgriChain_v2.md`](./Rancangan_Improvement_Proper_AgriChain_v2.md)
 
 ---
@@ -25,16 +25,16 @@
    - **AgroFarm v2 (`rf-v2.0`):** Random Forest 250 pohon + fitur **NDVI** + **80% Quantile Prediction Interval (`p10–p90`)** + *Feature Importance* + pembanding *baseline* (*Hist Mean* & *Linear Reg*) + *Crop Monitoring Deviation Engine* (**14 hari ± 2σ**) + *Sensor Outage Safety Fallback* (offline ≥ 3 hari → `FALLBACK_HISTORICAL_MEAN`) + skenario **`EXTREME_RAIN`** (jendela panen maju `-2 hari`).
    - **ColdChain v2 (`iforest-vrptw-v2.0`):** Google OR-Tools **VRPTW (*Time Windows*)** dengan 4 skenario (`NORMAL`, `ROAD_DISRUPTION`, `VEHICLE_BREAKDOWN`, `COLD_STORAGE_DROP`) & koordinat geospasial Yogyakarta/Sleman/Bantul + **XGBoost ETA Regressor** (`MAE 7,66 menit`) + deteksi anomali suhu **Isolation Forest** berbasis SOP `7–12°C`.
 3. **Pilar 3 — *Decoupled FastAPI Multi-Enterprise Gateway v2.0*:** Endpoint REST khusus AgroFarm (`/monitoring`, `/predict`), ColdChain (`/fleet` & `/shipments` CRUD dengan validasi ketat, `/vrptw`, `/eta`), *Server-Side Privacy Data Explorer* (`/api/v1/data-explorer/{enterprise_id}/{table_name}`), serta `/api/v1/orchestrator/run-cycle` dengan *Executive Briefing* & *lineage*.
-4. **Pilar 4 — *Role-Adaptive Enterprise Cockpit v2.0*:** UI terpisah via HTTP (`ApiBridge` + `X-Scoped-Token`), navigasi adaptif peran (*Global Operator*, *Farm Manager*, *Fleet Manager*, *Koperasi*, *FreshFood*, *SuperMart*), **5 UI State Wajib** (*Loading, Empty, Error + Retry, Stale/Partial Data Warning, Success + SHA-256 Audit*), **Impact-Preview HITL Confirmation Console**, dan **Peta Geospasial VRPTW Interaktif**.
+4. **Pilar 4 — *Role-Adaptive Enterprise Cockpit v2.0 (High-Contrast Light Mode)*:** UI terpisah via HTTP (`ApiBridge` + `X-Scoped-Token`), tema **Light Mode berkontras tinggi** (`.streamlit/config.toml` + WCAG AAA `#0F172A` di atas `#F8FAFC`/`#FFFFFF`), navigasi adaptif **1 stakeholder utama per enterprise** + 1 operator global, **5 UI State Wajib** (*Loading, Empty, Error + Retry, Stale/Partial Data Warning, Success + SHA-256 Audit*), **Impact-Preview HITL Confirmation Console**, dan **Peta Geospasial VRPTW Interaktif**.
 
-| ID Agen | Enterprise / Layer | Model Domain AI / Optimasi (v2.0) | Model LLM Backbone | Basis Data Lokal |
-| :--- | :--- | :--- | :--- | :--- |
-| `AGT-01` | **AgroFarm** | Random Forest 250 Trees + NDVI + 80% Quantile PI + 14d ± 2σ Monitor | **Qwen 2.5 14B Instruct** *(On-Premise)* | PostgreSQL (`agrofarm_pg.sqlite`) |
-| `AGT-02` | **Koperasi Tani** | LightGBM + Contract Net Auction | **Claude 3.5 Sonnet** | MySQL (`koperasi_mysql.sqlite`) |
-| `AGT-03` | **FreshFood Processing** | 2D-Conv Visual CNN + Food Safety Hard-Block + FEFO | **Gemini 2.5 Flash** *(Multimodal VLM)* | MongoDB (`freshfood_tomato_qc.json` + RGB NPZ) |
-| `AGT-04` | **ColdChain Logistics** | Isolation Forest (7–12°C) + XGBoost ETA + OR-Tools VRPTW | **Llama 3.1 8B Instruct** *(Edge)* | TimescaleDB (`coldchain_timescaledb.sqlite`) |
-| `AGT-05` | **SuperMart** | XGBoost Regression + Newsvendor Safety-Stock | **Mistral Small 3 (24B)** | MySQL (`supermart_mysql.sqlite`) |
-| `AGT-06` | **Global Control Center** | MILP-FEFO Solver (PuLP / CBC) + Cross-Enterprise Lineage | **GPT-4o** *(LangGraph Orchestrator)* | Redis + SHA-256 Audit Trail |
+| ID Agen | Enterprise / Layer | Primary Stakeholder (1 per Enterprise) | Model Domain AI / Optimasi (v2.0) | Model LLM Backbone | Basis Data Lokal |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `AGT-01` | **AgroFarm** | **Farm Manager** | Random Forest 250 Trees + NDVI + 80% Quantile PI + 14d ± 2σ Monitor | **Qwen 2.5 14B Instruct** *(On-Premise)* | PostgreSQL (`agrofarm_pg.sqlite`) |
+| `AGT-02` | **Koperasi Tani** | **Cooperative Manager** | LightGBM + Contract Net Auction | **Claude 3.5 Sonnet** | MySQL (`koperasi_mysql.sqlite`) |
+| `AGT-03` | **FreshFood Processing** | **Quality Control & Production Manager** | 2D-Conv Visual CNN + Food Safety Hard-Block + FEFO | **Gemini 2.5 Flash** *(Multimodal VLM)* | MongoDB (`freshfood_tomato_qc.json` + RGB NPZ) |
+| `AGT-04` | **ColdChain Logistics** | **Fleet & Cold Chain Manager** | Isolation Forest (7–12°C) + XGBoost ETA + OR-Tools VRPTW | **Llama 3.1 8B Instruct** *(Edge)* | TimescaleDB (`coldchain_timescaledb.sqlite`) |
+| `AGT-05` | **SuperMart** | **Purchasing Manager** | XGBoost Regression + Newsvendor Safety-Stock | **Mistral Small 3 (24B)** | MySQL (`supermart_mysql.sqlite`) |
+| `AGT-06` | **Global Control Center** | **Global Control Center Operator** | MILP-FEFO Solver (PuLP / CBC) + Cross-Enterprise Lineage | **GPT-4o** *(LangGraph Orchestrator)* | Redis + SHA-256 Audit Trail |
 
 ---
 
@@ -139,9 +139,9 @@ Proyek ini sudah dilengkapi konfigurasi siap pakai di [`.vscode/launch.json`](./
 
 ## Panduan Alur Demo 5 Menit (8 Skenario Adaptif & Perubahan Keputusan Terukur)
 
-1. **Menit 1 — *Server-Side* RBAC & Navigasi Adaptif Peran:**
-   - Dalam peran default **`Global Control Center Operator (AGT-06)`**, buka tab **`Server-Side Data Explorer & Benchmark`** dan pilih `Koperasi Tani — market_price_negotiations`: kolom `floor_price_rp` otomatis tampil **`🔒 REDACTED (Server-Side Firewall)`** langsung dari respons API FastAPI.
-   - Pindah peran di *sidebar* ke **`Farm Manager — AgroFarm (AGT-01)`** atau **`Fleet Manager — ColdChain (AGT-04)`** untuk melihat ruang kerja lokal khusus peran (*Role-Adaptive Navigation*) sekaligus pembukaan kolom privat miliknya sendiri.
+1. **Menit 1 — *Server-Side* RBAC & Navigasi Adaptif (1 Stakeholder per Enterprise):**
+   - Dalam peran default **`Global Control Center Operator (AGT-06)`**, buka tab **`Data Explorer & Eval`** dan pilih `Koperasi Tani — market_price_negotiations`: kolom `floor_price_rp` otomatis tampil **`🔒 REDACTED (Server-Side Firewall)`** langsung dari respons API FastAPI.
+   - Pindah peran di *sidebar* ke **`Farm Manager — AgroFarm (AGT-01)`**, **`Cooperative Manager — Koperasi Tani (AGT-02)`**, **`Quality Control & Production Manager — FreshFood (AGT-03)`**, **`Fleet & Cold Chain Manager — ColdChain (AGT-04)`**, atau **`Purchasing Manager — SuperMart (AGT-05)`** untuk melihat ruang kerja adaptif *Light Mode* sekaligus pembukaan kolom privat miliknya sendiri.
 2. **Menit 2 — Bukti Perubahan Keputusan Terukur (8 Skenario Gangguan):**
    - Uji **`COLD_STORAGE_FAILURE`** (kapasitas ruang dingin `3.000 → 1.000 kg`): alokasi `500 kg` berpindah otomatis ke `FreshFood_OT` dengan FLR `0,00%` dan Impact-Preview HITL Console muncul sebelum eksekusi.
    - Uji **`EXTREME_RAIN`** (AgroFarm BLK-11): curah hujan `96 mm/14h` & NDVI turun `0,41` → jendela panen maju **`-2 hari`**, hasil turun ~13,9% dengan interval 80% Quantile PI melebar.
@@ -182,6 +182,8 @@ Proyek ini sudah dilengkapi konfigurasi siap pakai di [`.vscode/launch.json`](./
 
 ```text
 agrichain-agentic-ai/
+├── .streamlit/
+│   └── config.toml                      # Tema Light Mode berkontras tinggi (WCAG AAA, navy #1F4E79)
 ├── .vscode/
 │   ├── launch.json                      # 1-klik Run & Debug VS Code (FastAPI, Streamlit, Train, Experiments)
 │   └── tasks.json                       # Task otomatis VS Code (Install, Pytest, Servers)
@@ -202,6 +204,6 @@ agrichain-agentic-ai/
 ├── docker-compose.yml                   # Stack PostgreSQL 16, MySQL 8, MongoDB 7, TimescaleDB, Redis 7
 ├── Analisis_Insight_ColdChain_AgroFarm_UIUX.md                   # Ringkasan analisis 12 dokumen rancangan
 ├── Rancangan_Improvement_Proper_AgriChain_v2.md                  # Blueprint 4 pilar peningkatan v2.0
-├── Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.{md,docx,pdf}    # Laporan Lengkap v2.0 (Bab 1–11, 53 halaman)
+├── Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.{md,docx,pdf}    # Laporan Lengkap v2.0 (Bab 1–11, 54 halaman)
 └── Laporan_Bab1_7_Smart_Agriculture_Agentic_AI.{md,docx,pdf}     # Laporan Rancangan Awal (Bab 1–7, 35 halaman)
 ```

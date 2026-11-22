@@ -110,22 +110,20 @@ Ketika kelima perusahaan tersebut mengelola sistem informasi dan basis data seca
 
 ## 2.2 Analisis Pemangku Kepentingan (*Stakeholders*) dan Konflik Kepentingan
 
-### A. Pemangku Kepentingan Internal
+### A. Pemangku Kepentingan Internal Utama (*1 Primary Stakeholder per Enterprise*)
 
-**Tabel 2.3.** Pemetaan Pemangku Kepentingan Internal di Lima Enterprise
+Untuk menjamin akuntabilitas keputusan yang tunggal (*single point of accountability*) serta keselarasan 1:1 antara struktur organisasi, agen otonom, dan peran login RBAC pada aplikasi (*lean enterprise cluster*), setiap perusahaan menetapkan **satu pemangku kepentingan internal utama** sebagai pengambil keputusan sekaligus penyetuju *Human-in-the-Loop* (HITL), ditambah satu operator pada lapis global (**Tabel 2.3**).
 
-| Enterprise | Peran Stakeholder | Tanggung Jawab Utama | Kepentingan Bisnis Dominan |
-| :--- | :--- | :--- | :--- |
-| **AgroFarm** | *Farm Manager* | Mengelola operasional budidaya & eksekusi panen | Seluruh panen terserap dengan biaya operasional minimum |
-| **AgroFarm** | *Agricultural Analyst* | Menganalisis data cuaca, tanah, dan akurasi prediksi panen | Akurasi estimasi pasokan tinggi (MAE rendah) |
-| **Koperasi Tani** | *Cooperative Manager* | Mengelola konsolidasi stok petani & distribusi mitra | Stok tak terjual (*unsold inventory*) minimal & kesejahteraan petani |
-| **Koperasi Tani** | *Procurement Officer* | Melaksanakan negosiasi harga dan kontrak jual-beli | Mendapatkan harga jual optimal dan kesepakatan cepat |
-| **FreshFood Processing** | *Factory Manager* | Mengatur kapasitas produksi, shift mesin, dan utilitas pabrik | Utilisasi mesin 80–95% tanpa kelebihan beban (*overload*) |
-| **FreshFood Processing** | *Quality Control Officer* | Memeriksa grade visual dan standar keamanan pangan | Zero pelanggaran *food safety* & akurasi *grading* tinggi |
-| **ColdChain Logistics** | *Fleet Manager* | Mengelola armada truk berpendingin & jadwal rute | Pengiriman tepat waktu (≥ 95%) dan efisiensi bahan bakar/jarak |
-| **ColdChain Logistics** | *Warehouse Manager* | Mengelola kapasitas dan stabilitas suhu *cold storage* | Kepatuhan suhu (≥ 98%) & rotasi stok aman |
-| **SuperMart** | *Purchasing Manager* | Menentukan volume pembelian (PO) dan negosiasi harga beli | Harga beli kompetitif & kepastian pasokan Grade A |
-| **SuperMart** | *Inventory Manager* | Mengendalikan stok rak, *stockout*, dan barang kedaluwarsa | *Stockout* ≤ 5%, *overstock* ≤ 10%, *turnover* tinggi |
+**Tabel 2.3.** Pemetaan Pemangku Kepentingan Internal Utama (*1 Stakeholder per Enterprise + Global Control Center*)
+
+| Enterprise / Lapis | Agen | Pemangku Kepentingan Utama | Tanggung Jawab Operasional & Wewenang HITL | Kepentingan Bisnis Dominan |
+| :--- | :---: | :--- | :--- | :--- |
+| **AgroFarm** | `AGT-01` | **Farm Manager** | Mengelola budidaya blok lahan, memantau deviasi NDVI 14-hari ± 2σ, menyetujui jadwal panen, pergeseran panen ekstrem (`-2 hari`), & *harvest deferral* | Seluruh panen terserap dengan akurasi estimasi tinggi (MAE ≤ 10%) & biaya minimum |
+| **Koperasi Tani** | `AGT-02` | **Cooperative Manager** | Mengonsolidasi stok petani, menjaga *floor price* privat, serta memvalidasi diskon & hasil negosiasi *Contract Net* | Stok tak terjual (*unsold inventory*) ≤ 5%, transaksi cepat, & kesejahteraan petani terjaga |
+| **FreshFood Processing** | `AGT-03` | **Quality Control & Production Manager** | Memegang hak veto mutlak kelayakan *food safety* (grading CNN & uji lab) sekaligus mengotorisasi kapasitas reguler & lembur pabrik (+500 kg) | Zero pelanggaran *food safety*, akurasi grading ≥ 90%, & utilisasi lini 80–95% |
+| **ColdChain Logistics** | `AGT-04` | **Fleet & Cold Chain Manager** | Mengelola armada reefer, optimasi rute VRPTW/ETA, stabilitas suhu gudang `7,0–12,0°C`, serta sewa kapasitas cadangan 3PL | Pengiriman tepat waktu (OTD ≥ 95%, 0 *TW violations*), kepatuhan suhu ≥ 98%, & efisiensi jarak |
+| **SuperMart** | `AGT-05` | **Purchasing Manager** | Mengendalikan prediksi permintaan POS, *ceiling price* privat, penerbitan PO (*Newsvendor*), pengendalian *stockout/overstock*, & izin substitusi Grade B | Harga beli kompetitif, *stockout* ≤ 5%, *overstock* ≤ 10%, & kepastian pasokan Grade A |
+| **Global Control Center** | `AGT-06` | **Global Control Center Operator** | Memantau orkestrasi 6 agen, meninjau *Impact-Preview HITL Console*, & mengaudit integritas SHA-256 lintas perusahaan | Menekan *food loss* global (FLR → 0%), menjaga keadilan profit (*Jain's Index*), & 0 *privacy leak* |
 
 ### B. Pemangku Kepentingan Eksternal
 
@@ -647,9 +645,9 @@ sequenceDiagram
 
 **Gambar 5.3.** *Sequence Diagram* Alur Data *End-to-End* pada Kondisi Normal dan *Adaptive Replanning*
 
-## 5.5 Rancangan Antarmuka Pengguna (*Role-Adaptive Enterprise Cockpit v2.0*)
+## 5.5 Rancangan Antarmuka Pengguna (*Role-Adaptive Enterprise Cockpit v2.0 — Light Mode*)
 
-Antarmuka sistem dibangun menggunakan **Streamlit + Plotly** secara terpisah (*decoupled*) yang berkomunikasi melalui klien HTTP (`ApiBridge`) ke **FastAPI Multi-Enterprise Gateway v2.0** dengan membawa header autentikasi **`X-Scoped-Token`**. Desain UI/UX mengadopsi prinsip *Role-Adaptive Navigation* dan **5 UI State Wajib** (*Loading* via `st.status`, *Empty*, *Error + Retry*, *Stale/Partial Data Warning*, dan *Success + SHA-256 Audit*):
+Antarmuka sistem dibangun menggunakan **Streamlit + Plotly** dalam **tema *Light Mode* berkontras tinggi** (`.streamlit/config.toml` + palet WCAG AAA `#0F172A` di atas `#F8FAFC`/`#FFFFFF`) secara terpisah (*decoupled*) yang berkomunikasi melalui klien HTTP (`ApiBridge`) ke **FastAPI Multi-Enterprise Gateway v2.0** dengan membawa header autentikasi **`X-Scoped-Token`**. Desain UI/UX mengadopsi prinsip *Role-Adaptive Navigation* (**1 stakeholder utama per enterprise + 1 operator global**) dan **5 UI State Wajib** (*Loading* via `st.status`, *Empty*, *Error + Retry*, *Stale/Partial Data Warning*, dan *Success + SHA-256 Audit*):
 
 1. **Global Agentic Control Center (6 Tab Terstruktur untuk Operator Global):**
    - **Tab 1 — `Global Center`:** Menampilkan *Executive Briefing* otomatis dari `AGT-06`, 6 kartu KPI dengan delta terukur terhadap *baseline* statis, **Impact-Preview HITL Confirmation Console** (tabel perbandingan *Statis vs Adaptive* + *Mitra Terdampak* sebelum tombol *Approve/Reject via API*), *Sankey Allocation Diagram*, grafik *Perubahan Keputusan Terukur*, serta **Live Agent Status Matrix** (6 agen).
@@ -659,8 +657,8 @@ Antarmuka sistem dibangun menggunakan **Streamlit + Plotly** secara terpisah (*d
    - **Tab 5 — `FreshFood, Kop & Retail`:** Menampilkan galeri citra RGB tomat nyata hasil klasifikasi 2D-Conv CNN + *Food Safety Hard-Block*, kurva LightGBM Koperasi, serta simulator XGBoost + Newsvendor PO SuperMart.
    - **Tab 6 — `Data Explorer & Eval`:** Menyediakan penjelajah basis data lintas enterprise yang ditenagai endpoint `/api/v1/data-explorer/{enterprise_id}/{table_name}` (**redaksi `🔒 REDACTED` di sisi server FastAPI**) serta grafik benchmark Bab 9.
 
-2. **Navigasi Adaptif Peran (*Role-Adaptive Local Workspaces*):**
-   - Ketika pengguna beralih peran di *sidebar* menjadi **`Farm Manager — AgroFarm (AGT-01)`** atau **`Fleet Manager — ColdChain (AGT-04)`**, antarmuka secara otomatis menyaring navigasi menjadi ruang kerja lokal khusus peran tersebut (membuka akses HPP/data privat miliknya sendiri di server FastAPI sambil tetap meredaksi data privat enterprise lain).
+2. **Navigasi Adaptif Peran (*1 Stakeholder per Enterprise*):**
+   - Ketika pengguna beralih peran di *sidebar* menjadi **`Farm Manager — AgroFarm (AGT-01)`**, **`Cooperative Manager — Koperasi Tani (AGT-02)`**, **`Quality Control & Production Manager — FreshFood (AGT-03)`**, **`Fleet & Cold Chain Manager — ColdChain (AGT-04)`**, atau **`Purchasing Manager — SuperMart (AGT-05)`**, antarmuka secara otomatis menyesuaikan ruang kerja dan membuka kolom privat milik enterprise tersebut di server FastAPI sambil tetap meredaksi data privat enterprise lain.
 
 ---
 
@@ -830,12 +828,12 @@ Setiap agen dalam ekosistem diberi peran terdefinisi secara formal (mengadopsi p
 
 | ID Agen | Nama Agen | Peran Fungsional | Inputs Utama | Outputs Utama | Tingkat Otonomi & Batasan |
 | :---: | :--- | :--- | :--- | :--- | :--- |
-| `AGT-01` | **AgroFarm Agent** | *Crop Monitor, Supply Forecaster & Harvest Planner* | Data cuaca, kelembapan, NDVI 14-hari, status sensor, permintaan *deferral* | Prediksi RF + 80% Quantile PI, jendela panen (`-2 hari` saat hujan ekstrem), status *fallback* | **Semi-Otonom:** Bebas menerbitkan prediksi; penundaan panen > 48 jam, pergeseran panen `-2 hari`, atau *sensor outage* ≥ 3 hari eskalasi *Farm Manager* |
-| `AGT-02` | **Koperasi Tani Agent** | *Aggregator & Price Negotiator* | Stok batch petani, harga pasar, proposal/CFP pembeli | Rekap stok, tawaran harga, kontrak jual-beli (*Purchase Agreement*) | **Otonom Terbatas:** Boleh negosiasi selama harga ≥ `floor_price` privat; diskon > 15% butuh persetujuan *Cooperative Manager* |
-| `AGT-03` | **FreshFood Agent** | *Quality Inspector & Factory Scheduler* | Citra tomat, hasil uji lab QC, kapasitas mesin, CFP *overtime* | Label grade A/B/C/Reject, sertifikat *food safety*, jadwal produksi FEFO | **Kritis-Terproteksi:** Penolakan *food safety* bersifat mutlak; aktivasi *overtime* > 500 kg wajib disetujui *Factory Manager* |
-| `AGT-04` | **ColdChain Agent** | *Cold-Chain Monitor (7–12°C), VRPTW & ETA Optimizer* | Stream sensor suhu/daya, *Shipments Inbox*, *Master Fleet*, kondisi lalu lintas | Peringatan `DISRUPTION_EVENT`, rute optimal **VRPTW** (0 *TW violations*), estimasi **XGBoost ETA** | **Reaktif-Otonom:** Deteksi anomali & *alert* instan otomatis; perubahan armada & sewa 3PL diverifikasi *Fleet/Warehouse Manager* |
-| `AGT-05` | **SuperMart Agent** | *Demand Forecaster & Retail Procurer* | Riwayat POS, kalender promo, stok rak, tawaran pasokan | Prediksi permintaan, *Purchase Order* (PO), konfirmasi penerimaan | **Otonom Terbatas:** PO otomatis jika harga ≤ `ceiling_price`; substitusi Grade B saat *Demand Surge* butuh persetujuan *Purchasing Manager* |
-| `AGT-06` | **Global Orchestrator Agent** | *Ecosystem Coordinator, Optimizer & Replanner* | Snapshot terotorisasi 5 agen, *disruption events*, hasil negosiasi | Rencana alokasi global MILP-FEFO, mediasi konflik, perintah *commit*, laporan HITL | **Supervised Coordinator:** Eksekusi otomatis dalam ambang aman; wajib *Human Approval* saat ambang risiko NIST RMF terlampaui |
+| `AGT-01` | **AgroFarm Agent** | *Crop Monitor, Supply Forecaster & Harvest Planner* | Data cuaca, kelembapan, NDVI 14-hari, status sensor, permintaan *deferral* | Prediksi RF + 80% Quantile PI, jendela panen (`-2 hari` saat hujan ekstrem), status *fallback* | **Semi-Otonom:** Bebas menerbitkan prediksi; penundaan panen > 48 jam, pergeseran panen `-2 hari`, atau *sensor outage* ≥ 3 hari eskalasi **Farm Manager** |
+| `AGT-02` | **Koperasi Tani Agent** | *Aggregator & Price Negotiator* | Stok batch petani, harga pasar, proposal/CFP pembeli | Rekap stok, tawaran harga, kontrak jual-beli (*Purchase Agreement*) | **Otonom Terbatas:** Boleh negosiasi selama harga ≥ `floor_price` privat; diskon > 15% butuh persetujuan **Cooperative Manager** |
+| `AGT-03` | **FreshFood Agent** | *Quality Inspector & Factory Scheduler* | Citra tomat, hasil uji lab QC, kapasitas mesin, CFP *overtime* | Label grade A/B/C/Reject, sertifikat *food safety*, jadwal produksi FEFO | **Kritis-Terproteksi:** Penolakan *food safety* bersifat mutlak; aktivasi *overtime* > 500 kg wajib disetujui **Quality Control & Production Manager** |
+| `AGT-04` | **ColdChain Agent** | *Cold-Chain Monitor (7–12°C), VRPTW & ETA Optimizer* | Stream sensor suhu/daya, *Shipments Inbox*, *Master Fleet*, kondisi lalu lintas | Peringatan `DISRUPTION_EVENT`, rute optimal **VRPTW** (0 *TW violations*), estimasi **XGBoost ETA** | **Reaktif-Otonom:** Deteksi anomali & *alert* instan otomatis; perubahan armada & sewa 3PL diverifikasi **Fleet & Cold Chain Manager** |
+| `AGT-05` | **SuperMart Agent** | *Demand Forecaster & Retail Procurer* | Riwayat POS, kalender promo, stok rak, tawaran pasokan | Prediksi permintaan, *Purchase Order* (PO), konfirmasi penerimaan | **Otonom Terbatas:** PO otomatis jika harga ≤ `ceiling_price`; substitusi Grade B saat *Demand Surge* butuh persetujuan **Purchasing Manager** |
+| `AGT-06` | **Global Orchestrator Agent** | *Ecosystem Coordinator, Optimizer & Replanner* | Snapshot terotorisasi 5 agen, *disruption events*, hasil negosiasi | Rencana alokasi global MILP-FEFO, mediasi konflik, perintah *commit*, laporan HITL | **Supervised Coordinator:** Eksekusi otomatis dalam ambang aman; wajib persetujuan **Global Control Center Operator** saat ambang risiko NIST RMF terlampaui |
 
 ## 7.2 Topologi Multi-Agent (*Hybrid Hierarchical–Peer Topology*)
 
@@ -967,14 +965,14 @@ Karena keputusan rantai pasok pangan menyangkut keamanan pangan (*food safety*),
 
 | Pemicu Risiko (*Risk Trigger*) | Ambang Batas Otomatisasi | Tindakan Sistem | Pejabat Penyetuju (*Approver*) |
 | :--- | :--- | :--- | :--- |
-| **Kegagalan Keamanan Pangan** (`food_safety_approved == false`) | 0% toleransi (*Hard Block*) | Tolak batch secara otomatis; dilarang di-*override* oleh agen | *Quality Control Officer* (FreshFood) |
-| **Penurunan Kapasitas Ekstrem** (*Cold Storage / Factory*) | Penurunan kapasitas ≥ 40% | Jeda komitmen final; tampilkan opsi *replanning* MILP | *Control Center Operator* & *Warehouse Manager* |
-| **Estimasi *Food Loss* Tinggi** | Prediksi FLR > 10% total panen | Wajib tinjauan manual & opsi pasar darurat/donasi | *Cooperative Manager* & *Control Center Operator* |
-| **Deviasi Biaya / Harga Negosiasi** | Biaya darurat > 15% atau harga < `floor_price` | Blokir auto-kontrak; eskalasi persetujuan finansial | *Procurement / Purchasing Manager* terkait |
-| **Kebuntuan Negosiasi (*Deadlock*)** | Tidak sepakat setelah $R_{\max} = 3$ putaran | Hentikan loop; sajikan 2 opsi kompromi *Pareto* ke manusia | *Control Center Operator* |
+| **Kegagalan Keamanan Pangan** (`food_safety_approved == false`) | 0% toleransi (*Hard Block*) | Tolak batch secara otomatis; dilarang di-*override* oleh agen | *Quality Control & Production Manager* (FreshFood) |
+| **Penurunan Kapasitas Ekstrem** (*Cold Storage / Factory*) | Penurunan kapasitas ≥ 40% | Jeda komitmen final; tampilkan opsi *replanning* MILP | *Global Control Center Operator* & *Fleet & Cold Chain Manager* |
+| **Estimasi *Food Loss* Tinggi** | Prediksi FLR > 10% total panen | Wajib tinjauan manual & opsi pasar darurat/donasi | *Cooperative Manager* & *Global Control Center Operator* |
+| **Deviasi Biaya / Harga Negosiasi** | Biaya darurat > 15% atau harga < `floor_price` | Blokir auto-kontrak; eskalasi persetujuan finansial | *Cooperative Manager* / *Purchasing Manager* terkait |
+| **Kebuntuan Negosiasi (*Deadlock*)** | Tidak sepakat setelah $R_{\max} = 3$ putaran | Hentikan loop; sajikan 2 opsi kompromi *Pareto* ke manusia | *Global Control Center Operator* |
 | **Substitusi Grade Ritel** | Penurunan standar mutu (Grade A → B) | Meminta persetujuan eksplisit sebelum mengubah PO | *Purchasing Manager* (SuperMart) |
-| **Pergeseran Jendela Panen Ekstrem (`EXTREME_RAIN`)** | Panen maju `≥ 2 hari` & NDVI `< mean - 2σ` | Tandai blok `MENYIMPANG`; eskalasi jadwal panen darurat | *Farm Manager* (AgroFarm) & *Control Center Operator* |
-| **Sensor Lahan Offline (`SENSOR_OUTAGE`)** | Sensor mati `≥ 3 hari` berturut-turut | Beralih ke `FALLBACK_HISTORICAL_MEAN` + tampilkan *Stale Data Warning* | *Farm Manager* (AgroFarm) & *Control Center Operator* |
+| **Pergeseran Jendela Panen Ekstrem (`EXTREME_RAIN`)** | Panen maju `≥ 2 hari` & NDVI `< mean - 2σ` | Tandai blok `MENYIMPANG`; eskalasi jadwal panen darurat | *Farm Manager* (AgroFarm) & *Global Control Center Operator* |
+| **Sensor Lahan Offline (`SENSOR_OUTAGE`)** | Sensor mati `≥ 3 hari` berturut-turut | Beralih ke `FALLBACK_HISTORICAL_MEAN` + tampilkan *Stale Data Warning* | *Farm Manager* (AgroFarm) & *Global Control Center Operator* |
 
 ### B. Mekanisme Keamanan, *Guardrails*, dan Auditabilitas
 1. **Isolasi Data & *Server-Side Role-Based Access Control* (RBAC):** Setiap *endpoint* enterprise diamankan menggunakan token berlingkup (`X-Scoped-Token`) yang diverifikasi di sisi server FastAPI (`resolve_token_scope()` & `redact_records_for_scope()`). Global Orchestrator dan peran lintas perusahaan hanya menerima kolom non-privat, sementara kolom sensitif (`production_cost_per_kg`, `floor_price_rp`, `ceiling_price_rp`, dll.) dihapus langsung di server sebelum respons JSON dikirim ke UI.

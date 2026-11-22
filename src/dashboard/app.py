@@ -41,18 +41,133 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------------------------
-# Custom CSS (Clean Executive Theme — zero banner clipping, legible KPIs)
+# Custom CSS (Strict High-Contrast Light Mode — WCAG AAA Legibility)
 # ---------------------------------------------------------------------------
 st.markdown(
     """
     <style>
-    .block-container { padding-top: 3.1rem; padding-bottom: 2rem; }
-    [data-testid="stMetricValue"] { font-size: 1.42rem !important; }
-    [data-testid="stMetricDelta"] { font-size: 0.78rem !important; }
+    :root, html, body, .stApp {
+        color-scheme: light !important;
+        background-color: #F8FAFC !important;
+        color: #0F172A !important;
+    }
+    .stApp [data-testid="stHeader"] {
+        background-color: #F8FAFC !important;
+    }
+    section[data-testid="stSidebar"] {
+        background-color: #FFFFFF !important;
+        border-right: 1px solid #CBD5E1 !important;
+    }
+    section[data-testid="stSidebar"] * {
+        color: #0F172A !important;
+    }
+    section[data-testid="stSidebar"] .stCaption,
+    section[data-testid="stSidebar"] small {
+        color: #334155 !important;
+    }
+    .block-container {
+        padding-top: 2.8rem;
+        padding-bottom: 2.2rem;
+    }
+    h1, h2, h3, h4, h5, p, li, label, .stMarkdown {
+        color: #0F172A !important;
+    }
+    /* Crisp high-contrast inline code pills (replaces faint green default) */
+    code {
+        background-color: #E2E8F0 !important;
+        color: #0F2C4C !important;
+        font-weight: 600 !important;
+        padding: 0.12rem 0.38rem !important;
+        border-radius: 4px !important;
+        border: 1px solid #CBD5E1 !important;
+    }
+    /* Tab bar contrast */
+    button[data-baseweb="tab"] {
+        color: #334155 !important;
+        font-weight: 600 !important;
+        background-color: transparent !important;
+    }
+    button[data-baseweb="tab"][aria-selected="true"] {
+        color: #1F4E79 !important;
+        font-weight: 700 !important;
+    }
+    div[data-baseweb="tab-highlight"] {
+        background-color: #1F4E79 !important;
+    }
+    /* Executive Primary & Secondary Buttons */
+    .stButton > button[kind="primary"],
+    .stFormSubmitButton > button {
+        background-color: #1F4E79 !important;
+        color: #FFFFFF !important;
+        border: 1px solid #143454 !important;
+        font-weight: 600 !important;
+    }
+    .stButton > button[kind="primary"] *,
+    .stFormSubmitButton > button *,
+    section[data-testid="stSidebar"] .stButton > button[kind="primary"] *,
+    section[data-testid="stSidebar"] .stFormSubmitButton > button * {
+        color: #FFFFFF !important;
+    }
+    .stButton > button[kind="primary"]:hover,
+    .stFormSubmitButton > button:hover {
+        background-color: #143454 !important;
+        color: #FFFFFF !important;
+    }
+    .stButton > button[kind="primary"]:hover *,
+    .stFormSubmitButton > button:hover * {
+        color: #FFFFFF !important;
+    }
+    .stButton > button[kind="secondary"],
+    .stDownloadButton > button {
+        background-color: #FFFFFF !important;
+        color: #0F2C4C !important;
+        border: 1px solid #94A3B8 !important;
+        font-weight: 600 !important;
+    }
+    .stButton > button[kind="secondary"]:hover,
+    .stDownloadButton > button:hover {
+        background-color: #EDF3F9 !important;
+        border-color: #1F4E79 !important;
+    }
+    /* Inputs, selects, expanders */
+    div[data-baseweb="select"] > div,
+    div[data-baseweb="input"] > div,
+    input, textarea {
+        background-color: #FFFFFF !important;
+        color: #0F172A !important;
+        border-color: #94A3B8 !important;
+    }
+    details, [data-testid="stExpander"] {
+        background-color: #FFFFFF !important;
+        border: 1px solid #CBD5E1 !important;
+        border-radius: 8px !important;
+    }
+    /* High-contrast Metric Cards */
+    div[data-testid="stMetric"] {
+        background-color: #FFFFFF !important;
+        border: 1px solid #CBD5E1 !important;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+        padding: 0.7rem 0.9rem !important;
+        border-radius: 8px !important;
+    }
+    [data-testid="stMetricLabel"] {
+        color: #334155 !important;
+        font-weight: 600 !important;
+    }
+    [data-testid="stMetricValue"] {
+        color: #0F172A !important;
+        font-size: 1.42rem !important;
+        font-weight: 700 !important;
+    }
+    [data-testid="stMetricDelta"] {
+        font-size: 0.80rem !important;
+        font-weight: 600 !important;
+    }
+    /* Top Executive Banner (pure white text on deep navy) */
     .role-banner {
-        background: linear-gradient(90deg, #143454 0%, #1F4E79 65%, #2B6CB0 100%);
-        color: #FFFFFF;
-        padding: 0.9rem 1.25rem;
+        background: linear-gradient(90deg, #102A43 0%, #1F4E79 65%, #2B6CB0 100%);
+        color: #FFFFFF !important;
+        padding: 0.95rem 1.3rem;
         border-radius: 10px;
         margin-bottom: 0.95rem;
         display: flex;
@@ -60,31 +175,44 @@ st.markdown(
         align-items: center;
         flex-wrap: wrap;
         gap: 0.5rem;
+        box-shadow: 0 2px 6px rgba(15, 44, 76, 0.16);
+    }
+    .role-banner * {
+        color: #FFFFFF !important;
     }
     .role-badge {
-        background: rgba(255,255,255,0.16);
-        border: 1px solid rgba(255,255,255,0.35);
-        padding: 0.25rem 0.7rem;
+        background: rgba(255,255,255,0.20);
+        border: 1px solid rgba(255,255,255,0.45);
+        color: #FFFFFF !important;
+        padding: 0.25rem 0.72rem;
         border-radius: 999px;
         font-size: 0.80rem;
         font-weight: 600;
     }
-    .banner-ok { background:#ECFDF5; border-left:5px solid #10B981; color:#065F46; padding:0.75rem 1rem; border-radius:6px; margin-bottom:0.75rem; }
-    .banner-warn { background:#FFFBEB; border-left:5px solid #F59E0B; color:#92400E; padding:0.75rem 1rem; border-radius:6px; margin-bottom:0.75rem; }
-    .banner-stale { background:#FEF3C7; border:1px solid #F59E0B; border-left:6px solid #D97706; color:#78350F; padding:0.75rem 1rem; border-radius:6px; margin-bottom:0.75rem; }
-    .banner-danger { background:#FEF2F2; border-left:5px solid #EF4444; color:#991B1B; padding:0.75rem 1rem; border-radius:6px; margin-bottom:0.75rem; }
-    .brief-box { background:#EFF6FF; border:1px solid #BFDBFE; border-left:5px solid #1F4E79; color:#1E3A5F; padding:0.85rem 1rem; border-radius:6px; margin-bottom:0.8rem; }
-    .trace-card { background:#F8FAFC; border:1px solid #CBD5E1; border-left:4px solid #1F4E79; border-radius:6px; padding:0.6rem 0.9rem; margin-bottom:0.45rem; }
-    .msg-card { background:#FFFFFF; border:1px solid #E2E8F0; border-left:4px solid #2B6CB0; border-radius:6px; padding:0.55rem 0.9rem; margin-bottom:0.4rem; }
-    .empty-card { background:#F8FAFC; border:1px dashed #94A3B8; border-radius:8px; padding:1.4rem; text-align:center; color:#475569; margin:0.6rem 0; }
-    div[data-testid="stMetric"] { background:#F8FAFC; border:1px solid #E2E8F0; padding:0.65rem 0.85rem; border-radius:8px; }
+    /* Alert & Briefing Boxes — dark legible text on clean light tints */
+    .banner-ok { background:#DCFCE7; border:1px solid #86EFAC; border-left:5px solid #15803D; color:#14532D !important; padding:0.75rem 1rem; border-radius:6px; margin-bottom:0.75rem; }
+    .banner-ok * { color:#14532D !important; }
+    .banner-warn { background:#FEF3C7; border:1px solid #FCD34D; border-left:5px solid #B45309; color:#78350F !important; padding:0.75rem 1rem; border-radius:6px; margin-bottom:0.75rem; }
+    .banner-warn * { color:#78350F !important; }
+    .banner-stale { background:#FFEDD5; border:1px solid #FDBA74; border-left:6px solid #C2410C; color:#7C2D12 !important; padding:0.75rem 1rem; border-radius:6px; margin-bottom:0.75rem; }
+    .banner-stale * { color:#7C2D12 !important; }
+    .banner-danger { background:#FEE2E2; border:1px solid #FCA5A5; border-left:5px solid #B91C1C; color:#7F1D1D !important; padding:0.75rem 1rem; border-radius:6px; margin-bottom:0.75rem; }
+    .banner-danger * { color:#7F1D1D !important; }
+    .brief-box { background:#EFF6FF; border:1px solid #93C5FD; border-left:5px solid #1F4E79; color:#0F2C4C !important; padding:0.85rem 1rem; border-radius:6px; margin-bottom:0.8rem; line-height:1.5; }
+    .brief-box * { color:#0F2C4C !important; }
+    .trace-card { background:#FFFFFF; border:1px solid #CBD5E1; border-left:4px solid #1F4E79; color:#0F172A !important; border-radius:6px; padding:0.65rem 0.95rem; margin-bottom:0.45rem; }
+    .trace-card * { color:#0F172A !important; }
+    .msg-card { background:#FFFFFF; border:1px solid #CBD5E1; border-left:4px solid #2B6CB0; color:#0F172A !important; border-radius:6px; padding:0.55rem 0.9rem; margin-bottom:0.4rem; }
+    .msg-card * { color:#0F172A !important; }
+    .empty-card { background:#FFFFFF; border:1px dashed #64748B; border-radius:8px; padding:1.4rem; text-align:center; color:#334155 !important; margin:0.6rem 0; }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
 # ---------------------------------------------------------------------------
-# Role Profiles (RBAC Tokens verified SERVER-SIDE by FastAPI)
+# Role Profiles — 1 Primary Stakeholder per Enterprise + Global Operator
+# (RBAC Tokens verified SERVER-SIDE by FastAPI)
 # ---------------------------------------------------------------------------
 ROLE_PROFILES: Dict[str, Dict[str, Any]] = {
     "Global Control Center Operator (AGT-06)": {
@@ -97,31 +225,31 @@ ROLE_PROFILES: Dict[str, Dict[str, Any]] = {
         "user": "farm.manager@agrofarm.co.id",
         "enterprise_key": "agrofarm",
         "token": "tok_agrofarm_local_v1",
-        "scope_desc": "Workspace Lokal AgroFarm (PostgreSQL) — Crop Monitoring NDVI (14d ± 2σ), RF 80% PI & HPP Lokal Terbuka",
+        "scope_desc": "Stakeholder Tunggal AgroFarm (PostgreSQL) — Crop Monitoring NDVI (14d ± 2σ), RF 80% PI & HPP Lokal Terbuka",
     },
-    "Fleet Manager — ColdChain (AGT-04)": {
-        "user": "fleet.manager@coldchain.co.id",
-        "enterprise_key": "coldchain",
-        "token": "tok_coldchain_local_v1",
-        "scope_desc": "Workspace Lokal ColdChain (TimescaleDB) — Fleet/Shipments CRUD, OR-Tools VRPTW, XGBoost ETA & Monitor 7–12°C",
-    },
-    "Koperasi Tani Manager (AGT-02)": {
-        "user": "ketua@koperasitani.id",
+    "Cooperative Manager — Koperasi Tani (AGT-02)": {
+        "user": "coop.manager@koperasitani.id",
         "enterprise_key": "koperasi",
         "token": "tok_koperasi_local_v1",
-        "scope_desc": "Workspace Lokal Koperasi (MySQL) — LightGBM Price, Contract Net Auction & floor_price_rp Terbuka Lokal",
+        "scope_desc": "Stakeholder Tunggal Koperasi (MySQL) — LightGBM Price, Contract Net Auction & floor_price_rp Terbuka Lokal",
     },
-    "FreshFood QC Manager (AGT-03)": {
-        "user": "qc.lead@freshfood.co.id",
+    "Quality Control & Production Manager — FreshFood (AGT-03)": {
+        "user": "qc.prod@freshfood.co.id",
         "enterprise_key": "freshfood",
         "token": "tok_freshfood_local_v1",
-        "scope_desc": "Workspace Lokal FreshFood (MongoDB) — Galeri Citra RGB CNN Grading & Guardrail Food Safety 0% Toleransi",
+        "scope_desc": "Stakeholder Tunggal FreshFood (MongoDB) — Galeri Citra RGB CNN, Food Safety Hard-Block & Otorisasi Lembur +500 kg",
     },
-    "SuperMart Procurement Manager (AGT-05)": {
-        "user": "buyer@supermart.co.id",
+    "Fleet & Cold Chain Manager — ColdChain (AGT-04)": {
+        "user": "fleet.coldchain@coldchain.co.id",
+        "enterprise_key": "coldchain",
+        "token": "tok_coldchain_local_v1",
+        "scope_desc": "Stakeholder Tunggal ColdChain (TimescaleDB) — Fleet/Shipments CRUD, OR-Tools VRPTW, XGBoost ETA & Gudang 7–12°C",
+    },
+    "Purchasing Manager — SuperMart (AGT-05)": {
+        "user": "purchasing@supermart.co.id",
         "enterprise_key": "supermart",
         "token": "tok_supermart_local_v1",
-        "scope_desc": "Workspace Lokal SuperMart (MySQL) — XGBoost Demand, Newsvendor PO & ceiling_price_rp Terbuka Lokal",
+        "scope_desc": "Stakeholder Tunggal SuperMart (MySQL) — XGBoost Demand, Newsvendor PO, Substitusi Grade B & ceiling_price_rp Lokal",
     },
 }
 
@@ -262,7 +390,15 @@ def build_sankey(allocations: List[Dict[str, Any]], unallocated: Dict[str, float
             link=dict(source=sources, target=targets, value=values, label=labels, color=colors),
         )]
     )
-    fig.update_layout(title="Aliran Alokasi Rantai Pasok Tomat (MILP-FEFO)", height=350, margin=dict(l=10, r=10, t=38, b=10))
+    fig.update_layout(
+        title=dict(text="Aliran Alokasi Rantai Pasok Tomat (MILP-FEFO)", font=dict(color="#0F172A", size=14)),
+        template="plotly_white",
+        paper_bgcolor="#FFFFFF",
+        plot_bgcolor="#FFFFFF",
+        font=dict(color="#0F172A", size=12),
+        height=350,
+        margin=dict(l=10, r=10, t=38, b=10),
+    )
     return fig
 
 
@@ -279,15 +415,19 @@ def build_decision_shift_chart(baseline_state: Dict[str, Any], active_state: Dic
 
     s_base, s_act = summarize(baseline_state), summarize(active_state)
     fig = go.Figure()
-    fig.add_trace(go.Bar(name="Statis (Tanpa Adaptive Replan)", x=channels, y=[s_base[c] for c in channels], marker_color="#94A3B8", text=[f"{s_base[c]:,.0f}" if s_base[c] > 0 else "" for c in channels], textposition="outside"))
-    fig.add_trace(go.Bar(name="Adaptive Replanning (MILP-FEFO)", x=channels, y=[s_act[c] for c in channels], marker_color="#1F4E79", text=[f"{s_act[c]:,.0f}" if s_act[c] > 0 else "" for c in channels], textposition="outside"))
+    fig.add_trace(go.Bar(name="Statis (Tanpa Adaptive Replan)", x=channels, y=[s_base[c] for c in channels], marker_color="#64748B", text=[f"{s_base[c]:,.0f}" if s_base[c] > 0 else "" for c in channels], textposition="outside", textfont=dict(color="#0F172A")))
+    fig.add_trace(go.Bar(name="Adaptive Replanning (MILP-FEFO)", x=channels, y=[s_act[c] for c in channels], marker_color="#1F4E79", text=[f"{s_act[c]:,.0f}" if s_act[c] > 0 else "" for c in channels], textposition="outside", textfont=dict(color="#0F172A")))
     fig.update_layout(
-        title=dict(text="Perubahan Alokasi (kg): Statis vs Adaptive Replanning", y=0.97, x=0.0, font=dict(size=14)),
+        title=dict(text="Perubahan Alokasi (kg): Statis vs Adaptive Replanning", y=0.97, x=0.0, font=dict(size=14, color="#0F172A")),
+        template="plotly_white",
+        paper_bgcolor="#FFFFFF",
+        plot_bgcolor="#FFFFFF",
+        font=dict(color="#0F172A"),
         barmode="group",
         yaxis_title="Volume (kg)",
-        yaxis=dict(range=[0, max(max(s_base.values()), max(s_act.values()), 100) * 1.18]),
+        yaxis=dict(range=[0, max(max(s_base.values()), max(s_act.values()), 100) * 1.18], gridcolor="#E2E8F0"),
         height=355,
-        legend=dict(orientation="h", yanchor="top", y=-0.22, xanchor="center", x=0.5),
+        legend=dict(orientation="h", yanchor="top", y=-0.22, xanchor="center", x=0.5, font=dict(color="#0F172A")),
         margin=dict(l=10, r=10, t=44, b=55),
     )
     return fig
@@ -316,10 +456,16 @@ def build_geospatial_vrptw_map(vrptw_plan: Dict[str, Any]) -> go.Figure:
 
     fig.update_layout(
         mapbox=dict(style="open-street-map", center=dict(lat=-7.775, lon=110.355), zoom=10.6),
-        title=f"Peta Geospasial Rute VRPTW ({vrptw_plan.get('scenario', 'NORMAL')}) — Total {vrptw_plan.get('optimized_distance_km', 0):.0f} km (-{vrptw_plan.get('distance_reduction_pct', 0)}%)",
+        title=dict(
+            text=f"Peta Geospasial Rute VRPTW ({vrptw_plan.get('scenario', 'NORMAL')}) — Total {vrptw_plan.get('optimized_distance_km', 0):.0f} km (-{vrptw_plan.get('distance_reduction_pct', 0)}%)",
+            font=dict(color="#0F172A", size=14),
+        ),
+        template="plotly_white",
+        paper_bgcolor="#FFFFFF",
+        font=dict(color="#0F172A"),
         height=380,
         margin=dict(l=5, r=5, t=40, b=5),
-        legend=dict(orientation="h", yanchor="bottom", y=0.01, xanchor="left", x=0.01, bgcolor="rgba(255,255,255,0.85)"),
+        legend=dict(orientation="h", yanchor="bottom", y=0.01, xanchor="left", x=0.01, bgcolor="rgba(255,255,255,0.92)", font=dict(color="#0F172A")),
     )
     return fig
 
@@ -462,8 +608,16 @@ def render_agrofarm_workspace(api: ApiBridge, api_online: bool, state: Dict[str,
         fi = m_af.get("feature_importance", {})
         if fi:
             fi_df = pd.DataFrame(list(fi.items()), columns=["Fitur", "Importance"]).sort_values("Importance", ascending=True)
-            fig_fi = px.bar(fi_df, x="Importance", y="Fitur", orientation="h", color="Importance", color_continuous_scale="Greens")
-            fig_fi.update_layout(height=300, coloraxis_showscale=False, margin=dict(l=10, r=10, t=15, b=10))
+            fig_fi = px.bar(fi_df, x="Importance", y="Fitur", orientation="h", color="Importance", color_continuous_scale="Tealgrn", template="plotly_white")
+            fig_fi.update_layout(
+                height=300,
+                coloraxis_showscale=False,
+                paper_bgcolor="#FFFFFF",
+                plot_bgcolor="#FFFFFF",
+                font=dict(color="#0F172A"),
+                xaxis=dict(gridcolor="#E2E8F0"),
+                margin=dict(l=10, r=10, t=15, b=10),
+            )
             st.plotly_chart(fig_fi, use_container_width=True)
 
 
@@ -586,7 +740,17 @@ def render_coldchain_workspace(api: ApiBridge, api_online: bool, state: Dict[str
             anoms = df_tel[df_tel["is_anomaly"] == 1]
             if not anoms.empty:
                 fig_tel.add_trace(go.Scatter(x=anoms["ts"], y=anoms["temp_c"], mode="markers", name="Anomali Isolation Forest", marker=dict(color="#DC2626", size=9, symbol="x")))
-            fig_tel.update_layout(title="Telemetri Suhu Cold Storage & Deteksi Anomali Isolation Forest", yaxis_title="Suhu (°C)", height=320, margin=dict(l=10, r=10, t=38, b=10))
+            fig_tel.update_layout(
+                title=dict(text="Telemetri Suhu Cold Storage & Deteksi Anomali Isolation Forest", font=dict(color="#0F172A", size=14)),
+                template="plotly_white",
+                paper_bgcolor="#FFFFFF",
+                plot_bgcolor="#FFFFFF",
+                font=dict(color="#0F172A"),
+                yaxis_title="Suhu (°C)",
+                yaxis=dict(gridcolor="#E2E8F0"),
+                height=320,
+                margin=dict(l=10, r=10, t=38, b=10),
+            )
             st.plotly_chart(fig_tel, use_container_width=True)
         with t2:
             st.markdown("#### ⏱️ Simulator Prediksi ETA (XGBoost Regressor)")
