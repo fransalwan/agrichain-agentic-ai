@@ -1,19 +1,28 @@
-# LAPORAN PROYEK MAGISTER ILMU KOMPUTER
+# LAPORAN PROYEK MAGISTER KECERDASAN ARTIFISIAL
 
 ## SMART AGRICULTURE & FOOD SUPPLY CHAIN:
 ### *Heterogeneous Multi-Enterprise Agentic AI Ecosystem untuk Optimasi Produksi Pertanian, Distribusi Pangan, dan Adaptive Replanning*
 
-**Mata Kuliah:** AI Agentic Technology Systems for Digital Enterprise Ecosystem  
-**Program Studi:** Magister Ilmu Komputer — Konsentrasi Kecerdasan Artifisial  
+**Mata Kuliah:** Agent Enterprise  
+**Program Studi:** Magister Kecerdasan Artifisial  
 **Cakupan Dokumen:** Bab 1 (Pendahuluan) sampai Bab 11 (Kesimpulan dan Saran) + Daftar Pustaka  
-**Repositori Implementasi:** `agrichain-agentic-ai` v2.0 (Python 3.11, LangGraph, PuLP MILP-FEFO, OR-Tools VRPTW, FastAPI v2.0, Streamlit)  
+**Repositori Implementasi:** `agrichain-agentic-ai` v2.1 (Python 3.11, LangGraph, PuLP MILP-FEFO, OR-Tools VRPTW, FastAPI v2.1 20 Endpoint, Streamlit Light-Mode Cockpit)  
 **Komoditas Studi Kasus:** Tomat (*Solanum lycopersicum*) — SOP Suhu Aman `7,0–12,0°C`  
+
+**Tim Penyusun & Pembagian Tugas:**
+
+| No | Nama Anggota | NIM | Pembagian Tugas (Enterprise / Lapis) |
+| :---: | :--- | :---: | :--- |
+| 1 | **M. Al lail Qadrillah** | `26/590736/PPA/07413` | Koperasi Tani (`AGT-02`) |
+| 2 | **Dimas Prabowo** | `26/590092/PPA/07382` | ColdChain Logistics (`AGT-04`) |
+| 3 | **Monanta Alfiareza** | `26/591492/PPA/07455` | AgroFarm (`AGT-01`) |
+| 4 | **Frans Alwan Purba** | `25/563545/PPA/07116` | FreshFood Processing (`AGT-03`), SuperMart (`AGT-05`), & Global Orchestration (`AGT-06`) |
 
 ---
 
 ## Ringkasan Eksekutif
 
-Rantai pasok pangan pertanian (*agri-food supply chain*) memiliki karakteristik kompleksitas tinggi karena melibatkan berbagai entitas bisnis independen dengan sistem informasi heterogen, tujuan komersial yang saling berkonflik, serta komoditas mudah rusak (*perishable*) dengan umur simpan singkat. Proyek ini merancang dan mengimplementasikan **Heterogeneous Multi-Enterprise Agentic AI Ecosystem (v2.0)** yang mengoordinasikan lima entitas perusahaan—**AgroFarm**, **Koperasi Tani**, **FreshFood Processing**, **ColdChain Logistics**, dan **SuperMart**—melalui pusat koordinasi **Global Orchestrator Agent**.
+Rantai pasok pangan pertanian (*agri-food supply chain*) memiliki karakteristik kompleksitas tinggi karena melibatkan berbagai entitas bisnis independen dengan sistem informasi heterogen, tujuan komersial yang saling berkonflik, serta komoditas mudah rusak (*perishable*) dengan umur simpan singkat. Proyek ini merancang dan mengimplementasikan **Heterogeneous Multi-Enterprise Agentic AI Ecosystem (v2.1)** yang mengoordinasikan lima entitas perusahaan—**AgroFarm**, **Koperasi Tani**, **FreshFood Processing**, **ColdChain Logistics**, dan **SuperMart**—melalui pusat koordinasi **Global Orchestrator Agent**.
 
 Berbeda dari pendekatan prediktif tunggal atau sistem ERP terpusat yang melanggar otonomi data perusahaan, rancangan ini memisahkan secara tegas antara **Local Enterprise Intelligence** dan **Global Ecosystem Intelligence** berdasarkan prinsip kedaulatan data (*data sovereignty*) yang ditegakkan secara langsung di **sisi server FastAPI (`Server-Side RBAC Firewall` berbasis `X-Scoped-Token`)** disertai keterlacakan *canonical cross-enterprise lineage* (`block_id → lot_id → qc_doc_id → shipment_id → trip_id → vehicle_id → po_ref`). Ekosistem ini terdiri atas **enam agen otonom** (5 agen enterprise lokal + 1 agen orkestrator global) yang menerapkan **arsitektur model heterogen ganda**: setiap agen dilengkapi model *machine learning*/optimasi domain yang berbeda (**Random Forest 250 Trees + NDVI + 80% Quantile PI & 14-day ± 2σ Deviation Engine**, **LightGBM + Contract Net Auction**, **2D-Conv Spatial-Spectral CNN + Food Safety Hard-Block**, **Isolation Forest 7–12°C + XGBoost ETA + OR-Tools VRPTW**, **XGBoost + Newsvendor PO**, dan **MILP berbasis FEFO**) sekaligus *backbone* Large Language Model (LLM) yang berbeda sesuai tuntutan modalitas, latensi, privasi, dan kedalaman penalaran (**Qwen 2.5 14B**, **Claude 3.5 Sonnet**, **Gemini 2.5 Flash Multimodal**, **Llama 3.1 8B**, **Mistral Small 3**, dan **GPT-4o**). Komunikasi antar-agen mengadopsi protokol *Agent-to-Agent* (A2A) berbasis performatif **FIPA-ACL** dan standar pertukaran *event* **GS1 EPCIS 2.0**, dilengkapi *Impact-Preview* **Human-in-the-Loop (HITL)** dan *concurrency-safe* **SHA-256 Audit Trail** yang mengacu pada **NIST AI RMF 1.0**.
 
@@ -60,7 +69,7 @@ Tujuan yang ingin dicapai melalui perancangan dan pengembangan proyek ini adalah
 
 ## 1.4 Batasan Masalah
 
-Agar ruang lingkup proyek tetap terfokus, terukur, dan dapat dievaluasi secara mendalam di tingkat Magister Ilmu Komputer, ditetapkan batasan sebagai berikut:
+Agar ruang lingkup proyek tetap terfokus, terukur, dan dapat dievaluasi secara mendalam di tingkat Magister Kecerdasan Artifisial, ditetapkan batasan sebagai berikut:
 
 1. **Komoditas tunggal berkarakteristik *perishable*:** Studi kasus difokuskan pada komoditas **tomat segar dan olahan** yang terbagi atas tiga kelas mutu (Grade A, Grade B, Grade C) dengan variasi umur simpan (*shelf life*) antara 2 hingga 5 hari.
 2. **Jumlah entitas perusahaan:** Ekosistem dibatasi pada lima entitas enterprise (AgroFarm, Koperasi Tani, FreshFood Processing, ColdChain Logistics, SuperMart) dan satu pusat koordinasi global (*Global Agentic Control Center*).
@@ -73,6 +82,19 @@ Agar ruang lingkup proyek tetap terfokus, terukur, dan dapat dievaluasi secara m
 1. **Manfaat Akademis:** Memberikan kontribusi konseptual dan arsitektural pada literatur *Multi-Agent LLM Systems* untuk domain *cross-enterprise supply chain*, khususnya pada integrasi *neuro-symbolic* antara optimasi deterministik (MILP/CVRP), prediksi statistik/visi komputer, dan penalaran strategis berbasis LLM heterogen.
 2. **Manfaat Praktis bagi Ekosistem Agribisnis:** Menjadi cetak biru (*blueprint*) sistem kolaborasi digital lintas pelaku rantai pasok pangan untuk menekan *food loss*, menjaga stabilitas harga yang adil bagi petani dan ritel, serta mempercepat respons terhadap gangguan rantai dingin.
 3. **Manfaat Rekayasa Perangkat Lunak AI:** Menunjukkan praktik terbaik (*best practices*) dalam orkestrasi agen heterogen, pertukaran pesan terstandar GS1 EPCIS 2.0, serta penerapan tata kelola risiko AI berbasis NIST AI RMF 1.0 pada sistem enterprise.
+
+## 1.6 Pembagian Tugas dan Kontribusi Anggota Kelompok
+
+Pengembangan ekosistem **AgriChain v2.1** dilaksanakan secara kolaboratif oleh empat anggota kelompok pada Program Studi **Magister Kecerdasan Artifisial** (Mata Kuliah **Agent Enterprise**). Setiap anggota bertanggung jawab penuh atas perancangan arsitektur agen lokal, pemodelan AI/optimasi domain, layanan *endpoint* API, validasi skenario gangguan, serta antarmuka peran (*role workspace*) pada entitas enterprise masing-masing, sebagaimana dirinci pada **Tabel 1.1**.
+
+**Tabel 1.1.** Pembagian Tugas dan Kontribusi Anggota Kelompok
+
+| No | Nama Anggota | NIM | Enterprise / Lapis | Kontribusi Perancangan & Implementasi Utama |
+| :---: | :--- | :---: | :--- | :--- |
+| 1 | **M. Al lail Qadrillah** | `26/590736/PPA/07413` | **Koperasi Tani** (`AGT-02`) | Perancangan agen agregator & *trading* (*Cooperative Manager*), model prediksi harga pasar **LightGBM**, protokol negosiasi *Contract Net Protocol* dengan *server-side redaction* `floor_price_rp`, layanan `/api/v1/koperasi/price-forecast`, serta *workspace* Koperasi Tani. |
+| 2 | **Dimas Prabowo** | `26/590092/PPA/07382` | **ColdChain Logistics** (`AGT-04`) | Perancangan agen logistik rantai dingin (*Fleet & Cold Chain Manager*), deteksi anomali suhu **Isolation Forest** (`7,0–12,0°C`), prediksi durasi **XGBoost ETA**, optimasi rute **Google OR-Tools VRPTW** (*dynamic dock sync*), layanan CRUD armada & pengiriman `/api/v1/coldchain/{fleet,shipments,vrptw,eta}`, serta peta geospasial VRPTW. |
+| 3 | **Monanta Alfiareza** | `26/591492/PPA/07455` | **AgroFarm** (`AGT-01`) | Perancangan agen produksi pertanian (*Farm Manager*), model prediksi hasil panen **Random Forest 250 Trees + NDVI + 80% Quantile PI**, *Crop Monitoring Deviation Engine* (`14-hari ± 2σ`), *Sensor Outage Safety Fallback*, skenario `EXTREME_RAIN`, layanan `/api/v1/agrofarm/{monitoring,predict}`, serta *workspace* AgroFarm v2. |
+| 4 | **Frans Alwan Purba** | `25/563545/PPA/07116` | **FreshFood Processing** (`AGT-03`), **SuperMart** (`AGT-05`), & **Global Orchestration** (`AGT-06`) | Perancangan agen pengolahan (**2D-Conv CNN**, *Food Safety Hard-Block*, penjadwalan FEFO, *QC Feedback*, *Waste Valorization*) & agen ritel (**XGBoost 7-Day Horizon**, Newsvendor PO, *Flash-Promo*, *Goods Receipt SLA*); serta **Global Orchestrator** (**LangGraph**, **PuLP MILP-FEFO**, *Canonical Lineage*, *Server-Side RBAC Firewall*, *Impact-Preview HITL*, *SHA-256 Audit Trail*, integrasi FastAPI Gateway 20 endpoint, Streamlit Light-Mode Cockpit, dan pengujian otomatis `pytest`). |
 
 ---
 

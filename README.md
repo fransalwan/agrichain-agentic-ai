@@ -8,18 +8,28 @@
 ![Tests](https://img.shields.io/badge/Pytest-13%2F13%20Passed-2E7D32)
 ![Standards](https://img.shields.io/badge/Standards-A2A%20%7C%20FIPA--ACL%20%7C%20GS1%20EPCIS%202.0%20%7C%20NIST%20AI%20RMF%201.0-0F766E)
 
-> **Proyek Magister Ilmu Komputer (S2 — Konsentrasi Kecerdasan Artifisial)**  
-> **Mata Kuliah:** *AI Agentic Technology Systems for Digital Enterprise Ecosystem*  
-> **Laporan Lengkap v2.0 (Bab 1–11, 54 Halaman):** [`Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.pdf`](./Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.pdf) · [`DOCX`](./Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.docx) · [`Markdown`](./Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.md)  
-> **Rancangan & Analisis Arsitektur v2.0:** [`Analisis_Insight_ColdChain_AgroFarm_UIUX.md`](./Analisis_Insight_ColdChain_AgroFarm_UIUX.md) · [`Rancangan_Improvement_Proper_AgriChain_v2.md`](./Rancangan_Improvement_Proper_AgriChain_v2.md)
+> **Program Studi:** Magister Kecerdasan Artifisial  
+> **Mata Kuliah:** Agent Enterprise  
+> **Laporan Lengkap v2.1 (Bab 1–11, 54 Halaman):** [`Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.pdf`](./Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.pdf) · [`DOCX`](./Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.docx) · [`Markdown`](./Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.md)
 
 ---
 
-## Ringkasan Proyek & Peningkatan v2.0 (4 Pilar)
+## Tim Penyusun & Pembagian Tugas
+
+| No | Nama Anggota | NIM | Enterprise / Lapis Tanggung Jawab |
+| :---: | :--- | :---: | :--- |
+| 1 | **M. Al lail Qadrillah** | `26/590736/PPA/07413` | **Koperasi Tani** (`AGT-02`) |
+| 2 | **Dimas Prabowo** | `26/590092/PPA/07382` | **ColdChain Logistics** (`AGT-04`) |
+| 3 | **Monanta Alfiareza** | `26/591492/PPA/07455` | **AgroFarm** (`AGT-01`) |
+| 4 | **Frans Alwan Purba** | `25/563545/PPA/07116` | **FreshFood Processing** (`AGT-03`), **SuperMart** (`AGT-05`), & **Global Orchestration** (`AGT-06`) |
+
+---
+
+## Ringkasan Proyek & Peningkatan v2.1 (Full 5-Enterprise Parity)
 
 `agrichain-agentic-ai` mengoordinasikan **5 perusahaan independen** (*AgroFarm, Koperasi Tani, FreshFood Processing, ColdChain Logistics, SuperMart*) melalui **Global Agentic Control Center** menggunakan **6 agen otonom** dengan **heterogenitas model ganda** (6 model domain ML/optimasi berbeda + 6 keluarga LLM berbeda) serta prinsip **Zero-Direct-DB-Access (*Data Sovereignty*)**.
 
-### Peningkatan Utama Versi 2.0
+### Peningkatan Utama Versi 2.0 → 2.1
 1. **Pilar 1 — Arsitektur, Kontrak Data & *Server-Side RBAC*:** Standarisasi suhu aman tomat **`7,0–12,0°C`** lintas modul, pelacakan *canonical cross-enterprise lineage* (`block_id → lot_id → qc_doc_id → shipment_id → trip_id → vehicle_id → po_ref`), redaksi data privat di **server FastAPI** berbasis header `X-Scoped-Token`, serta rantai audit kriptografi **SHA-256** (*concurrency-safe*).
 2. **Pilar 2 — Pendalaman AI Lokal (`AGT-01` AgroFarm v2 & `AGT-04` ColdChain v2):**
    - **AgroFarm v2 (`rf-v2.0`):** Random Forest 250 pohon + fitur **NDVI** + **80% Quantile Prediction Interval (`p10–p90`)** + *Feature Importance* + pembanding *baseline* (*Hist Mean* & *Linear Reg*) + *Crop Monitoring Deviation Engine* (**14 hari ± 2σ**) + *Sensor Outage Safety Fallback* (offline ≥ 3 hari → `FALLBACK_HISTORICAL_MEAN`) + skenario **`EXTREME_RAIN`** (jendela panen maju `-2 hari`).
@@ -27,7 +37,7 @@
 3. **Pilar 3 — *Decoupled FastAPI Multi-Enterprise Gateway v2.1 (Full 5-Enterprise Parity, 20 Endpoint)*:** Endpoint REST lokal lengkap untuk **seluruh 5 enterprise** — AgroFarm (`/monitoring`, `/predict`), Koperasi (`/price-forecast`), FreshFood (`/qc-inspect`, `/schedule`), ColdChain (`/fleet` & `/shipments` CRUD, `/vrptw`, `/eta`), SuperMart (`/forecast-7d`, `/po` CRUD, `/goods-receipt-sla`), *Server-Side Privacy Data Explorer*, serta LangGraph Orchestrator dengan *Closed-Loop Handshakes* (VRPTW *dynamic dock sync*, *QC Feedback → AgroFarm*, *7-Day Demand Horizon → Hulu*, *Flash-Promo Absorption*, & *Goods Receipt SLA*).
 4. **Pilar 4 — *Role-Adaptive Enterprise Cockpit v2.1 (High-Contrast Light Mode)*:** UI terpisah via HTTP (`ApiBridge` + `X-Scoped-Token`), tema **Light Mode berkontras tinggi** (`.streamlit/config.toml` + WCAG AAA `#0F172A` di atas `#F8FAFC`/`#FFFFFF`), *dedicated workspace* untuk **seluruh 6 peran** (1 stakeholder utama per enterprise + 1 operator global), **5 UI State Wajib**, **Impact-Preview HITL Confirmation Console**, dan **Peta Geospasial VRPTW Interaktif**.
 
-| ID Agen | Enterprise / Layer | Primary Stakeholder (1 per Enterprise) | Model Domain AI / Optimasi (v2.0) | Model LLM Backbone | Basis Data Lokal |
+| ID Agen | Enterprise / Layer | Primary Stakeholder (1 per Enterprise) | Model Domain AI / Optimasi (v2.1) | Model LLM Backbone | Basis Data Lokal |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `AGT-01` | **AgroFarm** | **Farm Manager** | Random Forest 250 Trees + NDVI + 80% Quantile PI + 14d ± 2σ Monitor | **Qwen 2.5 14B Instruct** *(On-Premise)* | PostgreSQL (`agrofarm_pg.sqlite`) |
 | `AGT-02` | **Koperasi Tani** | **Cooperative Manager** | LightGBM + Contract Net Auction | **Claude 3.5 Sonnet** | MySQL (`koperasi_mysql.sqlite`) |
@@ -38,7 +48,7 @@
 
 ---
 
-## Galeri Screenshot Aplikasi Aktual (v2.0)
+## Galeri Screenshot Aplikasi Aktual (v2.1 — High-Contrast Light Mode)
 
 ### 1. Global Command Center — Executive Briefing, Impact-Preview HITL Console, KPI Delta, Sankey & Decision Shift
 ![Global Control Center](./docs/screenshots/01_global_control_center.png)
@@ -58,8 +68,8 @@
 ### 6. Server-Side Privacy Data Explorer (`🔒 REDACTED` via `X-Scoped-Token`) & Grafik Benchmark Bab 9
 ![Server-Side Data Explorer and Privacy Firewall](./docs/screenshots/06_data_explorer_privacy.png)
 
-### 7. FastAPI Multi-Enterprise Gateway v2.0 — Swagger UI (`:8000/docs`)
-![FastAPI Swagger Gateway v2.0](./docs/screenshots/07_fastapi_swagger_gateway.png)
+### 7. FastAPI Multi-Enterprise Gateway v2.1 — Swagger UI (20 Endpoint, `:8000/docs`)
+![FastAPI Swagger Gateway v2.1](./docs/screenshots/07_fastapi_swagger_gateway.png)
 
 ---
 
@@ -197,19 +207,16 @@ agrichain-agentic-ai/
 ├── src/
 │   ├── data/                            # Generator 19.575 rekaman + 3.000 citra RGB + Adapter 5 DB lokal
 │   ├── protocols/                       # A2A, FIPA-ACL, GS1 EPCIS 2.0, Server-Side RBAC Firewall, SHA-256 Audit
-│   ├── models/                          # 5 model ML v2.0 (RF+NDVI+PI80, LightGBM, CNN, IF+XGB-ETA+VRPTW, XGB) + MILP-FEFO
+│   ├── models/                          # 5 model ML v2.1 (RF+NDVI+PI80, LightGBM, CNN, IF+XGB-ETA+VRPTW, XGB 7d) + MILP-FEFO
 │   ├── llm/                             # 6 System Prompts + Multi-Provider 6-LLM Router (LIVE & SIMULATED)
-│   ├── agents/                          # 5 Enterprise Agents + LangGraph Orchestrator v2.0 (Lineage & Briefing)
+│   ├── agents/                          # 5 Enterprise Agents + LangGraph Orchestrator v2.1 (Closed-Loop Lineage & Briefing)
 │   ├── api/main.py                      # FastAPI Decoupled Gateway v2.1 (20 Endpoint + Full 5-Enterprise Parity)
 │   ├── experiments/run_experiments.py   # Benchmark 4 Kondisi x 30 siklus + 3 Ablasi + 3 Failure Cases
 │   └── dashboard/app.py                 # Streamlit Role-Adaptive Light-Mode Cockpit v2.1 (6 Dedicated Role Views)
 ├── tests/test_ecosystem.py              # 13 Automated Unit, RBAC, Closed-Loop Parity & FastAPI Integration Tests
-├── docs/screenshots/                    # 7 Screenshot aktual aplikasi v2.0 & FastAPI Swagger UI
+├── docs/screenshots/                    # 7 Screenshot aktual aplikasi v2.1 (Light Mode) & FastAPI Swagger UI
 ├── data/                                # Dataset dummy tergenerasi & 5 database lokal terisolasi
-├── results/                             # Model terlatih v2.0 (.pkl), metrik JSON, audit_trail.jsonl, & 3 grafik
+├── results/                             # Model terlatih (.pkl), metrik JSON, audit_trail.jsonl, & 3 grafik Bab 9
 ├── docker-compose.yml                   # Stack PostgreSQL 16, MySQL 8, MongoDB 7, TimescaleDB, Redis 7
-├── Analisis_Insight_ColdChain_AgroFarm_UIUX.md                   # Ringkasan analisis 12 dokumen rancangan
-├── Rancangan_Improvement_Proper_AgriChain_v2.md                  # Blueprint 4 pilar peningkatan v2.0
-├── Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.{md,docx,pdf}    # Laporan Lengkap v2.0 (Bab 1–11, 54 halaman)
-└── Laporan_Bab1_7_Smart_Agriculture_Agentic_AI.{md,docx,pdf}     # Laporan Rancangan Awal (Bab 1–7, 35 halaman)
+└── Laporan_Bab1_11_Smart_Agriculture_Agentic_AI.{md,docx,pdf}    # Laporan Lengkap v2.1 (Bab 1–11, 54 halaman)
 ```
