@@ -6,18 +6,18 @@
 **Mata Kuliah:** AI Agentic Technology Systems for Digital Enterprise Ecosystem  
 **Program Studi:** Magister Ilmu Komputer — Konsentrasi Kecerdasan Artifisial  
 **Cakupan Dokumen:** Bab 1 (Pendahuluan) sampai Bab 11 (Kesimpulan dan Saran) + Daftar Pustaka  
-**Repositori Implementasi:** `agrichain-agentic-ai` (Python 3.11, LangGraph, PuLP, OR-Tools, FastAPI, Streamlit)  
-**Komoditas Studi Kasus:** Tomat (*Solanum lycopersicum*)  
+**Repositori Implementasi:** `agrichain-agentic-ai` v2.0 (Python 3.11, LangGraph, PuLP MILP-FEFO, OR-Tools VRPTW, FastAPI v2.0, Streamlit)  
+**Komoditas Studi Kasus:** Tomat (*Solanum lycopersicum*) — SOP Suhu Aman `7,0–12,0°C`  
 
 ---
 
 ## Ringkasan Eksekutif
 
-Rantai pasok pangan pertanian (*agri-food supply chain*) memiliki karakteristik kompleksitas tinggi karena melibatkan berbagai entitas bisnis independen dengan sistem informasi heterogen, tujuan komersial yang saling berkonflik, serta komoditas mudah rusak (*perishable*) dengan umur simpan singkat. Proyek ini merancang **Heterogeneous Multi-Enterprise Agentic AI Ecosystem** yang mengoordinasikan lima entitas perusahaan—**AgroFarm**, **Koperasi Tani**, **FreshFood Processing**, **ColdChain Logistics**, dan **SuperMart**—melalui pusat koordinasi **Global Orchestrator Agent**.
+Rantai pasok pangan pertanian (*agri-food supply chain*) memiliki karakteristik kompleksitas tinggi karena melibatkan berbagai entitas bisnis independen dengan sistem informasi heterogen, tujuan komersial yang saling berkonflik, serta komoditas mudah rusak (*perishable*) dengan umur simpan singkat. Proyek ini merancang dan mengimplementasikan **Heterogeneous Multi-Enterprise Agentic AI Ecosystem (v2.0)** yang mengoordinasikan lima entitas perusahaan—**AgroFarm**, **Koperasi Tani**, **FreshFood Processing**, **ColdChain Logistics**, dan **SuperMart**—melalui pusat koordinasi **Global Orchestrator Agent**.
 
-Berbeda dari pendekatan prediktif tunggal atau sistem ERP terpusat yang melanggar otonomi data perusahaan, rancangan ini memisahkan secara tegas antara **Local Enterprise Intelligence** dan **Global Ecosystem Intelligence** berdasarkan prinsip kedaulatan data (*data sovereignty*). Ekosistem ini terdiri atas **enam agen otonom** (5 agen enterprise lokal + 1 agen orkestrator global) yang menerapkan **arsitektur model heterogen ganda**: setiap agen dilengkapi model *machine learning*/optimasi domain yang berbeda (**Random Forest**, **LightGBM + Contract Net Auction**, **CNN MobileNetV2**, **Isolation Forest + OR-Tools CVRP**, **XGBoost**, dan **MILP berbasis FEFO**) sekaligus *backbone* Large Language Model (LLM) yang berbeda sesuai tuntutan modalitas, latensi, privasi, dan kedalaman penalaran (**Qwen 2.5 14B**, **Claude 3.5 Sonnet**, **Gemini 2.5 Flash Multimodal**, **Llama 3.1 8B**, **Mistral Small 3**, dan **GPT-4o**). Komunikasi antar-agen mengadopsi protokol *Agent-to-Agent* (A2A) berbasis performatif **FIPA-ACL** dan standar pertukaran *event* **GS1 EPCIS 2.0**, dilengkapi mekanisme *Human-in-the-Loop* (HITL) yang mengacu pada **NIST AI RMF 1.0**.
+Berbeda dari pendekatan prediktif tunggal atau sistem ERP terpusat yang melanggar otonomi data perusahaan, rancangan ini memisahkan secara tegas antara **Local Enterprise Intelligence** dan **Global Ecosystem Intelligence** berdasarkan prinsip kedaulatan data (*data sovereignty*) yang ditegakkan secara langsung di **sisi server FastAPI (`Server-Side RBAC Firewall` berbasis `X-Scoped-Token`)** disertai keterlacakan *canonical cross-enterprise lineage* (`block_id → lot_id → qc_doc_id → shipment_id → trip_id → vehicle_id → po_ref`). Ekosistem ini terdiri atas **enam agen otonom** (5 agen enterprise lokal + 1 agen orkestrator global) yang menerapkan **arsitektur model heterogen ganda**: setiap agen dilengkapi model *machine learning*/optimasi domain yang berbeda (**Random Forest 250 Trees + NDVI + 80% Quantile PI & 14-day ± 2σ Deviation Engine**, **LightGBM + Contract Net Auction**, **2D-Conv Spatial-Spectral CNN + Food Safety Hard-Block**, **Isolation Forest 7–12°C + XGBoost ETA + OR-Tools VRPTW**, **XGBoost + Newsvendor PO**, dan **MILP berbasis FEFO**) sekaligus *backbone* Large Language Model (LLM) yang berbeda sesuai tuntutan modalitas, latensi, privasi, dan kedalaman penalaran (**Qwen 2.5 14B**, **Claude 3.5 Sonnet**, **Gemini 2.5 Flash Multimodal**, **Llama 3.1 8B**, **Mistral Small 3**, dan **GPT-4o**). Komunikasi antar-agen mengadopsi protokol *Agent-to-Agent* (A2A) berbasis performatif **FIPA-ACL** dan standar pertukaran *event* **GS1 EPCIS 2.0**, dilengkapi *Impact-Preview* **Human-in-the-Loop (HITL)** dan *concurrency-safe* **SHA-256 Audit Trail** yang mengacu pada **NIST AI RMF 1.0**.
 
-Seluruh rancangan telah diimplementasikan secara penuh dalam repositori **`agrichain-agentic-ai`** dan dievaluasi secara empiris pada 19.575 rekaman dataset dummy lintas 5 basis data terisolasi serta 3.000 citra RGB tomat. Kelima model ML lokal melampaui seluruh target KPI, sementara eksperimen ekosistem ($N = 30$ siklus gangguan berpasangan) membuktikan bahwa *adaptive replanning* berbasis *neuro-symbolic* MILP-FEFO dan negosiasi terbatas menurunkan *Food Loss Rate* dari **15,47% menjadi 0,00%**, memulihkan *Order Fulfillment Rate* dari **92,92% ke 98,25%**, menaikkan profit bersih ekosistem **+39,3%**, menjaga **0% pelanggaran kendala** dan **0 kebocoran data privat**, serta menghemat biaya token LLM sebesar **41,71%** dan menurunkan latensi *replanning* **10,19%** dibanding arsitektur homogen 6× GPT-4o.
+Seluruh rancangan telah diimplementasikan secara penuh dalam repositori **`agrichain-agentic-ai` v2.0** (14 endpoint REST FastAPI terpisah, *Role-Adaptive Cockpit* dengan 5 *UI states* wajib dan peta geospasial VRPTW, serta **10/10 pengujian otomatis `pytest` lulus**) dan dievaluasi secara empiris pada 19.575 rekaman dataset dummy lintas 5 basis data terisolasi serta 3.000 citra RGB tomat. Kelima model ML lokal melampaui seluruh target KPI—termasuk peningkatan AgroFarm v2 menjadi **MAE 87,84 kg (6,83% mean, R² 0,9449, PI80 Coverage 91,67%)**, ColdChain **XGBoost ETA MAE 7,66 menit** dan **OR-Tools VRPTW -31,15% dengan 0 pelanggaran jendela waktu**. Sementara itu, eksperimen ekosistem ($N = 30$ siklus gangguan berpasangan) membuktikan bahwa *adaptive replanning* berbasis *neuro-symbolic* MILP-FEFO dan negosiasi terbatas menurunkan *Food Loss Rate* dari **15,47% menjadi 0,00%**, memulihkan *Order Fulfillment Rate* dari **92,92% ke 98,25%**, menaikkan profit bersih ekosistem **+39,3%**, menjaga **0% pelanggaran kendala** dan **0 kebocoran data privat**, serta menghemat biaya token LLM sebesar **41,71%** dan menurunkan latensi *replanning* **10,19%** dibanding arsitektur homogen 6× GPT-4o.
 
 ---
 
@@ -88,11 +88,11 @@ Dalam rancangan ekosistem ini, aliran fisik produk dan aliran informasi bergerak
 
 | Tahap | Nama Enterprise | Peran Ekosistem | Tanggung Jawab Operasional Utama | Fokus Keputusan AI Lokal |
 | :---: | :--- | :--- | :--- | :--- |
-| 1 | **AgroFarm** | *Agricultural Producer* | Budidaya lahan tomat, pemantauan kondisi tanaman, penjadwalan panen | *Crop monitoring* & prediksi hasil panen (*yield prediction*) |
-| 2 | **Koperasi Tani** | *Aggregation & Trading* | Pengumpulan panen dari banyak petani, konsolidasi stok, negosiasi harga jual | Agregasi panen, prediksi harga pasar, & negosiasi harga (*auction*) |
-| 3 | **FreshFood Processing** | *Food Manufacturer* | Pemeriksaan mutu (*grading*), verifikasi keamanan pangan, pengolahan saus/pasta | Klasifikasi kualitas visual (CNN) & penjadwalan kapasitas mesin |
-| 4 | **ColdChain Logistics** | *Logistics Provider* | Penyimpanan berpendingin (*cold storage*), transportasi berpendingin, pemantauan suhu | Optimasi rute pengiriman (CVRP) & deteksi anomali suhu |
-| 5 | **SuperMart** | *Retailer* | Pengelolaan inventori gerai ritel, penetapan harga/promo, pemenuhan konsumen akhir | Prediksi permintaan (*demand forecasting*) & perencanaan pembelian (PO) |
+| 1 | **AgroFarm** | *Agricultural Producer* | Budidaya blok lahan tomat (`BLK-07`, `BLK-03`, `BLK-11`), pemantauan deviasi NDVI 14-hari, penjadwalan panen | *Crop monitoring* 14-hari ± 2σ, prediksi hasil panen RF + 80% Quantile PI & *sensor fallback* |
+| 2 | **Koperasi Tani** | *Aggregation & Trading* | Pengumpulan panen dari banyak petani, konsolidasi stok, negosiasi harga jual | Agregasi panen, prediksi harga pasar (LightGBM), & negosiasi harga (*Contract Net*) |
+| 3 | **FreshFood Processing** | *Food Manufacturer* | Pemeriksaan mutu (*grading*), verifikasi keamanan pangan, pengolahan saus/pasta | Klasifikasi kualitas visual (2D-Conv CNN), *Food Safety Hard-Block*, & penjadwalan FEFO |
+| 4 | **ColdChain Logistics** | *Logistics Provider* | Penyimpanan berpendingin (`7,0–12,0°C`), manajemen armada/shipment, pemantauan suhu | Optimasi rute **VRPTW** (*Time Windows*), prediksi ETA (**XGBoost**), & deteksi anomali suhu |
+| 5 | **SuperMart** | *Retailer* | Pengelolaan inventori gerai ritel, penetapan harga/promo, pemenuhan konsumen akhir | Prediksi permintaan (*demand forecasting* XGBoost) & perencanaan pembelian (*Newsvendor PO*) |
 
 Ketika kelima perusahaan tersebut mengelola sistem informasi dan basis data secara terpisah tanpa koordinasi *real-time*, timbul tujuh permasalahan bisnis utama yang saling terkait (**Tabel 2.2**).
 
@@ -187,7 +187,13 @@ Untuk mengilustrasikan cara kerja ekosistem secara terukur, digunakan studi kasu
    - **Koperasi Agent** (Claude 3.5 Sonnet) membuka *Call for Proposals (CFP)* ke FreshFood Agent untuk slot lembur pengolahan 500 kg H002 dan ke ColdChain Agent untuk penggunaan sisa 1.000 kg ruang dingin yang sehat atau sewa 3PL sementara.
    - **AgroFarm Agent** (Qwen 2.5 14B) menerima instruksi penundaan panen (*harvest deferral*) selama 24 jam bagi sebagian blok lahan Grade A yang belum dipetik guna mencegah penumpukan di gudang dingin yang rusak.
    - **SuperMart Agent** (Mistral Small 3) menerima pembaruan *Estimated Time of Arrival* (ETA) dan konfirmasi bahwa pasokan Grade A tetap aman melalui *direct delivery* armada berpendingin.
-4. **Gerbang Kontrol Manusia (HITL):** Karena penurunan kapasitas *cold storage* mencapai 66,7% (melampaui ambang batas eskalasi 40%) dan melibatkan biaya lembur FreshFood/3PL, Global Orchestrator menyajikan ringkasan *trade-off* biaya vs penyelamatan pangan ke *Control Center Operator* untuk persetujuan satu-klik sebelum eksekusi final.
+4. **Gerbang Kontrol Manusia (HITL):** Karena penurunan kapasitas *cold storage* mencapai 66,7% (melampaui ambang batas eskalasi 40%) dan melibatkan biaya lembur FreshFood/3PL, Global Orchestrator menyajikan **Impact-Preview Confirmation Console** (perbandingan metrik statis vs rencana adaptif serta daftar mitra terdampak) ke *Control Center Operator* untuk persetujuan satu-klik sebelum eksekusi final.
+
+### Skenario C & D: Gangguan Hulu Pertanian (*Extreme Rain* & *Sensor Outage Fallback*)
+
+Melengkapi gangguan logistik dan ritel, ekosistem v2.0 juga menangani dua skenario gangguan agronomi kritis di hulu (**AgroFarm**):
+- **Skenario C — *Extreme Rain* (`EXTREME_RAIN` pada blok `BLK-11` / lot `H003`):** Curah hujan 14 hari melonjak menjadi `96 mm` (> ambang `90 mm`), kelembapan tanah mencapai `83%`, dan indeks vegetasi **NDVI** turun ke `0,41` (di bawah batas bawah `2σ` sebesar `0,56`). *Crop Monitoring Deviation Engine* menandai blok `BLK-11` sebagai `MENYIMPANG`, memicu prediksi ulang Random Forest dengan **80% Quantile Prediction Interval** melebar (`[476,5; 1.264,7] kg`), menurunkan estimasi panen ~13,9% (`1.000 → 861 kg`), memajukan jendela panen sebesar **`-2 hari`** untuk mencegah busuk lahan, serta mengaktifkan eskalasi HITL (`AGROFARM_HARVEST_WINDOW_SHIFTED_2_DAYS`) sekaligus memicu penyesuaian rute ColdChain (`ROAD_DISRUPTION`).
+- **Skenario D — *Sensor Outage* (`SENSOR_OUTAGE` ≥ 3 Hari Offline):** Apabila sensor IoT pada blok `BLK-11` gagal mengirim data selama `≥ 3 hari` berturut-turut, `AgroFarm Agent` secara otomatis beralih dari mode inferensi ML standar (`RF_QUANTILE_PI80`) ke mode cadangan aman (**`FALLBACK_HISTORICAL_MEAN`**) dengan pita ketidakpastian melebar (`± 28%`), menerbitkan peringatan **`STALE DATA WARNING`** pada kokpit operator, dan mengaktifkan gerbang HITL (`AGROFARM_SENSOR_OFFLINE_FALLBACK_ACTIVE`) agar keputusan panen tetap aman meski data telemetri tidak lengkap (*graceful degradation*).
 
 ## 2.4 Ukuran Keberhasilan (*Key Performance Indicators* — KPI)
 
@@ -263,7 +269,7 @@ Secara spesifik di domain rantai pasok, Jannelli et al. (2026) dalam *Internatio
 | Wu et al. (2023) — AutoGen | *General LLM-MAS* | Tidak (opsional via kode) | Tidak | Ya (Konversasional) | Opsional | Tidak |
 | Hong et al. (2024) — MetaGPT | *Software Engineering MAS* | Tidak | Tidak | Ya (SOP Terstruktur) | Homogen (umumnya) | Tidak |
 | Jannelli et al. (2026) | *Supply Chain Consensus* | Parsial | Tidak | Ya (Konsensus LLM) | Homogen | Parsial |
-| **Proyek Ini (Usulan)** | ***Smart Agriculture & Perishable Supply Chain*** | **Ya (MILP-FEFO + OR-Tools CVRP)** | **Ya (RF, LightGBM, CNN, Isolation Forest, XGBoost)** | **Ya (Hybrid Orchestrator + CNP/FIPA-ACL)** | **Ya (6 LLM berbeda sesuai peran)** | **Ya (API Terotorisasi + GS1 EPCIS 2.0 + NIST AI RMF)** |
+| **Proyek Ini (Usulan v2.0)** | ***Smart Agriculture & Perishable Supply Chain*** | **Ya (MILP-FEFO + OR-Tools VRPTW)** | **Ya (RF+NDVI/PI80, LightGBM, CNN, IF+XGB-ETA, XGBoost)** | **Ya (Hybrid Orchestrator + CNP/FIPA-ACL)** | **Ya (6 LLM berbeda sesuai peran)** | **Ya (Server-Side RBAC API + GS1 EPCIS 2.0 + Lineage + NIST RMF)** |
 
 ## 3.2 Pola Agentik (*Agentic Design Patterns*) yang Digunakan
 
@@ -293,10 +299,10 @@ Berdasarkan tinjauan pustaka di atas, terdapat empat celah utama yang dijembatan
 
 Sesuai batasan ruang lingkup proyek, data yang digunakan berupa **Synthetic / Dummy Multi-Enterprise Dataset** yang dirancang secara terintegrasi agar merefleksikan karakteristik domain pertanian tomat, dinamika pasar hortikultura, standar pemeriksaan mutu, telemetri rantai dingin, serta pola permintaan ritel. Untuk menjamin realisme ilmiah dan menghindari data acak tak bermakna (*pure random noise*), generasi dataset dummy mengikuti empat prinsip pemodelan domain:
 
-1. **Koherensi Kausal Lintas Enterprise:** Tanggal panen, kode batch (`lot_id`), dan volume dari AgroFarm terhubung secara referensial (*referential integrity*) dengan catatan penerimaan Koperasi Tani, hasil *grading* FreshFood, catatan pengiriman ColdChain, dan penerimaan stok SuperMart.
-2. **Pola Musiman & Stokastik Realistis:** Data cuaca dan hasil panen menggunakan fungsi sinusoidal musiman (musim hujan vs kemarau) ditambah *Gaussian noise*; permintaan SuperMart memodelkan efek akhir pekan (*weekend uplift* +25%), elastisitas harga, dan lonjakan promosi.
-3. **Fisika Degradasi Mutu (*Shelf-Life Decay*):** Sisa umur simpan tomat dimodelkan sensitif terhadap suhu penyimpanan; suhu ideal penyimpanan tomat matang-segar berada di kisaran **8°C – 12°C** (penyimpangan > 13°C mempercepat pembusukan 1,8× lipat, sedangkan < 6°C menimbulkan *chilling injury*).
-4. **Injeksi Skenario Gangguan Terkontrol:** Dataset telemetri dan permintaan dilengkapi *event flag* khusus untuk mereproduksi gangguan *Cold Storage Failure* (penurunan kapasitas 3.000 kg → 1.000 kg disertai anomali suhu > 14°C) dan *Demand Surge* (+40% permintaan mendadak).
+1. **Koherensi Kausal & *Canonical Cross-Enterprise Lineage*:** Seluruh entitas lintas perusahaan tertaut melalui rantai keterlacakan kanonik **`block_id → lot_id → qc_doc_id → shipment_id → trip_id → vehicle_id → po_ref`** (misal `BLK-07 → H001 → QC-H001 → SH001 → TRIP-01 → V001 → PO-SM-001`), menjamin integritas referensial penuh dari blok lahan AgroFarm hingga gerai SuperMart.
+2. **Pola Musiman & Stokastik Realistis:** Data cuaca, indeks vegetasi **NDVI**, dan hasil panen menggunakan fungsi sinusoidal musiman (musim hujan vs kemarau) ditambah *Gaussian noise*; permintaan SuperMart memodelkan efek akhir pekan (*weekend uplift* +25%), elastisitas harga, dan lonjakan promosi.
+3. **Fisika Degradasi Mutu (*Shelf-Life Decay*) & SOP Suhu Aman Tomat:** Sisa umur simpan tomat dimodelkan sensitif terhadap suhu penyimpanan dengan **standar seragam lintas ekosistem sebesar `7,0°C – 12,0°C`** (*anti chilling-injury*): penyimpangan > 12,0°C mempercepat pembusukan hingga 1,8× lipat, sedangkan < 7,0°C menimbulkan kerusakan dingin (*chilling injury*).
+4. **Injeksi 8 Skenario Lingkungan & Gangguan Terkontrol:** Selain kondisi `NORMAL`, sistem mendukung tujuh skenario gangguan terukur: `COLD_STORAGE_FAILURE` (kapasitas 3.000 → 1.000 kg disertai lonjakan suhu > 14°C), `EXTREME_RAIN` (curah hujan 96 mm/14 hari & penurunan NDVI 0,41 pada blok `BLK-11`), `SENSOR_OUTAGE` (sensor offline ≥ 3 hari memicu *fallback*), `DEMAND_SURGE` (+40% permintaan ritel), `FOOD_SAFETY_FAIL` (kegagalan uji mikroba/residu `H003`), `COMPOUND`, dan `DEADLOCK`.
 
 *Catatan khusus untuk data visual FreshFood (CNN):* Untuk pelatihan dan inferensi prototipe CNN MobileNetV2, citra tomat dapat menggunakan himpunan citra publik berlisensi terbuka (seperti *Tomato Grading / Ripeness Image Dataset* dari Kaggle/Roboflow berlisensi CC-BY/CC0) yang dipetakan ke metadata dokumen MongoDB sintetik beserta atribut keamanan pangan (`brix_pct`, `ph_level`, `microbial_pass`).
 
@@ -308,10 +314,10 @@ Ekosistem menggunakan **tiga jenis basis data heterogen** (PostgreSQL/TimescaleD
 
 | Enterprise | DBMS Lokal | Nama Tabel / Koleksi Utama | Jumlah Baris/Dokumen Dummy | Periode Simulasi | Kegunaan Model AI |
 | :--- | :--- | :--- | :---: | :--- | :--- |
-| **AgroFarm** | PostgreSQL | `farm_harvest_history`, `active_harvest_lots` | 1.200 baris historis + 90 batch aktif | 3 tahun (harian/blok lahan) | Pelatihan Random Forest Regression (*yield prediction*) |
-| **Koperasi Tani** | MySQL | `coop_inventory_lots`, `market_price_negotiations` | 1.500 baris transaksi & riwayat harga | 3 tahun + sesi negosiasi | Pelatihan LightGBM (*price forecasting*) & simulasi *auction* |
-| **FreshFood Processing** | MongoDB | `tomato_qc_inspections`, `factory_capacity_schedule` | 3.000 dokumen citra+QC + 365 jadwal | 1 tahun + batch harian | Pelatihan/uji CNN MobileNetV2 & verifikasi *food safety* |
-| **ColdChain Logistics** | PostgreSQL + TimescaleDB | `cold_storage_telemetry`, `fleet_delivery_routes` | 10.000 baris sensor (interval 15 mnt) + 500 rute | 104 hari telemetri + graf rute | Pelatihan Isolation Forest (*anomaly detection*) & OR-Tools CVRP |
+| **AgroFarm** | PostgreSQL | `farm_harvest_history`, `active_harvest_lots`, `private_costs` | 1.200 baris historis + 90 batch aktif (termasuk fitur `ndvi` & `block_id`) | 3 tahun (harian/blok lahan) | Pelatihan RF 250 Trees + 80% Quantile PI & *Crop Monitoring 14d ± 2σ* |
+| **Koperasi Tani** | MySQL | `coop_inventory_lots`, `market_price_negotiations` | 1.500 baris transaksi & riwayat harga | 3 tahun + sesi negosiasi | Pelatihan LightGBM (*price forecasting*) & simulasi *Contract Net* |
+| **FreshFood Processing** | MongoDB | `tomato_qc_inspections`, `factory_capacity_schedule` | 3.000 dokumen citra+QC + 3.000 citra RGB 32×32 | 1 tahun + batch harian | Pelatihan/uji 2D-Conv CNN & verifikasi *food safety hard-block* |
+| **ColdChain Logistics** | PostgreSQL + TimescaleDB | `cold_storage_telemetry`, `fleet_delivery_routes` + Master Fleet/Shipments | 10.000 baris sensor (15 mnt) + 500 rute + 600 trip ETA | 104 hari telemetri + graf Yogyakarta/Sleman/Bantul | Isolation Forest (`7–12°C`), **XGBoost ETA**, & **OR-Tools VRPTW** |
 | **SuperMart** | MySQL | `retail_pos_sales`, `retail_inventory_state` | 3.285 baris (1.095 hari × 3 gerai) | 3 tahun penjualan harian | Pelatihan XGBoost Regression (*demand forecasting*) |
 
 Berikut rincian skema dan contoh sampel dataset dummy untuk masing-masing enterprise:
@@ -431,13 +437,15 @@ Menyimpan data penjualan harian historis, harga jual, promosi, musim, serta indi
 Pelabelan data pada ekosistem dilakukan melalui aturan objektif yang dapat diaudit (*reproducible labeling rules*) agar evaluasi model prediktif tidak bias:
 
 1. **Anotasi Mutu Tomat & Kelayakan Pangan (FreshFood):**
-   - **Grade A (Segar Premium):** Diameter ≥ 58 mm, indeks kematangan warna 0,75–0,90, rasio cacat permukaan (`surface_defect_ratio`) ≤ 5%, `food_safety_approved = true`. Umur simpan standar: 5 hari (pada 8–12°C).
+   - **Grade A (Segar Premium):** Diameter ≥ 58 mm, indeks kematangan warna 0,75–0,90, rasio cacat permukaan (`surface_defect_ratio`) ≤ 5%, `food_safety_approved = true`. Umur simpan standar: 5 hari (pada SOP `7,0–12,0°C`).
    - **Grade B (Olahan Standar):** Diameter 50–57,9 mm atau rasio cacat 5%–12%, kematangan 0,85–0,95, `food_safety_approved = true`. Umur simpan standar: 3 hari.
    - **Grade C (Olahan Prioritas FEFO):** Diameter < 50 mm atau rasio cacat 12%–20%, kematangan > 0,92, **wajib** `microbial_pass = true` dan `pesticide_residue_ppm ≤ 0,05` serta `pH` dalam rentang aman (4,0–4,6). Umur simpan standar: 2 hari.
    - **Reject (Tidak Layak Pangan):** Rasio cacat > 20% atau `microbial_pass = false` atau residu melebihi ambang → otomatis ditolak dan dialihkan ke kompos/pakan (dicatat sebagai *processing waste*).
 2. **Anotasi Anomali Suhu & Kapasitas (ColdChain):**
    - Label `is_anomaly = 1` diberikan apabila suhu ruang pendingin keluar dari rentang aman `[7.0°C, 12.0°C]` selama ≥ 2 interval berturut-turut (30 menit) atau terjadi penurunan daya kompresor > 50% secara tiba-tiba.
-3. **Anotasi Status Negosiasi (Koperasi Tani):**
+3. **Anotasi Deviasi Tanaman & *Sensor Outage* (AgroFarm v2):**
+   - Status blok lahan dilabeli `MENYIMPANG` apabila `ndvi_today < ndvi_14d_mean - 2σ`, curah hujan 14 hari `> 90 mm`, atau kelembapan tanah jenuh `> 80%` (memicu *re-prediction* & pergeseran jendela panen `-2 hari`); sedangkan apabila sensor mati `≥ 3 hari` berturut-turut, blok dilabeli `SENSOR_OFFLINE_FALLBACK` yang otomatis mengaktifkan mode `FALLBACK_HISTORICAL_MEAN`.
+4. **Anotasi Status Negosiasi (Koperasi Tani):**
    - Label `AGREED` apabila harga kesepakatan memenuhi $P_{\text{floor}}^{\text{coop}} \le P_{\text{agreed}} \le P_{\text{ceiling}}^{\text{buyer}}$ dalam ≤ 3 putaran; `ESCALATED` jika memerlukan persetujuan HITL; `REJECTED` jika melampaui batas putaran tanpa konvergensi.
 
 ## 4.4 Pembagian Data Latih, Validasi, dan Uji (*Train–Val–Test Split*)
@@ -456,7 +464,7 @@ Untuk mencegah kebocoran data (*data leakage*)—terutama kebocoran temporal (*l
 
 ## 4.5 Etika, Privasi Data (*Shared vs Private Governance*), dan Lisensi
 
-1. **Kedaulatan dan Klasifikasi Privasi Data:** Dalam ekosistem multi-perusahaan, tidak semua data boleh dibuka ke pusat koordinasi global. **Tabel 4.5** menetapkan batas tegas data yang dibagikan (*Shared via Authorized API*) versus data rahasia perusahaan (*Strictly Private*).
+1. **Kedaulatan dan Klasifikasi Privasi Data (*Server-Side Enforcement*):** Dalam ekosistem multi-perusahaan, tidak semua data boleh dibuka ke pusat koordinasi global. **Tabel 4.5** menetapkan batas tegas data yang dibagikan (*Shared via Authorized API*) versus data rahasia perusahaan (*Strictly Private*). Pada versi 2.0, penegakan redaksi dilakukan secara ketat di **sisi server FastAPI** (`/api/v1/data-explorer/{enterprise_id}/{table_name}`) melalui verifikasi header `X-Scoped-Token`, sehingga kolom privat dihapus sebelum respons JSON meninggalkan server.
 
 **Tabel 4.5.** Matriks Tata Kelola Privasi Data (*Shared vs Private Data*) per Enterprise
 
@@ -531,7 +539,7 @@ flowchart TD
 **Global Orchestrator Agent** merupakan inti koordinasi ekosistem yang menyelesaikan paradoks antara optimasi matematis terpusat dan otonomi negosiasi lintas perusahaan. Alih-alih memaksakan keputusan sepihak, Orchestrator menggunakan pola **"Propose–Validate–Negotiate–Commit"** yang terdiri atas enam modul internal:
 
 1. **Event Ingestion & Trigger Router:** Mendengarkan dua jenis pemicu: (a) *Scheduled Daily Planning Trigger* (siklus harian pukul 06.00 WIB untuk sinkronisasi panen–permintaan), dan (b) *Asynchronous Disruption Webhook* (seperti `ColdStorageFailureEvent` dari ColdChain Agent atau `DemandSurgeEvent` dari SuperMart Agent) yang segera menginterupsi rencana aktif.
-2. **State Manager & Shared Blackboard:** Diimplementasikan menggunakan **LangGraph `StateGraph`** dengan persistensi *checkpoint* (PostgreSQL/Redis). Struktur `EcosystemState` menyimpan secara terstruktur: `cycle_id`, `trigger_mode` (`NORMAL` / `DISRUPTION`), `supply_lots`, `quality_reports`, `capacity_snapshots`, `demand_forecasts`, `milp_allocation_plan`, `negotiation_history`, `round_counter`, `risk_assessment`, dan `hitl_status`.
+2. **State Manager & Shared Blackboard:** Diimplementasikan menggunakan **LangGraph `StateGraph`** dengan persistensi *checkpoint* (PostgreSQL/Redis). Struktur `EcosystemState` menyimpan secara terstruktur: `cycle_id`, `trigger_mode` (8 mode: `NORMAL`, `COLD_STORAGE_FAILURE`, `EXTREME_RAIN`, `SENSOR_OUTAGE`, `DEMAND_SURGE`, `FOOD_SAFETY_FAIL`, `COMPOUND`, `DEADLOCK`), `batches`, `agrofarm_monitoring`, `vrptw_plan`, `lineage` (rantai kanonik `block_id → po_ref`), `executive_briefing`, `data_freshness_warning`, `milp_result`, `negotiation_history`, `round_counter`, `decision_trace`, dan `hitl_status`.
 3. **Constraint & Feasibility Aggregator:** Mengirim *request* terotorisasi ke lima agen enterprise secara paralel (*fan-out*), memvalidasi skema JSON GS1 EPCIS 2.0, serta memeriksa kelayakan awal (*mass balance* total panen vs total kapasitas serapan dan penyimpanan).
 4. **Global Optimization Engine (MILP-FEFO Solver):** Menjalankan formulasi optimasi *Mixed-Integer Linear Programming* (dijelaskan rinci pada Subbab 6.2) untuk menghasilkan **Rencana Alokasi Global Awal (*Draft Allocation Plan*)** yang meminimalkan total biaya rantai pasok sekaligus penalti pembusukan berbasis sisa umur simpan (*First-Expired, First-Out*).
 5. **Conflict Resolution & Bounded Negotiation Mediator:** Menyebarkan draf alokasi ke lima agen enterprise untuk verifikasi terhadap *private local policy*. Apabila ada agen yang menolak (*veto*)—misalnya Koperasi menolak harga karena di bawah *floor price* privat, atau FreshFood menolak volume di atas kapasitas reguler—Orchestrator mengaktifkan **Bounded Negotiation Loop** (maksimum $R_{\max} = 3$ putaran) dengan memfasilitasi *Call for Proposals* (CFP), *counter-offer* harga/slot *overtime*/sewa 3PL, hingga mencapai konsensus. Apabila terjadi *deadlock* setelah 3 putaran, Orchestrator memicu *fallback optimization* dan menandai sesi untuk eskalasi HITL.
@@ -580,8 +588,8 @@ Untuk merepresentasikan heterogenitas dunia nyata sekaligus menjaga kelayakan im
 | **Basis Data Heterogen** | PostgreSQL 16 (AgroFarm), MySQL 8 (Koperasi & SuperMart), MongoDB 7 (FreshFood), TimescaleDB (ColdChain) | Menjamin simulasi heterogenitas skema (*relational*, *document*, *time-series*) via Docker Compose |
 | **Cache & Message Broker** | Redis 7 | *State checkpointing*, *event pub/sub* untuk `DisruptionEvent`, dan *rate limiting* |
 | **Library ML & Visi** | Scikit-learn (RF, Isolation Forest), LightGBM, XGBoost, PyTorch + Torchvision (MobileNetV2) | Pelatihan dan inferensi model prediktif lokal per enterprise |
-| **Solver Optimasi** | PuLP (CBC Solver) & Google OR-Tools | Optimasi alokasi global MILP-FEFO dan optimasi rute armada dingin CVRP |
-| **Antarmuka Dashboard** | Streamlit + Plotly | Dashboard operasional 5 enterprise & Global Agentic Control Center |
+| **Solver Optimasi** | PuLP (CBC Solver) & Google OR-Tools (**VRPTW** / CVRP) | Optimasi alokasi global MILP-FEFO dan optimasi rute armada dingin berjendela waktu (*Time Windows*) |
+| **Antarmuka Dashboard** | Streamlit + Plotly (*Sankey & Scattermapbox Geospasial*) + HTTPX `ApiBridge` | *Decoupled Role-Adaptive Cockpit* terhubung langsung ke 14 endpoint FastAPI v2.0 |
 | **Kontainerisasi** | Docker & Docker Compose | Isolasi layanan 5 enterprise, 4 container DB, dan 1 Global Control Center |
 
 ## 5.4 Alur Data *End-to-End* (Kondisi Normal dan Gangguan)
@@ -639,22 +647,20 @@ sequenceDiagram
 
 **Gambar 5.3.** *Sequence Diagram* Alur Data *End-to-End* pada Kondisi Normal dan *Adaptive Replanning*
 
-## 5.5 Rancangan Antarmuka Pengguna (*Dashboard Wireframe*)
+## 5.5 Rancangan Antarmuka Pengguna (*Role-Adaptive Enterprise Cockpit v2.0*)
 
-Antarmuka sistem dibangun menggunakan **Streamlit** berbasis peran (*role-based view*) yang terdiri atas dua kelompok tampilan utama:
+Antarmuka sistem dibangun menggunakan **Streamlit + Plotly** secara terpisah (*decoupled*) yang berkomunikasi melalui klien HTTP (`ApiBridge`) ke **FastAPI Multi-Enterprise Gateway v2.0** dengan membawa header autentikasi **`X-Scoped-Token`**. Desain UI/UX mengadopsi prinsip *Role-Adaptive Navigation* dan **5 UI State Wajib** (*Loading* via `st.status`, *Empty*, *Error + Retry*, *Stale/Partial Data Warning*, dan *Success + SHA-256 Audit*):
 
-1. **Global Agentic Control Center (Tampilan Orkestrator & Evaluator):**
-   - **Panel Ringkasan KPI Global (*Top Metrics Row*):** Menampilkan *Food Loss Rate* (%), *Order Fulfillment Rate* (%), *Total Supply Chain Cost* (Rp), *Enterprise Fairness Index*, *Negotiation Success Rate* (%), dan *Replanning Response Time* (detik).
-   - **Peta Aliran Rantai Pasok (*Sankey Allocation Diagram*):** Memvisualisasikan perpindahan kilogram tomat secara *real-time* dari AgroFarm (`H001`, `H002`, `H003`) → Koperasi → FreshFood / ColdChain / SuperMart.
-   - **Panel Simulasi Gangguan (*Chaos / Disruption Injector*):** Tombol simulasi untuk memicu skenario *Normal*, *Cold Storage Failure* (slider penurunan kapasitas 3.000 → 1.000 kg), dan *Demand Surge* (2.000 → 2.800 kg) guna membandingkan metrik secara instan.
-   - **Log Negosiasi A2A & Gerbang HITL (*Negotiation Transcript & Approval Queue*):** Menampilkan riwayat pesan FIPA-ACL antar-agen beserta tombol **Approve / Override / Reject** untuk keputusan yang melebihi ambang risiko.
+1. **Global Agentic Control Center (6 Tab Terstruktur untuk Operator Global):**
+   - **Tab 1 — `Global Center`:** Menampilkan *Executive Briefing* otomatis dari `AGT-06`, 6 kartu KPI dengan delta terukur terhadap *baseline* statis, **Impact-Preview HITL Confirmation Console** (tabel perbandingan *Statis vs Adaptive* + *Mitra Terdampak* sebelum tombol *Approve/Reject via API*), *Sankey Allocation Diagram*, grafik *Perubahan Keputusan Terukur*, serta **Live Agent Status Matrix** (6 agen).
+   - **Tab 2 — `Trace, Lineage & Audit`:** Menyajikan tabel **Canonical Cross-Enterprise Lineage** (`block_id → lot_id → qc_doc_id → shipment_id → trip_id → vehicle_id → po_ref`), *LangGraph 7-Node Decision Trace*, umpan pesan **FIPA-ACL / GS1 EPCIS 2.0**, dan verifikator integritas **SHA-256 Audit Trail**.
+   - **Tab 3 — `AgroFarm v2`:** Menampilkan tabel pemantauan blok lahan **14-Hari ± 2σ** (`BLK-07`, `BLK-03`, `BLK-11`), grafik kontribusi fitur (*Feature Importance*), serta simulator prediksi **Random Forest 250 Trees + 80% Quantile PI** dan rekomendasi jendela panen via API `/api/v1/agrofarm/predict`.
+   - **Tab 4 — `ColdChain v2`:** Mencakup **Peta Geospasial OR-Tools VRPTW** (*Plotly Scattermapbox* Yogyakarta/Sleman/Bantul) dengan pembanding 4 skenario rute, form **CRUD Fleet & Shipments Inbox** tervalidasi API (`deadline > ready_time`, SOP `7–12°C`), grafik telemetri Isolation Forest, serta simulator **XGBoost ETA**.
+   - **Tab 5 — `FreshFood, Kop & Retail`:** Menampilkan galeri citra RGB tomat nyata hasil klasifikasi 2D-Conv CNN + *Food Safety Hard-Block*, kurva LightGBM Koperasi, serta simulator XGBoost + Newsvendor PO SuperMart.
+   - **Tab 6 — `Data Explorer & Eval`:** Menyediakan penjelajah basis data lintas enterprise yang ditenagai endpoint `/api/v1/data-explorer/{enterprise_id}/{table_name}` (**redaksi `🔒 REDACTED` di sisi server FastAPI**) serta grafik benchmark Bab 9.
 
-2. **Dashboard Lokal Lima Enterprise (Tab Terisolasi per Perusahaan):**
-   - **Tab AgroFarm:** Grafik prediksi panen vs aktual (Random Forest), indikator cuaca/kelembapan, dan jadwal panen blok lahan.
-   - **Tab Koperasi Tani:** Tabel agregasi batch, kurva prediksi harga pasar (LightGBM), dan riwayat putaran tawar-menawar negosiasi.
-   - **Tab FreshFood Processing:** Panel unggah/inspeksi sampel citra tomat (hasil *grading* CNN MobileNetV2 + parameter uji lab *food safety*) dan Gantt Chart kapasitas mesin berbasis FEFO.
-   - **Tab ColdChain Logistics:** Grafik deret waktu suhu sensor tiap zona gudang dingin dengan penanda anomali (Isolation Forest), peta rute CVRP (OR-Tools), dan status armada.
-   - **Tab SuperMart:** Kurva prediksi permintaan harian (XGBoost), indikator *stockout/overstock*, dan daftar *Purchase Order* (PO) aktif.
+2. **Navigasi Adaptif Peran (*Role-Adaptive Local Workspaces*):**
+   - Ketika pengguna beralih peran di *sidebar* menjadi **`Farm Manager — AgroFarm (AGT-01)`** atau **`Fleet Manager — ColdChain (AGT-04)`**, antarmuka secara otomatis menyaring navigasi menjadi ruang kerja lokal khusus peran tersebut (membuka akses HPP/data privat miliknya sendiri di server FastAPI sambil tetap meredaksi data privat enterprise lain).
 
 ---
 
@@ -670,10 +676,10 @@ Sesuai prinsip rekayasa sistem multi-agen modern dan kebutuhan spesifik setiap e
 
 | No | Nama Agen | Layer / Enterprise | Model Domain AI / Optimasi (Berbeda-beda) | Model LLM Backbone (Berbeda-beda) | Karakteristik Tugas & Alasan Teknis Pemilihan Model |
 | :---: | :--- | :--- | :--- | :--- | :--- |
-| **1** | **AgroFarm Yield & Harvest Agent** | Lokal — AgroFarm | **Random Forest Regression** (Breiman, 2001) | **Qwen 2.5 14B Instruct** *(Open-Weight / Lokal)* | **ML:** Random Forest tangguh menangani hubungan non-linear cuaca–tanah–pupuk dan *outlier* tanpa *overfitting* pada dataset lahan berukuran sedang (~1.200 baris). **LLM:** Qwen 2.5 14B memiliki performa unggul pada penalaran tabular/numerik dan keluaran JSON terstruktur, serta dapat dijalankan *on-premise* agar data agronomi lahan tetap privat dan hemat biaya API. |
+| **1** | **AgroFarm Yield & Harvest Agent** | Lokal — AgroFarm | **Random Forest 250 Trees + NDVI + 80% Quantile PI** (Breiman, 2001) + **14d ± 2σ Monitor** | **Qwen 2.5 14B Instruct** *(Open-Weight / Lokal)* | **ML:** Random Forest 250 pohon dengan fitur **NDVI** dan interval prediksi kuantil **80% (`p10–p90`)** tangguh menangani hubungan non-linear cuaca–tanah–pupuk sekaligus menyajikan *Feature Importance* dan *fallback* historis saat sensor mati ≥ 3 hari. **LLM:** Qwen 2.5 14B unggul pada penalaran tabular/numerik terstruktur serta dapat dijalankan *on-premise* agar data agronomi lahan tetap privat dan hemat biaya API. |
 | **2** | **Koperasi Aggregation & Negotiation Agent** | Lokal — Koperasi Tani | **LightGBM Regressor** (Ke et al., 2017) + **Contract Net Auction** (Smith, 1980) | **Claude 3.5 Sonnet** *(Frontier Strategic Reasoning)* | **ML:** LightGBM sangat cepat dan akurat memodelkan harga pasar harian dari fitur kategorikal (*grade*, wilayah, musim). **LLM:** Tugas Koperasi adalah pusat negosiasi multi-ronde yang penuh konflik kepentingan (menjaga *floor price* petani sambil mencapai kesepakatan dengan pembeli); Claude 3.5 Sonnet unggul dalam konsistensi *policy adherence*, nuansa negosiasi strategis, dan penalaran *trade-off*. |
-| **3** | **FreshFood Quality & Production Agent** | Lokal — FreshFood Processing | **CNN MobileNetV2** (Sandler et al., 2018) + **Heuristic FEFO Scheduler** | **Gemini 2.5 Flash** *(Multimodal Vision-Language Model)* | **ML:** MobileNetV2 ringan dan cepat untuk klasifikasi visual tomat (Grade A/B/C/Reject) pada lini sortir pabrik. **LLM:** Karena agen ini memverifikasi citra anomali visual sekaligus membaca laporan uji lab *food safety* (pH, brix, residu), dipilih **Gemini 2.5 Flash** yang bersifat multimodal natif, cepat, dan hemat biaya untuk penalaran gabungan citra–teks. |
-| **4** | **ColdChain Logistics & Monitoring Agent** | Lokal — ColdChain Logistics | **Isolation Forest** (Liu et al., 2008) + **Google OR-Tools (CVRP)** | **Llama 3.1 8B Instruct** *(Ultra-Low Latency Edge LLM)* | **ML:** Isolation Forest mendeteksi anomali suhu ruang dingin secara *unsupervised* dalam milidetik; OR-Tools menyelesaikan optimasi rute berkapasitas (CVRP). **LLM:** Deteksi *Cold Storage Failure* menuntut respons sangat cepat (*real-time alerting*) dengan format pesan sederhana; Llama 3.1 8B yang dijalankan lokal memberikan latensi sub-detik tanpa ketergantungan jaringan eksternal. |
+| **3** | **FreshFood Quality & Production Agent** | Lokal — FreshFood Processing | **2D-Conv Spatial-Spectral CNN** (terinspirasi MobileNetV2; Sandler et al., 2018) + **FEFO Scheduler** | **Gemini 2.5 Flash** *(Multimodal Vision-Language Model)* | **ML:** 2D-Conv CNN ringan dan cepat untuk klasifikasi visual tomat (Grade A/B/C/Reject) pada lini sortir pabrik dengan *Recall Reject 100%*. **LLM:** Karena agen ini memverifikasi citra anomali visual sekaligus membaca laporan uji lab *food safety* (pH, brix, residu), dipilih **Gemini 2.5 Flash** yang bersifat multimodal natif, cepat, dan hemat biaya. |
+| **4** | **ColdChain Logistics & Monitoring Agent** | Lokal — ColdChain Logistics | **Isolation Forest** (`7–12°C`) + **XGBoost ETA Regressor** + **Google OR-Tools (VRPTW)** | **Llama 3.1 8B Instruct** *(Ultra-Low Latency Edge LLM)* | **ML:** Isolation Forest mendeteksi anomali suhu ruang dingin (`7,0–12,0°C`) dalam milidetik; **XGBoost ETA** memprediksi durasi perjalanan berbasis jarak/lalu lintas/cuaca; **OR-Tools VRPTW** mengoptimasi rute berkapasitas & berjendela waktu (*Time Windows*) lintas 4 skenario gangguan. **LLM:** Llama 3.1 8B lokal memberi latensi sub-detik untuk *real-time alerting*. |
 | **5** | **SuperMart Demand & Procurement Agent** | Lokal — SuperMart | **XGBoost Regression** (Chen & Guestrin, 2016) + **Newsvendor Safety-Stock** | **Mistral Small 3 (24B)** *(High-Speed Structured Function Calling)* | **ML:** XGBoost unggul pada data tabular ritel dengan interaksi kompleks antara harga, promosi, hari libur, dan musim. **LLM:** Pengadaan ritel berfrekuensi tinggi membutuhkan model berbiaya rendah dengan keandalan *function calling* ketat untuk menerbitkan *Purchase Order* (PO) dan memvalidasi batas *overstock/stockout*; Mistral Small 3 dirancang khusus untuk latensi rendah dan *structured JSON tool-calling*. |
 | **6** | **Global Orchestrator & Replanning Agent** | Global — Control Center | **MILP Solver (PuLP / CBC)** dengan penalti *Shelf-Life Decay (FEFO)* | **GPT-4o** *(Complex Multi-Constraint Global Orchestration)* | **Optimasi:** MILP menjamin kelayakan matematis alokasi kapasitas, grade, dan prioritas FEFO lintas 5 perusahaan. **LLM:** Orkestrator harus mensintesis laporan 5 agen, mendeteksi inkonsistensi lintas kendala, memediasi *adaptive replanning* saat krisis, dan menyusun ringkasan keputusan HITL yang akurat; GPT-4o menawarkan keandalan tinggi pada *complex multi-tool orchestration* dan sintesis konteks panjang. |
 
@@ -744,8 +750,8 @@ Setiap agen dilengkapi *system prompt* terstruktur yang menegaskan peran, kebija
 - **System Prompt:**
   > *"Anda adalah AgroFarm Yield & Harvest Agent yang mewakili perusahaan produsen pertanian AgroFarm. Tugas Anda adalah memprediksi hasil panen tomat per blok lahan dan menyusun jadwal panen optimal menggunakan tool `predict_yield_rf` dan `update_harvest_schedule`. JANGAN PERNAH mengarang angka prediksi panen tanpa memanggil tool model Random Forest. Anda WAJIB merahasiakan biaya pokok produksi (HPP) dan identitas petani dalam setiap pesan eksternal ke Global Orchestrator. Apabila Global Orchestrator meminta penundaan panen akibat gangguan kapasitas hilir, evaluasi risiko kematangan berlebih pada lahan sebelum mengirimkan `ACCEPT_PROPOSAL` atau `COUNTER_PROPOSE` dalam format JSON."*
 - **Daftar Tools:**
-  1. `query_farm_weather_db(plot_ids, date_range)` → Mengambil data cuaca, kelembapan tanah, dan usia tanaman dari PostgreSQL.
-  2. `predict_yield_rf(plot_features)` → Menjalankan model Random Forest Regression; output: `{lot_id, predicted_kg, confidence_interval, est_grade_mix}`.
+  1. `evaluate_block_monitoring_2sigma(extreme_rain, sensor_outage)` → Mengevaluasi deviasi NDVI 14 hari ± 2σ, curah hujan 14 hari > 90 mm, kelembapan > 80%, serta deteksi *stale sensor* ≥ 3 hari dari PostgreSQL.
+  2. `predict_yield_rf(plot_features)` → Menjalankan Random Forest 250 pohon + NDVI; output: `{block_id, lot_id, predicted_kg, pi80_interval_kg, harvest_window, prediction_mode, feature_importance}` (otomatis beralih ke `FALLBACK_HISTORICAL_MEAN` jika sensor offline ≥ 3 hari).
   3. `evaluate_harvest_deferral(lot_id, defer_hours)` → Menghitung dampak penundaan panen terhadap penurunan mutu di lahan.
 
 ### Agen 2: Koperasi Aggregation & Negotiation Agent (`Claude 3.5 Sonnet`)
@@ -769,9 +775,10 @@ Setiap agen dilengkapi *system prompt* terstruktur yang menegaskan peran, kebija
 - **System Prompt:**
   > *"Anda adalah ColdChain Logistics & Monitoring Agent. Anda memantau telemetri suhu seluruh zona cold storage dan armada truk berpendingin secara real-time melalui `detect_temp_anomaly_iforest` serta menghitung rute distribusi paling efisien melalui `optimize_cvrp_ortools`. Jika terdeteksi anomali suhu di luar 7–12°C atau kegagalan kompresor, SEGERA hitung kapasitas efektif terbaru dan kirimkan `DISRUPTION_EVENT` berformat GS1 EPCIS ke Global Orchestrator dalam waktu sesingkat mungkin. Prioritaskan pengiriman batch berumur simpan paling pendek dan sarankan kapasitas gudang 3PL cadangan jika diperlukan."*
 - **Daftar Tools:**
-  1. `detect_temp_anomaly_iforest(window_minutes)` → Menjalankan Isolation Forest pada data TimescaleDB; output: `{anomaly_flag, affected_zones, usable_cap_kg}`.
-  2. `optimize_cvrp_ortools(orders[], fleet_state)` → Menyelesaikan *Capacitated Vehicle Routing Problem* via Google OR-Tools; output: `{routes, total_km, est_eta, transport_cost}`.
-  3. `query_3pl_backup_capacity(required_kg)` → Mengecek ketersediaan dan tarif sewa gudang dingin mitra 3PL.
+  1. `detect_temp_anomaly_iforest(window_minutes)` → Menjalankan Isolation Forest berbasis SOP `7,0–12,0°C` pada TimescaleDB; output: `{anomaly_flag, affected_zones, usable_cap_kg}`.
+  2. `optimize_vrptw_ortools(scenario, traffic_level)` → Menyelesaikan *Vehicle Routing Problem with Time Windows* (**VRPTW**) via Google OR-Tools lintas 4 skenario (`NORMAL`, `ROAD_DISRUPTION`, `VEHICLE_BREAKDOWN`, `COLD_STORAGE_DROP`) beserta koordinat geospasial; output: `{routes, optimized_distance_km, time_window_violations, transport_cost_rp}`.
+  3. `predict_eta_xgboost(distance_km, traffic, stops, weather, dep_hour)` → Memprediksi durasi perjalanan & *error band* via **XGBoost ETA Regressor** (`xgb-eta-v1.0`).
+  4. `manage_fleet_and_shipments_crud(action, payload)` → Pengelolaan *Master Fleet* dan *Shipments Request Inbox* dengan validasi ketat `deadline > ready_time` dan rentang suhu `7–12°C`.
 
 ### Agen 5: SuperMart Demand & Procurement Agent (`Mistral Small 3`)
 - **System Prompt:**
@@ -823,10 +830,10 @@ Setiap agen dalam ekosistem diberi peran terdefinisi secara formal (mengadopsi p
 
 | ID Agen | Nama Agen | Peran Fungsional | Inputs Utama | Outputs Utama | Tingkat Otonomi & Batasan |
 | :---: | :--- | :--- | :--- | :--- | :--- |
-| `AGT-01` | **AgroFarm Agent** | *Supply Forecaster & Harvest Planner* | Data cuaca, kelembapan, luas lahan, permintaan penundaan panen | Estimasi panen (kg), jadwal panen, persetujuan *harvest deferral* | **Semi-Otonom:** Bebas menerbitkan prediksi; penundaan panen > 48 jam butuh konfirmasi *Farm Manager* |
+| `AGT-01` | **AgroFarm Agent** | *Crop Monitor, Supply Forecaster & Harvest Planner* | Data cuaca, kelembapan, NDVI 14-hari, status sensor, permintaan *deferral* | Prediksi RF + 80% Quantile PI, jendela panen (`-2 hari` saat hujan ekstrem), status *fallback* | **Semi-Otonom:** Bebas menerbitkan prediksi; penundaan panen > 48 jam, pergeseran panen `-2 hari`, atau *sensor outage* ≥ 3 hari eskalasi *Farm Manager* |
 | `AGT-02` | **Koperasi Tani Agent** | *Aggregator & Price Negotiator* | Stok batch petani, harga pasar, proposal/CFP pembeli | Rekap stok, tawaran harga, kontrak jual-beli (*Purchase Agreement*) | **Otonom Terbatas:** Boleh negosiasi selama harga ≥ `floor_price` privat; diskon > 15% butuh persetujuan *Cooperative Manager* |
 | `AGT-03` | **FreshFood Agent** | *Quality Inspector & Factory Scheduler* | Citra tomat, hasil uji lab QC, kapasitas mesin, CFP *overtime* | Label grade A/B/C/Reject, sertifikat *food safety*, jadwal produksi FEFO | **Kritis-Terproteksi:** Penolakan *food safety* bersifat mutlak; aktivasi *overtime* > 500 kg wajib disetujui *Factory Manager* |
-| `AGT-04` | **ColdChain Agent** | *Cold-Chain Monitor & Route Optimizer* | Stream sensor suhu/daya, daftar kiriman, ketersediaan armada & 3PL | Peringatan `DISRUPTION_EVENT`, rute optimal CVRP, estimasi ETA | **Reaktif-Otonom:** Deteksi anomali & *alert* instan otomatis; kontrak sewa 3PL darurat diverifikasi *Warehouse Manager* |
+| `AGT-04` | **ColdChain Agent** | *Cold-Chain Monitor (7–12°C), VRPTW & ETA Optimizer* | Stream sensor suhu/daya, *Shipments Inbox*, *Master Fleet*, kondisi lalu lintas | Peringatan `DISRUPTION_EVENT`, rute optimal **VRPTW** (0 *TW violations*), estimasi **XGBoost ETA** | **Reaktif-Otonom:** Deteksi anomali & *alert* instan otomatis; perubahan armada & sewa 3PL diverifikasi *Fleet/Warehouse Manager* |
 | `AGT-05` | **SuperMart Agent** | *Demand Forecaster & Retail Procurer* | Riwayat POS, kalender promo, stok rak, tawaran pasokan | Prediksi permintaan, *Purchase Order* (PO), konfirmasi penerimaan | **Otonom Terbatas:** PO otomatis jika harga ≤ `ceiling_price`; substitusi Grade B saat *Demand Surge* butuh persetujuan *Purchasing Manager* |
 | `AGT-06` | **Global Orchestrator Agent** | *Ecosystem Coordinator, Optimizer & Replanner* | Snapshot terotorisasi 5 agen, *disruption events*, hasil negosiasi | Rencana alokasi global MILP-FEFO, mediasi konflik, perintah *commit*, laporan HITL | **Supervised Coordinator:** Eksekusi otomatis dalam ambang aman; wajib *Human Approval* saat ambang risiko NIST RMF terlampaui |
 
@@ -966,11 +973,13 @@ Karena keputusan rantai pasok pangan menyangkut keamanan pangan (*food safety*),
 | **Deviasi Biaya / Harga Negosiasi** | Biaya darurat > 15% atau harga < `floor_price` | Blokir auto-kontrak; eskalasi persetujuan finansial | *Procurement / Purchasing Manager* terkait |
 | **Kebuntuan Negosiasi (*Deadlock*)** | Tidak sepakat setelah $R_{\max} = 3$ putaran | Hentikan loop; sajikan 2 opsi kompromi *Pareto* ke manusia | *Control Center Operator* |
 | **Substitusi Grade Ritel** | Penurunan standar mutu (Grade A → B) | Meminta persetujuan eksplisit sebelum mengubah PO | *Purchasing Manager* (SuperMart) |
+| **Pergeseran Jendela Panen Ekstrem (`EXTREME_RAIN`)** | Panen maju `≥ 2 hari` & NDVI `< mean - 2σ` | Tandai blok `MENYIMPANG`; eskalasi jadwal panen darurat | *Farm Manager* (AgroFarm) & *Control Center Operator* |
+| **Sensor Lahan Offline (`SENSOR_OUTAGE`)** | Sensor mati `≥ 3 hari` berturut-turut | Beralih ke `FALLBACK_HISTORICAL_MEAN` + tampilkan *Stale Data Warning* | *Farm Manager* (AgroFarm) & *Control Center Operator* |
 
 ### B. Mekanisme Keamanan, *Guardrails*, dan Auditabilitas
-1. **Isolasi Data & *Role-Based Access Control* (RBAC):** Setiap *endpoint* enterprise diamankan menggunakan token JWT berlingkup (*scoped API tokens*) sehingga Global Orchestrator tidak dapat mengakses kolom privat (HPP, *floor price*, *ceiling price*, PII petani).
-2. **Guardrails Anti-Halusinasi (*Neuro-Symbolic Verification*):** Setiap angka alokasi, harga, dan kapasitas yang dihasilkan LLM wajib lolos verifikasi silang terhadap luaran deterministik *solver* MILP dan *schema validator* Pydantic; pesan yang gagal verifikasi ditolak sebelum dikirim ke agen lain.
-3. **Immutable Audit Trail:** Setiap siklus perencanaan, pesan FIPA-ACL, hasil optimasi MILP, skor risiko, hingga identitas operator yang menyetujui HITL direkam secara kronologis dalam *append-only audit log* untuk kebutuhan evaluasi, penelusuran kegagalan (*failure analysis*), dan kepatuhan regulasi pangan.
+1. **Isolasi Data & *Server-Side Role-Based Access Control* (RBAC):** Setiap *endpoint* enterprise diamankan menggunakan token berlingkup (`X-Scoped-Token`) yang diverifikasi di sisi server FastAPI (`resolve_token_scope()` & `redact_records_for_scope()`). Global Orchestrator dan peran lintas perusahaan hanya menerima kolom non-privat, sementara kolom sensitif (`production_cost_per_kg`, `floor_price_rp`, `ceiling_price_rp`, dll.) dihapus langsung di server sebelum respons JSON dikirim ke UI.
+2. **Guardrails Anti-Halusinasi (*Neuro-Symbolic Verification*):** Setiap angka alokasi, harga, dan kapasitas yang dihasilkan LLM wajib lolos verifikasi silang terhadap luaran deterministik *solver* MILP, validasi Pydantic v2 (termasuk aturan `deadline > ready_time` dan rentang suhu `7–12°C`), serta *outbound privacy sanitizer*.
+3. **Concurrency-Safe Immutable Audit Trail:** Setiap siklus perencanaan, pesan FIPA-ACL, perubahan armada/shipment, hasil optimasi MILP, skor risiko, hingga identitas operator dan catatan persetujuan HITL direkam secara kronologis dengan penautan ulang hash terakhir (`_load_last_hash()`) berbasis SHA-256 pada `results/audit_trail.jsonl` untuk menjamin integritas rantai kriptografi lintas proses (*FastAPI, Streamlit, Pytest*).
 
 ---
 
@@ -978,121 +987,195 @@ Karena keputusan rantai pasok pangan menyangkut keamanan pangan (*food safety*),
 
 ## 8.1 Teknologi dan Lingkungan Eksekusi
 
-Seluruh arsitektur yang dirancang pada Bab 5 sampai Bab 7 telah diimplementasikan secara penuh ke dalam repositori perangkat lunak **`agrichain-agentic-ai`**. Implementasi dilakukan menggunakan bahasa pemrograman **Python 3.11.9** di lingkungan Windows 11 dengan seluruh modul disusun secara terpisah (*decoupled microservices-ready architecture*) agar dapat dijalankan baik dalam mode lokal terisolasi maupun terhubung dengan infrastruktur kontainer **Docker Compose** (PostgreSQL 16, MySQL 8, MongoDB 7, TimescaleDB, dan Redis 7).
+Seluruh arsitektur yang dirancang pada Bab 5 sampai Bab 7 beserta **4 Pilar Peningkatan v2.0** (*Server-Side RBAC & Lineage*, *AgroFarm v2 NDVI/PI80*, *ColdChain v2 VRPTW + XGBoost ETA + Fleet/Shipments CRUD*, dan *Decoupled Role-Adaptive Cockpit*) telah diimplementasikan secara penuh ke dalam repositori perangkat lunak **`agrichain-agentic-ai` (v2.0)**. Implementasi dilakukan menggunakan **Python 3.11.9** di lingkungan Windows 11 dengan konfigurasi 1-klik Visual Studio Code (`.vscode/launch.json` dan `.vscode/tasks.json`), serta siap dijalankan baik dalam mode lokal terisolasi maupun kontainer **Docker Compose** (PostgreSQL 16, MySQL 8, MongoDB 7, TimescaleDB, dan Redis 7).
 
-**Tabel 8.1.** Ringkasan Teknologi, Versi Aktual, dan Fungsi Modul pada Implementasi
+**Tabel 8.1.** Ringkasan Teknologi, Versi Aktual, dan Fungsi Modul pada Implementasi v2.0
 
 | Lapisan Sistem | Teknologi & Versi Terpasang | Modul Implementasi | Fungsi Utama |
 | :--- | :--- | :--- | :--- |
-| **Runtime & Validasi** | Python 3.11.9, Pydantic 2.13.5, Pydantic-Settings | `config/settings.py`, `src/protocols/fipa_epcis.py` | Validasi skema pesan A2A, FIPA-ACL, GS1 EPCIS 2.0, & pengaturan ambang HITL |
-| **Orkestrasi Multi-Agent** | **LangGraph 1.2.19**, LangChain Core 1.7.4 | `src/agents/orchestrator.py` | *Stateful cyclic graph* Global Orchestrator (`AGT-06`) dengan *bounded negotiation loop* & HITL gate |
-| **Optimasi Matematis** | **PuLP 2.8.0 (CBC)**, **Google OR-Tools** | `src/models/milp_fefo.py`, `src/models/coldchain_iforest_cvrp.py` | *Solver* MILP-FEFO global (Persamaan 6.1–6.8) dan optimasi rute armada dingin CVRP |
-| **Machine Learning & Visi** | Scikit-learn 1.5.2, **LightGBM**, **XGBoost**, SciPy 1.13.0, Pillow 10.4.0 | `src/models/*.py` | Random Forest (`AGT-01`), LightGBM (`AGT-02`), 2D-Conv CNN (`AGT-03`), Isolation Forest (`AGT-04`), XGBoost (`AGT-05`) |
-| **API Gateway & Web** | **FastAPI 0.141.1**, Uvicorn 0.52.4, HTTPX 0.28.1 | `src/api/main.py` | *Endpoint* discovery `/.well-known/agent.json`, eksekusi siklus orkestrator, & persetujuan HITL |
-| **Visualisasi & Dashboard** | **Streamlit 1.39.0**, Plotly 5.19.0, Matplotlib 3.11.1 | `src/dashboard/app.py`, `src/experiments/run_experiments.py` | *Global Control Center* (*Sankey Diagram*, *Disruption Injector*, *HITL Console*) + 5 tab enterprise |
+| **Runtime & Validasi** | Python 3.11.9, Pydantic 2.13.5, Pydantic-Settings | `config/settings.py`, `src/protocols/fipa_epcis.py` | Validasi skema A2A/FIPA-ACL/GS1 EPCIS 2.0, SOP suhu `7,0–12,0°C`, ambang HITL & deviasi `2σ` |
+| **Keamanan & RBAC** | SHA-256 Hash-Chain, Server-Side Scoped Token | `src/protocols/security.py` | `resolve_token_scope()`, `redact_records_for_scope()` (Server-Side Firewall), & *concurrency-safe* audit trail |
+| **Orkestrasi Multi-Agent** | **LangGraph 1.2.19**, LangChain Core 1.7.4 | `src/agents/orchestrator.py` | *Stateful cyclic graph* (`AGT-06`), 8 skenario gangguan, *canonical lineage*, *Executive Briefing*, & HITL |
+| **Optimasi Matematis** | **PuLP 2.8.0 (CBC)**, **Google OR-Tools** | `src/models/milp_fefo.py`, `src/models/coldchain_iforest_cvrp.py` | *Solver* MILP-FEFO global dan optimasi rute berjendela waktu **VRPTW** lintas 4 skenario gangguan |
+| **Machine Learning & Visi** | Scikit-learn 1.5.2, **LightGBM**, **XGBoost**, SciPy 1.13.0, Pillow 10.4.0 | `src/models/*.py` | RF 250 Trees + NDVI/PI80 (`AGT-01`), LightGBM (`AGT-02`), 2D-Conv CNN (`AGT-03`), IF + **XGBoost ETA** (`AGT-04`), XGBoost (`AGT-05`) |
+| **API Gateway v2.0** | **FastAPI 0.141.1**, Uvicorn 0.52.4, HTTPX 0.28.1 | `src/api/main.py` | 14 *endpoint* REST terpisah (*Discovery, Local Services, AgroFarm, ColdChain CRUD/VRPTW/ETA, Server-Side Data Explorer, Orchestrator, HITL, Audit*) |
+| **Cockpit & Visualisasi** | **Streamlit 1.39.0**, Plotly 5.19.0 (*Scattermapbox & Sankey*), Matplotlib 3.11.1 | `src/dashboard/app.py`, `src/experiments/run_experiments.py` | *Decoupled Role-Adaptive Cockpit* (`ApiBridge`), **5 UI States**, *Impact-Preview HITL Console*, & peta geospasial VRPTW |
 | **Basis Data Heterogen** | SQLAlchemy 2.0.52, PyMongo 4.19.0, SQLite3, Docker Compose | `src/data/db_adapter.py`, `docker-compose.yml` | Isolasi 5 basis data lokal (*PostgreSQL, MySQL, MongoDB JSON, TimescaleDB*) |
-| **Pengujian Otomatis** | Pytest 8.3.3, FastAPI `TestClient` | `tests/test_ecosystem.py` | Verifikasi *privacy firewall*, MILP-FEFO, *food safety hard-block*, *deadlock*, audit chain, & API |
+| **Pengujian Otomatis** | Pytest 8.3.3, FastAPI `TestClient`, Playwright | `tests/test_ecosystem.py` | **10 pengujian otomatis** (Firewall, MILP, Hard-Block, Deadlock, AgroFarm v2, ColdChain VRPTW/ETA/CRUD, Server-Side RBAC) |
 
-## 8.2 Struktur Kode dan Organisasi Repositori (`agrichain-agentic-ai`)
+## 8.2 Struktur Kode, Organisasi Repositori, dan Kontrak API v2.0 (`agrichain-agentic-ai`)
 
-Struktur proyek dirancang modular untuk memisahkan secara tegas lapisan data, protokol keamanan, model domain ML/optimasi, *LLM router*, agen otonom, layanan API, eksperimen evaluasi, dan antarmuka pengguna:
+Struktur proyek dirancang modular untuk memisahkan secara tegas lapisan data, protokol keamanan, model domain ML/optimasi v2.0, *LLM router*, agen otonom, *API Gateway* 14 *endpoint*, eksperimen evaluasi, dan antarmuka kokpit:
 
 ```text
 agrichain-agentic-ai/
+├── .vscode/
+│   ├── launch.json                      # 1-klik Run & Debug VS Code (FastAPI, Streamlit, Train, Experiments)
+│   └── tasks.json                       # Otomasi Task VS Code (Install, Pytest, Servers)
 ├── config/
-│   └── settings.py                      # Registri 6 profil LLM heterogen & ambang HITL NIST AI RMF
+│   └── settings.py                      # Registri 6 LLM, SOP suhu 7-12 C, ambang HITL & deviasi 2-sigma
 ├── src/
 │   ├── data/
 │   │   ├── generate_dummy_data.py       # Generator 19.575 rekaman dummy + 3.000 citra RGB tomat
 │   │   └── db_adapter.py                # Materialisasi 5 basis data lokal terisolasi
 │   ├── protocols/
 │   │   ├── fipa_epcis.py                # Skema A2A, FIPA-ACL performatives, GS1 EPCIS 2.0, AgentCard
-│   │   └── security.py                  # Data Sovereignty Firewall, Scoped Token, Hash-Chained Audit Log
+│   │   └── security.py                  # Server-Side RBAC Firewall, X-Scoped-Token, Concurrency-Safe Audit
 │   ├── models/
-│   │   ├── agrofarm_rf.py               # AGT-01: Random Forest Regression (Chronological + 5-Fold CV)
+│   │   ├── agrofarm_rf.py               # AGT-01 v2: RF 250 Trees + NDVI + 80% PI + 14d +/- 2-sigma + Fallback
 │   │   ├── koperasi_lgbm.py             # AGT-02: LightGBM Regressor + Contract Net Auction
 │   │   ├── freshfood_cnn.py             # AGT-03: 2D-Conv Visual Grading + Food Safety Hard-Block + FEFO
-│   │   ├── coldchain_iforest_cvrp.py    # AGT-04: Isolation Forest Anomaly + Google OR-Tools CVRP
+│   │   ├── coldchain_iforest_cvrp.py    # AGT-04 v2: Isolation Forest (7-12 C) + XGBoost ETA + OR-Tools VRPTW
 │   │   ├── supermart_xgb.py             # AGT-05: XGBoost Demand Forecasting + Newsvendor PO
 │   │   ├── milp_fefo.py                 # AGT-06: PuLP CBC MILP-FEFO Global Allocation Solver
-│   │   └── train_all.py                 # Orkestrasi generasi data, pelatihan 5 ML, & verifikasi MILP
+│   │   └── train_all.py                 # Orkestrasi generasi data, pelatihan 5 ML v2.0, & verifikasi MILP
 │   ├── llm/
 │   │   ├── prompts.py                   # 6 System Prompts terstruktur sesuai Bab 6.3
 │   │   └── router.py                    # LiteLLM-compatible Heterogeneous 6-LLM Router & Telemetry
 │   ├── agents/
 │   │   ├── base.py                      # BaseEnterpriseAgent + Outbound Privacy Sanitizer
 │   │   ├── enterprise_agents.py         # Implementasi 5 Enterprise Agents (AGT-01 s.d. AGT-05)
-│   │   └── orchestrator.py              # LangGraph StateGraph Global Orchestrator (AGT-06)
+│   │   └── orchestrator.py              # LangGraph Orchestrator v2.0 (8 Skenario, Lineage, Executive Briefing)
 │   ├── api/
-│   │   └── main.py                      # FastAPI Gateway (/.well-known/agent.json, /run-cycle, /hitl)
+│   │   └── main.py                      # FastAPI Decoupled Gateway v2.0 (14 REST Endpoints + RBAC Firewall)
 │   ├── experiments/
-│   │   └── run_experiments.py           # Benchmark 4 Kondisi x 30 siklus + 3 Ablasi + 3 Failure Cases
+│   │   └── run_experiments.py           # Benchmark 4 Kondisi x 30 siklus + 3 Ablasi + Failure Cases
 │   └── dashboard/
-│       └── app.py                       # Streamlit Control Center + 5 Enterprise Tabs
+│       └── app.py                       # Decoupled Role-Adaptive Cockpit v2.0 (ApiBridge + 5 UI States + Map)
 ├── tests/
-│   └── test_ecosystem.py                # 6 Unit & Integration Tests (pytest)
+│   └── test_ecosystem.py                # 10 Automated Unit, RBAC, AgroFarm/ColdChain v2 & FastAPI Tests
+├── docs/screenshots/                    # 7 Screenshot aktual aplikasi v2.0 & Swagger UI
 ├── docker-compose.yml                   # Stack 5 kontainer DB heterogen + Redis
 ├── requirements.txt                     # Daftar dependensi Python
-└── results/                             # Artefak model (.pkl), metrik JSON, audit_trail.jsonl, & grafik
+└── results/                             # Model terlatih v2.0 (.pkl), metrik JSON, audit_trail.jsonl, & grafik
 ```
 
-**Tabel 8.2.** Pemetaan Modul Kode terhadap Spesifikasi Arsitektur Bab 5–7
+**Tabel 8.2.** Pemetaan Modul Kode terhadap Spesifikasi Arsitektur Bab 5–7 dan 4 Pilar v2.0
 
 | Komponen Arsitektur | Berkas Sumber Utama | Mekanisme Kunci yang Diimplementasikan |
 | :--- | :--- | :--- |
-| **Zero-Direct-DB-Access Firewall** | `src/protocols/security.py`, `src/agents/base.py` | Fungsi rekursif `sanitize_outbound_payload()` memblokir otomatis 15 atribut privat (`production_cost_per_kg`, `floor_price_rp`, `ceiling_price_rp`, dll.) sebelum pesan keluar dari batas enterprise. |
-| **LangGraph StateGraph Orchestrator** | `src/agents/orchestrator.py` | 7 node terhubung kondisional (`collect_telemetry`, `run_milp`, `validate_local_policy`, `negotiation_loop`, `risk_hitl_gate`, `escalate_hitl`, `commit_and_audit`) dengan batas keras $R_{\max} = 3$. |
-| **Heterogeneous 6-LLM Router** | `src/llm/router.py`, `config/settings.py` | Pemetaan 6 model berbeda (*Qwen 2.5 14B, Claude 3.5 Sonnet, Gemini 2.5 Flash, Llama 3.1 8B, Mistral Small 3, GPT-4o*) + opsi `homogeneous_frontier=True` untuk ablasi. |
-| **Immutable Hash-Chained Audit** | `src/protocols/security.py` | Setiap *event* ditautkan dengan SHA-256 `prev_hash` ke `results/audit_trail.jsonl` dan dapat diverifikasi integritasnya melalui `verify_chain()`. |
+| **Server-Side RBAC & Zero-Direct-DB Firewall** | `src/protocols/security.py`, `src/api/main.py`, `src/agents/base.py` | `sanitize_outbound_payload()` dan `redact_records_for_scope()` memblokir 15 atribut privat langsung di server FastAPI berdasarkan `X-Scoped-Token` pemanggil sebelum data dikirim ke antarmuka UI. |
+| **LangGraph Orchestrator v2.0 & Lineage** | `src/agents/orchestrator.py` | 7 node terhubung kondisional dengan batas keras $R_{\max} = 3$, 8 skenario lingkungan, pembangunan rantai *canonical lineage* (`block_id → po_ref`), dan ringkasan *Executive Briefing*. |
+| **AgroFarm v2 (NDVI, 80% PI & Fallback)** | `src/models/agrofarm_rf.py` | Random Forest 250 pohon dengan fitur NDVI, interval kuantil 80% (`p10–p90`), mesin deviasi 14-hari ± 2σ, pergeseran panen `-2 hari` saat hujan ekstrem, serta mode aman `FALLBACK_HISTORICAL_MEAN`. |
+| **ColdChain v2 (VRPTW, XGBoost ETA & CRUD)** | `src/models/coldchain_iforest_cvrp.py`, `src/api/main.py` | OR-Tools VRPTW (4 skenario, koordinat Yogyakarta/Sleman/Bantul, 0 *TW violations*), **XGBoost ETA Regressor**, SOP `7,0–12,0°C`, serta validasi CRUD *Master Fleet* & *Shipments Inbox*. |
+| **Decoupled Role-Adaptive Cockpit & 5 UI States** | `src/dashboard/app.py` | Klien HTTP `ApiBridge` ke FastAPI, navigasi adaptif 6 peran, 5 *UI states* wajib (*Loading, Empty, Error, Stale Warning, Success*), *Impact-Preview HITL Console*, dan peta *Scattermapbox*. |
+| **Concurrency-Safe SHA-256 Audit Trail** | `src/protocols/security.py` | Penautan ulang `_load_last_hash()` sebelum setiap penulisan ke `results/audit_trail.jsonl` sehingga rantai kriptografi tetap valid 100% meski ditulis serentak oleh FastAPI, Streamlit, dan Pytest. |
+
+Untuk membuktikan pemisahan lapisan *backend* dan *frontend* secara penuh (*decoupled microservices gateway*), **Tabel 8.3** merangkum seluruh 14 *endpoint* REST yang diekspos oleh `src/api/main.py`.
+
+**Tabel 8.3.** Daftar 14 *Endpoint* REST FastAPI Multi-Enterprise Gateway v2.0 (`src/api/main.py`)
+
+| Method | Endpoint | Grup Layanan | Fungsi Utama & Penegakan Keamanan |
+| :---: | :--- | :--- | :--- |
+| `GET` | `/api/v1/health` | Global Control Center | Status layanan v2.0, SOP suhu tomat `[7.0, 12.0]`, jumlah agen (`6`), & validasi SHA-256 |
+| `GET` | `/.well-known/agent.json` | A2A Discovery | Ekspos *Agent Discovery Cards* standar A2A bagi seluruh 6 agen heterogen |
+| `GET` | `/api/v1/enterprises/{enterprise_id}/status` | Local Enterprise Services | Status *microservice* lokal, skema DB terisolasi, metrik ML aktual, & daftar field privat |
+| `GET` | `/api/v1/agrofarm/monitoring` | AgroFarm (`AGT-01`) | Evaluasi deviasi 14-hari ± 2σ per blok lahan + bendera `stale_alert` sensor offline |
+| `POST` | `/api/v1/agrofarm/predict` | AgroFarm (`AGT-01`) | Inferensi RF 250 pohon + NDVI + 80% Quantile PI + jendela panen + *Feature Importance* |
+| `GET` / `POST` | `/api/v1/coldchain/fleet` | ColdChain (`AGT-04`) | Daftar & *upsert* armada reefer/driver (terbatas peran `coldchain`/`global` + SHA-256 audit) |
+| `GET` / `POST` | `/api/v1/coldchain/shipments` | ColdChain (`AGT-04`) | Inbox permintaan kiriman dengan validasi Pydantic ketat (`deadline > ready_time`, suhu valid) |
+| `POST` | `/api/v1/coldchain/vrptw` | ColdChain (`AGT-04`) | Optimasi rute OR-Tools **VRPTW** (*Time Windows*) + pembandingan *delta* terhadap *Normal* |
+| `POST` | `/api/v1/coldchain/eta` | ColdChain (`AGT-04`) | Prediksi durasi tempuh berbasis **XGBoost ETA Regressor** beserta *error band* |
+| `GET` | `/api/v1/data-explorer/{enterprise_id}/{table_name}` | Server-Side Privacy Explorer | Query 5 DB lokal terisolasi dengan **Server-Side Redaction** berbasis header `X-Scoped-Token` |
+| `POST` | `/api/v1/orchestrator/run-cycle` | Global Control Center | Menjalankan 1 siklus LangGraph (8 skenario) + mengembalikan `lineage`, `vrptw_plan`, & *briefing* |
+| `POST` | `/api/v1/orchestrator/hitl/{cycle_id}/approve` | HITL Governance & Audit | Mencatat persetujuan operator & catatan audit ber-hash SHA-256 (`HUMAN_APPROVED`) |
+| `POST` | `/api/v1/orchestrator/hitl/{cycle_id}/reject` | HITL Governance & Audit | Menahan rencana eksekusi oleh operator dengan catatan audit SHA-256 (`HUMAN_REJECTED`) |
+| `GET` | `/api/v1/audit/trail` | HITL Governance & Audit | Mengambil riwayat *append-only audit log* terbaru beserta hasil verifikasi kriptografi |
 
 ## 8.3 Konfigurasi Sistem, *Dual-Mode LLM Router*, dan Verifikasi Otomatis
 
-1. **Konfigurasi Lingkungan (`.env` & `config/settings.py`):** Seluruh parameter kritis—termasuk `RANDOM_SEED=42`, `MAX_NEGOTIATION_ROUNDS=3`, ambang batas eskalasi NIST AI RMF (`HITL_MAX_FLR_PCT=10.0`, `HITL_CAPACITY_DROP_PCT=40.0`, `HITL_COST_SURGE_PCT=15.0`), serta tarif token per 1 juta token dan profil latensi keenam LLM—dikelola terpusat melalui `Pydantic BaseSettings`.
+1. **Konfigurasi Lingkungan (`.env` & `config/settings.py`):** Seluruh parameter kritis—termasuk `RANDOM_SEED=42`, `MAX_NEGOTIATION_ROUNDS=3`, SOP suhu aman tomat (`TOMATO_SAFE_TEMP_MIN_C=7.0`, `TOMATO_SAFE_TEMP_MAX_C=12.0`), ambang deviasi AgroFarm (`AGROFARM_DEVIATION_SIGMA=2.0`, `AGROFARM_RAIN_EXTREME_14D_MM=90.0`, `AGROFARM_SENSOR_OUTAGE_DAYS_THRESHOLD=3`), ambang HITL NIST AI RMF (`HITL_MAX_FLR_PCT=10.0`, `HITL_CAPACITY_DROP_PCT=40.0`, `HITL_COST_SURGE_PCT=15.0`), serta tarif token dan profil latensi keenam LLM—dikelola terpusat melalui `Pydantic BaseSettings`.
 2. **Arsitektur *Dual-Mode LLM Execution*:** Modul `HeterogeneousLLMRouter` mendukung dua mode operasi:
    - **Mode `LIVE`:** Mengirimkan permintaan *structured JSON completion* ke *endpoint* API komersial (OpenAI, Anthropic, Gemini, Mistral) maupun *endpoint* lokal **Ollama** (`qwen2.5:14b` dan `llama3.1:8b`) apabila kredensial tersedia pada `.env`.
    - **Mode `POLICY_GROUNDED_SIMULATED` (Default Benchmark Reprodusibel):** Mengeksekusi logika penalaran terstruktur berbasis kebijakan masing-masing agen yang terikat pada keluaran deterministik model ML/MILP, seraya mencatat secara presisi estimasi token *prompt/completion*, biaya USD per model, dan profil latensi terkalibrasi. Desain ini memungkinkan eksekusi eksperimen skala besar (> 200 siklus lintas kondisi dan ablasi) secara deterministik, bebas fluktuasi jaringan, dan dapat direproduksi oleh evaluator tanpa memerlukan kunci API berbayar.
-3. **Verifikasi Otomatis (*Automated Testing*):** Seluruh skenario kritis telah diverifikasi menggunakan `pytest tests/test_ecosystem.py -v` dengan hasil **6 dari 6 pengujian lulus (100% PASSED dalam 7,35 detik)**, mencakup: (1) pemblokiran kebocoran data privat oleh *Data Sovereignty Firewall*, (2) jaminan prioritas FEFO lot `H003` (umur 2 hari) pada solver MILP, (3) *hard-block* keamanan pangan 0% toleransi, (4) *adaptive replanning* saat *Cold Storage Failure* + verifikasi rantai hash audit trail (`verify_chain() == True`), (5) terminasi deterministik *deadlock* negosiasi tepat pada ronde ke-3 menuju HITL, serta (6) pengujian integrasi penuh *endpoint* FastAPI (`/.well-known/agent.json`, `/api/v1/orchestrator/run-cycle`, dan `/api/v1/orchestrator/hitl/{cycle_id}/approve`).
+3. **Verifikasi Otomatis (*Automated Testing* — 10/10 Passed):** Seluruh skenario kritis telah diverifikasi menggunakan `pytest tests/test_ecosystem.py -v` dengan hasil **10 dari 10 pengujian lulus (100% PASSED dalam 35,33 detik)**, mencakup: (1) pemblokiran kebocoran data privat oleh *Data Sovereignty Firewall*, (2) jaminan prioritas FEFO lot `H003` (umur 2 hari) pada solver MILP, (3) *hard-block* keamanan pangan 0% toleransi, (4) *adaptive replanning* saat *Cold Storage Failure* + verifikasi rantai SHA-256 (`verify_chain() == True`), (5) terminasi deterministik *deadlock* negosiasi tepat pada ronde ke-3 menuju HITL, (6) pengujian integrasi *endpoint* Global + 5 *local enterprise status* + HITL Approve/Reject + Audit Trail, (7) bukti **perubahan keputusan terukur** saat kondisi lingkungan berubah (*Normal* vs *Disruption*) beserta *canonical lineage* & *Executive Briefing*, (8) validasi AgroFarm v2 pada **`EXTREME_RAIN`** (80% PI, NDVI, pergeseran panen `-2 hari`) dan **`SENSOR_OUTAGE`** (`FALLBACK_HISTORICAL_MEAN` + *stale warning*), (9) validasi ColdChain v2 (**SOP `7,0–12,0°C`**, **OR-Tools VRPTW 0 pelanggaran jendela waktu**, **XGBoost ETA**, penolakan RBAC `403` untuk peran non-fleet, dan penolakan validasi `422` untuk `deadline <= ready_time`), serta (10) verifikasi **Server-Side RBAC Data Explorer Redaction** (kolom `floor_price_rp` otomatis ter-redaksi untuk `tok_orchestrator_global_scope_v1`, terbuka untuk pemilik sah `tok_koperasi_local_v1`, dan ditolak `403` untuk token tidak sah).
 
-## 8.4 Kendala Implementasi yang Dihadapi dan Strategi Mitigasi
+## 8.4 Implementasi Antarmuka Aktual (*Role-Adaptive Cockpit v2.0* & FastAPI Swagger)
 
-Selama proses implementasi dan pengujian sistem, ditemukan lima kendala teknis utama yang berhasil diselesaikan secara terstruktur (**Tabel 8.3**).
+Seluruh layar antarmuka telah dijalankan secara langsung pada server aktif (`Streamlit :8501` terhubung via HTTP ke `FastAPI :8000`) dan diaudit otomatis menggunakan headless Chrome (*Playwright*) dengan hasil **0 galat *runtime* (`stException = 0`)**. Lima tangkapan layar utama disajikan pada **Gambar 8.1** hingga **Gambar 8.5**.
 
-**Tabel 8.3.** Kendala Implementasi dan Solusi Rekayasa yang Diterapkan
+```image
+docs/screenshots/01_global_control_center.png
+```
+
+**Gambar 8.1.** *Global Command Center v2.0* — *Executive Briefing*, *Impact-Preview HITL Console*, dan 6 Kartu KPI Delta Terukur
+
+```image
+docs/screenshots/03_agrofarm_v2_ndvi_pi80.png
+```
+
+**Gambar 8.2.** Modul AgroFarm v2 (`AGT-01`) — Pemantauan Blok Lahan 14-Hari ± 2σ, *80% Quantile PI*, dan *Feature Importance*
+
+```image
+docs/screenshots/04_coldchain_anomaly_cvrp.png
+```
+
+**Gambar 8.3.** Modul ColdChain v2 (`AGT-04`) — Peta Geospasial OR-Tools VRPTW Yogyakarta/Sleman/Bantul dan Pembandingan Skenario
+
+```image
+docs/screenshots/06_data_explorer_privacy.png
+```
+
+**Gambar 8.4.** *Server-Side Privacy-Enforced Data Explorer* — Redaksi Otomatis `floor_price_rp` di Server FastAPI (`X-Scoped-Token`)
+
+```image
+docs/screenshots/07_fastapi_swagger_gateway.png
+```
+
+**Gambar 8.5.** FastAPI Multi-Enterprise API Gateway v2.0 — Dokumentasi Swagger UI (`14 Endpoint` & Skema Pydantic v2)
+
+## 8.5 Kendala Implementasi yang Dihadapi dan Strategi Mitigasi
+
+Selama proses implementasi v1.0 hingga penyempurnaan 4 pilar v2.0, ditemukan enam kendala teknis utama yang berhasil diselesaikan secara terstruktur (**Tabel 8.4**).
+
+**Tabel 8.4.** Kendala Implementasi dan Solusi Rekayasa yang Diterapkan
 
 | No | Kendala yang Dihadapi | Dampak Potensial | Solusi Rekayasa yang Diterapkan |
 | :---: | :--- | :--- | :--- |
-| 1 | **Ketiadaan API Key Komersial Aktif & Kegagalan Startup Server Ollama Lokal di Lingkungan Uji** | Eksperimen 120+ siklus multi-LLM tidak dapat dijalankan secara *live* dan rentan *timeout* | Membangun *Dual-Mode Heterogeneous Router* yang mendukung `LIVE` API sekaligus mode `POLICY_GROUNDED_SIMULATED` terkalibrasi untuk *offline reproducible benchmarking*, sehingga seluruh model ML, MILP, CVRP, dan LangGraph tetap berjalan nyata. |
+| 1 | **Ketiadaan API Key Komersial Aktif & Kegagalan Startup Server Ollama Lokal di Lingkungan Uji** | Eksperimen 120+ siklus multi-LLM tidak dapat dijalankan secara *live* dan rentan *timeout* | Membangun *Dual-Mode Heterogeneous Router* yang mendukung `LIVE` API sekaligus mode `POLICY_GROUNDED_SIMULATED` terkalibrasi untuk *offline reproducible benchmarking*, sehingga seluruh model ML, MILP, VRPTW, dan LangGraph tetap berjalan nyata. |
 | 2 | **Kebutuhan Memori & GPU untuk Pelatihan MobileNetV2 Penuh (PyTorch)** | Instalasi PyTorch + pelatihan CNN besar memperlambat iterasi di mesin CPU-only | Mengimplementasikan **2D Depthwise-Separable Convolutional Spatial-Spectral Extractor** (kernel Sobel X/Y, Laplacian detektor cacat, *spatial quadrant pooling*) + *MLP Classification Head* pada **3.000 citra RGB 32×32 sintetik**, menghasilkan akurasi 98,67% dengan waktu inferensi 0,0018 ms/citra. |
-| 3 | **Konflik Versi Dependensi `ortools` vs `pandas`/`streamlit`** | Instalasi `ortools` meningkatkan `pandas` ke versi 3.1.1 dan `protobuf` ke 6.x yang memicu peringatan kompatibilitas | Memastikan seluruh kode manipulatif DataFrame kompatibel dengan `pandas` 2.x/3.x (menghindari API usang) dan memisahkan lingkungan *runtime* layanan backend dari dashboard bila dideploy via Docker. |
+| 3 | **Konflik Versi Dependensi `ortools` vs `pandas`/`streamlit`** | Instalasi `ortools` meningkatkan `pandas` ke versi 3.1.1 dan `protobuf` ke 6.x yang memicu peringatan kompatibilitas | Memastikan seluruh kode manipulatif DataFrame kompatibel dengan `pandas` 2.x/3.x (menghindari API usang) dan memisahkan *frontend* Streamlit dari *backend* FastAPI melalui klien HTTP `ApiBridge`. |
 | 4 | **Risiko *Infinite Loop* pada Negosiasi Multi-Agen LangGraph** | Jika harga dasar privat Koperasi selalu lebih tinggi daripada batas maksimum pembeli, siklus graf `validate → negotiate → run_milp` tidak pernah berhenti | Menerapkan *hard bound* `round_counter >= MAX_NEGOTIATION_ROUNDS (3)` pada *conditional edge* LangGraph yang otomatis memicu status `deadlock_occurred = True` dan mengeskalasi ke gerbang HITL. |
 | 5 | **Penyelarasan Skala Fungsi Objektif MILP agar FEFO Konsisten** | Jika penalti kehilangan pangan terlalu kecil dibanding biaya *overtime* tetap, solver cenderung membiarkan lot Grade C busuk | Mengalibrasi penalti berbasis umur simpan $\dfrac{p_{\text{loss}}}{SL_i}$ dengan $p_{\text{loss}} = \text{Rp}18.000/\text{kg}$ ditambah kendala keras larangan transit gudang bagi $SL_i \le 2$ hari, sehingga lot paling kritis selalu diprioritaskan. |
+| 6 | **Potensi *Client-Side Privacy Bypass* & *Concurrency Race* pada Rantai Hash Audit** | Redaksi kolom privat di UI tetap mengirim data sensitif ke memori klien, sementara penulisan paralel ke `audit_trail.jsonl` dari FastAPI, Streamlit, dan Pytest dapat memutus rantai SHA-256 | Memindahkan seluruh penegakan redaksi ke **sisi server FastAPI** (`/api/v1/data-explorer` + `X-Scoped-Token`) dan memperbarui `ImmutableAuditTrail.record()` agar selalu memuat ulang `_load_last_hash()` sebelum menulis baris baru. |
 
 ---
 
 # BAB 9. EVALUASI DAN HASIL
 
-## 9.1 Metrik Evaluasi dan Hasil Pelatihan 5 Model AI Lokal
+## 9.1 Metrik Evaluasi dan Hasil Pelatihan 5 Model AI Lokal (v2.0)
 
-Sebelum mengevaluasi koordinasi multi-agen secara menyeluruh, kelima model *machine learning* dan optimasi lokal dilatih dan diuji pada **19.575 rekaman dataset dummy** (ditambah **3.000 citra RGB tomat**) menggunakan skema pembagian *Chronological Time-Series Split*, *Normal-Only Split*, dan *Stratified Split* sesuai Tabel 4.4 (`seed = 42`). Seluruh hasil pengujian aktual terekam di `results/ml_metrics.json` dan dirangkum pada **Tabel 9.1**.
+Sebelum mengevaluasi koordinasi multi-agen secara menyeluruh, kelima model *machine learning* dan optimasi lokal versi 2.0 dilatih ulang dan diuji pada **19.575 rekaman dataset dummy** (ditambah **3.000 citra RGB tomat** dan **600 riwayat perjalanan ETA ColdChain**) menggunakan skema *Chronological Time-Series Split*, *Normal-Only Split*, dan *Stratified Split* sesuai Tabel 4.4 (`seed = 42`). Seluruh hasil pengujian aktual terekam di `results/ml_metrics.json` dan dirangkum pada **Tabel 9.1**.
 
-**Tabel 9.1.** Hasil Evaluasi Aktual Lima Model AI Domain Lokal dan Verifikasi Optimasi
+**Tabel 9.1.** Hasil Evaluasi Aktual Lima Model AI Domain Lokal dan Verifikasi Optimasi (v2.0)
 
-| Agen & Enterprise | Model Domain AI / Optimasi | Pembagian Data (Train / Val / Test) | Metrik Uji Aktual | Target KPI (Bab 2.4) | Status | Waktu Inferensi |
+| Agen & Enterprise | Model Domain AI / Optimasi (v2.0) | Pembagian Data (Train / Val / Test) | Metrik Uji Aktual (v2.0) | Target KPI (Bab 2.4) | Status | Waktu Inferensi |
 | :--- | :--- | :---: | :--- | :--- | :---: | :---: |
-| **`AGT-01` AgroFarm** | Random Forest Regression | 840 / 180 / 180 *(Chronological)* | MAE = **93,09 kg (7,24% mean)**; RMSE = 120,14 kg; $R^2 = \mathbf{0,9393}$; 5-Fold CV MAE = 142,99 kg | MAE ≤ 10% mean | **Lulus** | 0,30 ms |
-| **`AGT-02` Koperasi Tani** | LightGBM Regressor + Contract Net Auction | 1.050 / 225 / 225 *(Chronological)* | MAE = **Rp240,1/kg**; MAPE = **4,28%**; $R^2 = \mathbf{0,9853}$ | MAPE ≤ 8% | **Lulus** | 0,0055 ms |
-| **`AGT-03` FreshFood** | 2D-Conv Spatial-Spectral CNN + MLP Head | 2.100 / 450 / 450 *(Stratified RGB)* | Accuracy = **98,67%**; Macro-F1 = **0,9878**; Recall Grade C = 97,89%; Recall Reject = **100,0%** | Acc ≥ 90% | **Lulus** | 0,0018 ms |
-| **`AGT-04` ColdChain** | Isolation Forest + Google OR-Tools CVRP | 7.000 normal / 1.500 / 1.500 *(Time-Series)* | Anomaly Precision = 91,06%; **Recall = 100,0%**; F1 = **95,32%**; AUC = **1,0000**; CVRP: 382 → 263 km (**-31,15%**) | F1 ≥ 90%, Rute ≥ 10% | **Lulus** | 0,0141 ms |
-| **`AGT-05` SuperMart** | XGBoost Regression + Newsvendor PO | 2.299 / 493 / 493 *(Chronological)* | MAE = **26,71 kg**; RMSE = 33,54 kg; MAPE = **3,72%**; $R^2 = \mathbf{0,9215}$ | MAPE ≤ 15% | **Lulus** | 0,0028 ms |
-| **`AGT-06` Control Center** | PuLP CBC MILP-FEFO *(Showcase 4.500 kg)* | Normal vs *Cold Storage Failure* | Normal: FLR **0,0%**, OFR **100%**, Profit Rp26,85 Jt; Disrupt Adaptive: FLR **0,0%**, OFR **100%**, OT Aktif, Profit Rp26,96 Jt | FLR ≤ 5%, OFR ≥ 95% | **Lulus** | 29,21 ms *(solve)* |
+| **`AGT-01` AgroFarm** | Random Forest **250 Trees + NDVI + 80% Quantile PI** (`rf-v2.0`) | 840 / 180 / 180 *(Chronological)* | **MAE = 87,84 kg (6,83% mean)**; RMSE = 114,47 kg; $R^2 = \mathbf{0,9449}$; 5-Fold CV MAE = 139,92 kg; **PI80 Cov = 91,67%** *(unggul vs Hist Mean 421,47 kg & LinReg 125,00 kg)* | MAE ≤ 10% mean | **Lulus** | 0,1223 ms |
+| **`AGT-02` Koperasi Tani** | LightGBM Regressor + Contract Net Auction | 1.050 / 225 / 225 *(Chronological)* | MAE = **Rp240,1/kg**; MAPE = **4,28%**; $R^2 = \mathbf{0,9853}$ | MAPE ≤ 8% | **Lulus** | 0,0043 ms |
+| **`AGT-03` FreshFood** | 2D-Conv Spatial-Spectral CNN + MLP Head | 2.100 / 450 / 450 *(Stratified RGB)* | Accuracy = **98,67%**; Macro-F1 = **0,9878**; Recall Grade C = 97,89%; **Recall Reject = 100,0%** | Acc ≥ 90% | **Lulus** | 0,0018 ms |
+| **`AGT-04` ColdChain** | Isolation Forest (`7–12°C`) + **XGBoost ETA** + **OR-Tools VRPTW** | 7.000 normal / 1.500 / 1.500 *(Sensor)*; 420 / 90 / 90 *(ETA)* | Anomaly F1 = **95,32%** (**Recall 100%**, AUC **1,0000**); **ETA MAE = 7,66 mnt** (RMSE 10,47 mnt, **MAPE 5,35%** vs LinReg 16,95 mnt); **VRPTW: 382 → 263 km (-31,15%, 0 TW violations)** | F1 ≥ 90%, Rute ≥ 10% | **Lulus** | 0,0139 ms |
+| **`AGT-05` SuperMart** | XGBoost Regression + Newsvendor PO | 2.299 / 493 / 493 *(Chronological)* | MAE = **26,71 kg**; RMSE = 33,54 kg; MAPE = **3,72%**; $R^2 = \mathbf{0,9215}$ | MAPE ≤ 15% | **Lulus** | 0,0024 ms |
+| **`AGT-06` Control Center** | PuLP CBC MILP-FEFO *(Showcase 4.500 kg)* | Normal vs *Cold Storage Failure* | Normal: FLR **0,0%**, OFR **100%**, Profit Rp26,85 Jt (`21,08 ms`); Disrupt Adaptive: FLR **0,0%**, OFR **100%**, OT Aktif, Profit Rp26,96 Jt (`20,67 ms`) | FLR ≤ 5%, OFR ≥ 95% | **Lulus** | 20,67 ms *(solve)* |
 
-Hasil pada **Tabel 9.1** menunjukkan bahwa seluruh lima model domain lokal melampaui target simulasi yang ditetapkan di Bab 2.4. Secara khusus, **Recall 100,0%** pada kelas *Reject* (FreshFood CNN) dan pada deteksi anomali suhu (ColdChain Isolation Forest) sangat krusial dari sisi manajemen risiko karena mencegah lolosnya tomat tidak layak pangan maupun keterlambatan deteksi kegagalan kompresor ruang dingin. Selain itu, optimasi CVRP dengan Google OR-Tools memangkas total jarak distribusi armada dari 382,0 km menjadi 263,0 km (**efisiensi -31,15%**), jauh melampaui target minimum 10%.
+Peningkatan versi 2.0 pada **Tabel 9.1** menghasilkan lompatan kualitas terukur pada dua enterprise kunci:
+1. **AgroFarm v2 (`rf-v2.0`):** Penambahan fitur vegetasi **NDVI** dan ekspansi ke 250 pohon menurunkan galat uji dari **93,09 kg (7,24%) → 87,84 kg (6,83%)** sekaligus menaikkan $R^2$ dari **0,9393 → 0,9449**. Analisis *Feature Importance* menunjukkan tiga prediktor dominan berupa luas lahan `area_ha` (**43,49%**), kelembapan tanah `soil_moisture_pct` (**24,94%**), dan indeks vegetasi `ndvi` (**14,84%**), sementara *80% Quantile Prediction Interval* mencapai *empirical coverage* **91,67%**.
+2. **ColdChain v2 (`iforest-vrptw-v2.0`):** Penambahan **XGBoost ETA Regressor** menekan galat prediksi durasi perjalanan sebesar **-54,8%** dibandingkan *Linear Regression* (`16,95 → 7,66 menit`), sedangkan optimasi rute **OR-Tools VRPTW (*Time Windows*)** diverifikasi secara konsisten melintasi 4 skenario gangguan operasional dengan **0 pelanggaran jendela waktu** (**Tabel 9.2**).
+
+**Tabel 9.2.** Evaluasi Komparatif Empat Skenario Optimasi Rute Google OR-Tools VRPTW (*Yogyakarta/Sleman/Bantul*)
+
+| Skenario VRPTW | Naive (km) | Optimal (km) | Hemat (%) | TW Viol. | Karakteristik Penyesuaian Rute |
+| :--- | :---: | :---: | :---: | :---: | :--- |
+| `NORMAL` | 382,0 | **263,0** | **-31,15%** | **0** | Konsolidasi penuh 3 armada reefer `7–12°C` sesuai jadwal standar |
+| `ROAD_DISRUPTION` | 382,0 | **263,0** | **-31,15%** | **0** | Penyesuaian urutan singgah menghindari koridor terganggu tanpa telat |
+| `VEHICLE_BREAKDOWN` | 382,0 | **195,0** | **-48,95%** | **0** | Relokasi muatan ke armada aktif tersisa dengan prioritas lot kritis FEFO |
+| `COLD_STORAGE_DROP` | 344,0 | **264,0** | **-23,26%** | **0** | Pengalihan *direct-haul* ke FreshFood & SuperMart tanpa transit gudang rusak |
 
 ## 9.2 Hasil Eksperimen 4 Kondisi Utama (*Baseline vs Adaptive Replanning*)
 
-Pengujian tingkat ekosistem dijalankan pada **4 kondisi eksperimen** dengan **$N = 30$ siklus harian stokastik berpasangan** per kondisi (total 120 siklus evaluasi) di mana pasokan panen bervariasi antara 4.000–5.300 kg dan permintaan SuperMart bervariasi antara 1.850–2.250 kg (normal) hingga 2.400–3.150 kg (*surge*). Seluruh hasil aktual tersimpan pada `results/experiment_results.json` dan disajikan pada **Tabel 9.2** serta divisualisasikan pada **Gambar 9.1**.
+Pengujian tingkat ekosistem dijalankan pada **4 kondisi eksperimen** dengan **$N = 30$ siklus harian stokastik berpasangan** per kondisi (total 120 siklus evaluasi) di mana pasokan panen bervariasi antara 4.000–5.300 kg dan permintaan SuperMart bervariasi antara 1.850–2.250 kg (normal) hingga 2.400–3.150 kg (*surge*). Seluruh hasil aktual tersimpan pada `results/experiment_results.json` dan disajikan pada **Tabel 9.3** serta divisualisasikan pada **Gambar 9.1**.
 
-**Tabel 9.2.** Perbandingan Kinerja Ekosistem pada 4 Kondisi Eksperimen ($N = 30$ Siklus Berpasangan; Mean ± Std)
+**Tabel 9.3.** Perbandingan Kinerja Ekosistem pada 4 Kondisi Eksperimen ($N = 30$ Siklus Berpasangan; Mean ± Std)
 
 | Global KPI | Kondisi 0: Siloed Baseline | Kondisi 1: Normal Global Agentic | Kondisi 2: Disruption Tanpa Replanning | Kondisi 3: Disruption + Adaptive Replanning | Dampak Adaptive (K3 vs K2) |
 | :--- | :---: | :---: | :---: | :---: | :---: |
@@ -1112,16 +1195,16 @@ results/figures/fig_9_1_conditions.png
 
 **Gambar 9.1.** Perbandingan Kinerja Ekosistem pada 4 Kondisi Eksperimen ($N = 30$ Siklus per Kondisi)
 
-Berdasarkan **Tabel 9.2** dan **Gambar 9.1**, terdapat tiga temuan empiris penting:
+Berdasarkan **Tabel 9.3** dan **Gambar 9.1**, terdapat tiga temuan empiris penting:
 1. **Koordinasi Global Menghapus *Food Loss* pada Kondisi Normal (K1 vs K0):** Meskipun tiap perusahaan pada *Siloed Baseline* (Kondisi 0) sudah menggunakan model ML prediktif lokal, ketiadaan koordinasi FEFO mengakibatkan rata-rata **13,38%** hasil panen membusuk (didominasi sisa Grade C berumur simpan 2 hari dan surplus Grade A yang terlambat diserap), sehingga menekan profit bersih ekosistem ke Rp21,74 juta/siklus. Dengan *Global Orchestrator* MILP-FEFO (Kondisi 1), *Food Loss Rate* turun menjadi **0,00%**, profit bersih ekosistem naik **+26,0%** (Rp27,38 juta), utilisasi sumber daya melonjak dari 50,97% ke 85,00%, dan indeks keadilan *Jain* meningkat ke **0,9607**.
 2. **Kerentanan Ekstrem Sistem Statis saat Gangguan (Kondisi 2):** Ketika *Cold Storage Failure* (kapasitas turun 66,7% disertai suhu 14,8°C) dan *Demand Surge* terjadi tanpa *replanning*, *Food Loss Rate* melonjak tajam ke **15,47%**, *Order Fulfillment Rate* merosot ke **92,92%** (dengan standar deviasi lebar ±7,24%), biaya membengkak ke **Rp31,36 juta** akibat penalti pembuangan dan *stockout*, serta keadilan profit jatuh ke **0,8286** karena ColdChain dan SuperMart menanggung kerugian paling besar.
 3. **Ketangguhan *Adaptive Replanning* Lintas Agen (Kondisi 3 vs Kondisi 2):** Aktivasi otomatis *Isolation Forest alert* → MILP-FEFO ulang → negosiasi *Contract Net* (*overtime* FreshFood +500 kg, *harvest deferral* 24 jam AgroFarm, 3PL cadangan, serta substitusi Grade B ≤ 30% saat *surge*) berhasil menekan FLR kembali ke **0,00%**, memulihkan OFR ke **98,25%**, memangkas total biaya sebesar **Rp2,31 juta/siklus (-7,35%)**, dan menaikkan profit bersih ekosistem sebesar **+39,3%** dalam waktu respons rata-rata hanya **4,23 detik**.
 
 ## 9.3 Hasil Tiga Studi Ablasi (*Ablation Study*)
 
-Untuk mengisolasi kontribusi masing-masing keputusan arsitektur, dilakukan tiga studi ablasi berpasangan pada 30 siklus kondisi gangguan (**Tabel 9.3** dan **Gambar 9.2**).
+Untuk mengisolasi kontribusi masing-masing keputusan arsitektur, dilakukan tiga studi ablasi berpasangan pada 30 siklus kondisi gangguan (**Tabel 9.4** dan **Gambar 9.2**).
 
-**Tabel 9.3.** Ringkasan Hasil Tiga Studi Ablasi Arsitektur ($N = 30$ Siklus Gangguan Berpasangan)
+**Tabel 9.4.** Ringkasan Hasil Tiga Studi Ablasi Arsitektur ($N = 30$ Siklus Gangguan Berpasangan)
 
 | Studi Ablasi & Varian | FLR (%) | OFR (%) | Jain's Fairness | Pelanggaran Kendala (%) | Kebocoran Privasi (Field) | Replanning Time (dtk) | Biaya LLM / 1.000 Siklus (USD) |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -1143,25 +1226,27 @@ Analisis komparatif dari ketiga studi ablasi tersebut membuktikan nilai tambah s
 2. **Homogeneous 6× GPT-4o vs Heterogeneous 6-LLM Routing (Ablasi 2):** Menempatkan 6 keluarga LLM berbeda sesuai kebutuhan fungsional mempertahankan kualitas alokasi identik (FLR 0,00%, OFR 98,25%, NSR 100%), sekaligus **menghemat biaya operasional token sebesar 41,71%** (\$17,50 → \$10,20 per 1.000 siklus) dan **mempercepat *replanning* sebesar 10,19%** (4,71 s → 4,23 s).
 3. **Pure LLM vs Neuro-Symbolic MILP-FEFO + LLM (Ablasi 3):** Menghapus *solver* matematis PuLP menyebabkan **100,0% siklus mengalami minimal satu pelanggaran kendala** (rata-rata 1,70 pelanggaran/siklus—berupa penempatan batch umur ≤ 2 hari ke gudang transit, *overshoot* kapasitas, atau kelalaian verifikasi batas keamanan pangan), yang menaikkan FLR ke 1,52% dan menurunkan OFR ke 93,67%. Integrasi *neuro-symbolic* MILP-FEFO menjamin **0,0% pelanggaran kendala**.
 
-## 9.4 Analisis Kegagalan (*Failure Analysis*)
+## 9.4 Analisis Kegagalan & Kondisi Ekstrem (*Failure & Edge-Case Analysis*)
 
-Untuk mengevaluasi perilaku sistem pada kondisi ekstrem (*edge cases*) dan memverifikasi keandalan tata kelola risiko **NIST AI RMF 1.0**, dijalankan tiga skenario uji kegagalan terarah (**Tabel 9.4**).
+Untuk mengevaluasi perilaku sistem pada kondisi ekstrem (*edge cases*) dan memverifikasi keandalan tata kelola risiko **NIST AI RMF 1.0** di versi 2.0, dijalankan **lima skenario uji kegagalan terarah** (**Tabel 9.5**).
 
-**Tabel 9.4.** Ringkasan Hasil Uji Tiga Skenario Kegagalan dan Respons Tata Kelola Risiko
+**Tabel 9.5.** Ringkasan Hasil Uji Lima Skenario Kegagalan & Kondisi Ekstrem dan Respons Tata Kelola Risiko
 
-| Kasus Kegagalan | Kondisi Pemicu (*Failure Injection*) | Perilaku Sistem & Hasil Terukur | Aktivasi HITL & Kepatuhan Risiko |
+| Kasus Uji | Kondisi Pemicu (*Failure Injection*) | Perilaku Sistem & Hasil Terukur (Aktual v2.0) | Aktivasi HITL & Kepatuhan Risiko |
 | :--- | :--- | :--- | :--- |
-| **Kasus 1:** *Food Safety Hard Block* | Batch `H003` (1.000 kg Grade C) diinjeksikan gagal uji mikroba + residu pestisida 0,08 ppm (> ambang 0,05 ppm) | `AGT-03` (FreshFood) memblokir mutlak `H003` (**alokasi = 0 kg**); FLR tercatat 22,22% (karena 1.000 kg dilarang beredar demi keamanan konsumen), OFR 87,50%, **zero pelanggaran** *food safety* | **HITL Aktif:** `FOOD_SAFETY_HARD_BLOCK_TRIGGERED` & `FLR_22.22%_EXCEEDS_10%` |
-| **Kasus 2:** *Negotiation Deadlock* | Pembeli alternatif menawar Rp5.100–5.300/kg (< *floor price* privat Koperasi) sepanjang seluruh ronde negosiasi | `AGT-02` (Koperasi) menolak proposal tanpa membocorkan nilai `floor_price_rp` (**privacy_leaks = 0**); graf LangGraph berhenti tepat di **ronde ke-3** (`deadlock_occurred = True`), mencegah *infinite loop* | **HITL Aktif:** `NEGOTIATION_DEADLOCK_AFTER_3_ROUNDS` (eskalasi opsi *Pareto* ke operator) |
-| **Kasus 3:** *Compound Disruption* | *Cold Storage Failure* (3.000 → 1.000 kg) + *Demand Surge* (2.000 → 2.800 kg) secara simultan | Orchestrator menyelesaikan replanning dalam **4,31 detik**; FLR tetap **0,00%**, OFR **93,75%**, dengan substitusi Grade B ke SuperMart sebesar **800,0 kg** (patuh di bawah batas keras 30% × 2.800 = 840 kg) | **HITL Aktif:** `CAPACITY_DROP_66.7%_EXCEEDS_40%` & `RETAIL_GRADE_B_SUBSTITUTION_REQUIRES_APPROVAL` |
+| **1. Food Safety Block** | Batch `H003` (1.000 kg Grade C) diinjeksikan gagal uji mikroba + residu pestisida 0,08 ppm (> ambang 0,05 ppm) | `AGT-03` (FreshFood) memblokir mutlak `H003` (**alokasi = 0 kg**); FLR tercatat 22,22% (karena 1.000 kg dilarang beredar demi keamanan konsumen), OFR 87,50%, **zero pelanggaran** *food safety* | **HITL Aktif:** `FOOD_SAFETY_HARD_BLOCK_TRIGGERED` & `FLR_22.22%_EXCEEDS_10%` |
+| **2. 3-Round Deadlock** | Pembeli alternatif menawar Rp5.100–5.300/kg (< *floor price* privat Koperasi) sepanjang seluruh ronde negosiasi | `AGT-02` (Koperasi) menolak proposal tanpa membocorkan nilai `floor_price_rp` (**privacy_leaks = 0**); graf LangGraph berhenti tepat di **ronde ke-3** (`deadlock_occurred = True`), mencegah *infinite loop* | **HITL Aktif:** `NEGOTIATION_DEADLOCK_AFTER_3_ROUNDS` (eskalasi opsi *Pareto* ke operator) |
+| **3. Compound Shock** | *Cold Storage Failure* (3.000 → 1.000 kg) + *Demand Surge* (2.000 → 2.800 kg) secara simultan | Orchestrator menyelesaikan replanning dalam **4,31 detik**; FLR tetap **0,00%**, OFR **93,75%**, dengan substitusi Grade B ke SuperMart sebesar **800,0 kg** (patuh di bawah batas keras 30% × 2.800 = 840 kg) | **HITL Aktif:** `CAPACITY_DROP_66.7%_EXCEEDS_40%` & `RETAIL_GRADE_B_SUBSTITUTION_REQUIRES_APPROVAL` |
+| **4. Extreme Rain** | Blok `BLK-11` (`H003`) menerima curah hujan 96 mm/14h (> 90 mm), kelembapan 83%, & NDVI turun ke 0,41 (< batas `2σ` 0,56) | `AGT-01` menandai blok `MENYIMPANG`, menurunkan prediksi `H003` **-13,9%** (`1.000 → 861 kg`, PI80 melebar `[476,5; 1.264,7] kg`), memajukan jendela panen **`-2 hari`**, & ColdChain menyesuaikan VRPTW (`ROAD_DISRUPTION`); FLR tetap **0,00%**, OFR **100,0%**, Profit Rp26,72 Jt | **HITL Aktif:** `AGROFARM_HARVEST_WINDOW_SHIFTED_2_DAYS` |
+| **5. Sensor Outage** | Sensor IoT blok `BLK-11` offline selama **3 hari berturut-turut** (`≥ 3 hari`) | `AGT-01` beralih aman (*graceful degradation*) ke **`FALLBACK_HISTORICAL_MEAN`** dengan PI80 `[720,0; 1.280,0] kg`, memunculkan *banner* **`STALE DATA WARNING`** pada kokpit; ekosistem tetap stabil (FLR **0,00%**, OFR **100,0%**) | **HITL Aktif:** `AGROFARM_SENSOR_OFFLINE_FALLBACK_ACTIVE` |
 
-Analisis kegagalan di atas memperlihatkan bahwa sistem gagal secara aman (*fail-safe*): ketika prioritas ekonomi (meminimalkan FLR) berbenturan dengan keamanan pangan (Kasus 1), *guardrail* mutlak memenangkan keselamatan konsumen; ketika negosiasi buntu (Kasus 2), batas putaran dan *privacy firewall* menjaga sistem tetap stabil dan aman; serta saat gangguan majemuk (Kasus 3), keputusan perubahan standar mutu tetap ditahan hingga disetujui manusia.
+Analisis lima kasus di atas memperlihatkan bahwa sistem gagal secara aman (*fail-safe*) dari hulu hingga hilir: keselamatan konsumen selalu menang atas ekonomi (Kasus 1), negosiasi buntu tidak pernah mengalami *infinite loop* atau kebocoran harga dasar (Kasus 2), gangguan majemuk tertahan oleh persetujuan manusia (Kasus 3), guncangan cuaca ekstrem memicu percepatan panen secara adaptif (Kasus 4), dan mati sensor tidak membuat inferensi AI roboh melainkan beralih ke mode *historical fallback* yang transparan (Kasus 5).
 
 ## 9.5 Analisis Biaya Token dan Latensi per Agen
 
-Rincian perbandingan latensi per panggilan dan estimasi biaya token per 1.000 siklus untuk masing-masing dari 6 agen disajikan pada **Tabel 9.5** dan **Gambar 9.3**.
+Rincian perbandingan latensi per panggilan dan estimasi biaya token per 1.000 siklus untuk masing-masing dari 6 agen disajikan pada **Tabel 9.6** dan **Gambar 9.3**.
 
-**Tabel 9.5.** Rincian Latensi dan Biaya Token per Agen: *Heterogeneous 6-LLM* vs *Homogeneous 6× GPT-4o*
+**Tabel 9.6.** Rincian Latensi dan Biaya Token per Agen: *Heterogeneous 6-LLM* vs *Homogeneous 6× GPT-4o*
 
 | ID Agen & Enterprise | Model LLM (Heterogen) | Latensi Heterogen (ms) | Latensi GPT-4o (ms) | Delta Latensi | Biaya Heterogen / 1k Siklus (USD) | Biaya GPT-4o / 1k Siklus (USD) | Delta Biaya |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -1179,7 +1264,7 @@ results/figures/fig_9_3_agent_cost_latency.png
 
 **Gambar 9.3.** Analisis Biaya Token dan Latensi per Agen: *Heterogeneous 6-LLM Routing* vs *Homogeneous GPT-4o*
 
-Dari **Tabel 9.5** dan **Gambar 9.3** terlihat jelas prinsip *right-sizing* model: empat agen operasional berfrekuensi tinggi (`AGT-01`, `AGT-03`, `AGT-04`, `AGT-05`) dipindahkan ke model ringan/multimodal/*edge* sehingga biaya gabungannya turun dari **\$9,47 menjadi hanya \$0,32 per 1.000 siklus (-96,6%)**, sementara latensi deteksi krisis pada `AGT-04` ColdChain melesat cepat menjadi **181,02 ms (-78,2%)**. Penghematan tersebut memungkinkan anggaran komputasi difokuskan secara strategis ke dua simpul penalaran paling krusial—negosiasi multi-ronde pada `AGT-02` (**Claude 3.5 Sonnet**, 73% porsi biaya) dan orkestrasi krisis pada `AGT-06` (**GPT-4o**, 23,5% porsi biaya)—dengan total biaya operasional hanya **~Rp163 per siklus harian** (jauh di bawah nilai ekonomi pangan yang diselamatkan sebesar ~Rp7,94 juta/siklus saat gangguan).
+Dari **Tabel 9.6** dan **Gambar 9.3** terlihat jelas prinsip *right-sizing* model: empat agen operasional berfrekuensi tinggi (`AGT-01`, `AGT-03`, `AGT-04`, `AGT-05`) dipindahkan ke model ringan/multimodal/*edge* sehingga biaya gabungannya turun dari **\$9,47 menjadi hanya \$0,32 per 1.000 siklus (-96,6%)**, sementara latensi deteksi krisis pada `AGT-04` ColdChain melesat cepat menjadi **181,02 ms (-78,2%)**. Penghematan tersebut memungkinkan anggaran komputasi difokuskan secara strategis ke dua simpul penalaran paling krusial—negosiasi multi-ronde pada `AGT-02` (**Claude 3.5 Sonnet**, 73% porsi biaya) dan orkestrasi krisis pada `AGT-06` (**GPT-4o**, 23,5% porsi biaya)—dengan total biaya operasional hanya **~Rp163 per siklus harian** (jauh di bawah nilai ekonomi pangan yang diselamatkan sebesar ~Rp7,94 juta/siklus saat gangguan).
 
 ---
 
@@ -1187,10 +1272,11 @@ Dari **Tabel 9.5** dan **Gambar 9.3** terlihat jelas prinsip *right-sizing* mode
 
 ## 10.1 Temuan Utama (*Key Findings*)
 
-1. **Keunggulan Paradigma *Neuro-Symbolic* (MILP-FEFO + Multi-Agent LLM):** Hasil Ablasi 3 membuktikan bahwa mengandalkan LLM semata (*pure LLM*) untuk alokasi rantai pasok pangan mudah rusak sangat berisiko karena 100% siklus uji mengalami pelanggaran kendala kapasitas atau FEFO. Sebaliknya, memadukan *solver* MILP deterministik sebagai penghasil rencana layak (*feasibility backbone*) dengan negosiasi LLM berbasis *Contract Net Protocol* memberikan jaminan 0% pelanggaran kendala sekaligus keluwesan komersial lintas perusahaan.
-2. **Validasi Empiris *Heterogeneous Multi-Model Routing*:** Membuktikan hipotesis utama proyek bahwa penggunaan model berbeda untuk setiap agen (6 ML + 6 LLM) bukan sekadar kompleksitas kosmetik, melainkan menghasilkan **penghematan biaya 41,71%** dan **penurunan latensi *edge* hingga 78,2%** tanpa menurunkan kualitas keputusan global sama sekali.
-3. **Kedaulatan Data dan Keadilan Ekonomi Hanya Terjamin pada Arsitektur Multi-Agent:** Ablasi 1 mengonfirmasi bahwa arsitektur *Single-Agent* terpusat tidak dapat diterapkan pada ekosistem bisnis independen karena mewajibkan pembukaan 15 atribut rahasia dagang perusahaan dan menghasilkan ketimpangan profit (*Jain's Fairness* 0,8355 vs 0,9332). Pemisahan *Local Enterprise Intelligence* dan *Global Ecosystem Intelligence* melalui API terotorisasi GS1 EPCIS 2.0 menjadi syarat mutlak adopsi di dunia nyata.
-4. **Efektivitas Pola *Propose–Validate–Negotiate–Commit*:** Mekanisme Global Orchestrator berbasis LangGraph mampu mereduksi *Food Loss Rate* saat gangguan dari **15,47% menjadi 0,00%** hanya dalam waktu respons **4,23 detik**, sembari menjaga *human agency* melalui gerbang HITL pada keputusan berisiko tinggi.
+1. **Keunggulan Paradigma *Neuro-Symbolic* (MILP-FEFO + OR-Tools VRPTW + Multi-Agent LLM):** Hasil Ablasi 3 membuktikan bahwa mengandalkan LLM semata (*pure LLM*) untuk alokasi rantai pasok pangan mudah rusak sangat berisiko karena 100% siklus uji mengalami pelanggaran kendala kapasitas atau FEFO. Sebaliknya, memadukan *solver* MILP-FEFO deterministik dan OR-Tools VRPTW (**0 pelanggaran jendela waktu** lintas 4 skenario gangguan) dengan negosiasi LLM berbasis *Contract Net Protocol* memberikan jaminan 0% pelanggaran kendala sekaligus keluwesan komersial lintas perusahaan.
+2. **Validasi Empiris *Heterogeneous Multi-Model Routing*:** Membuktikan hipotesis utama proyek bahwa penggunaan model berbeda untuk setiap agen (6 klaster ML/optimasi + 6 LLM) bukan sekadar kompleksitas kosmetik, melainkan menghasilkan **penghematan biaya 41,71%** dan **penurunan latensi *edge* hingga 78,2%** tanpa menurunkan kualitas keputusan global sama sekali.
+3. **Kedaulatan Data *Server-Side* & Keadilan Ekonomi Hanya Terjamin pada Arsitektur Multi-Agent:** Ablasi 1 dan pengujian otomatis RBAC (`test_server_side_rbac_data_explorer_redaction`) mengonfirmasi bahwa penegakan redaksi di **sisi server FastAPI (`X-Scoped-Token`)** adalah syarat mutlak adopsi lintas perusahaan: 15 atribut rahasia dagang terlindungi 100% (vs terekspos penuh pada *Single-Agent*) sekaligus meningkatkan *Jain's Fairness* dari **0,8355 → 0,9332**.
+4. **Kuantifikasi Ketidakpastian & *Graceful Degradation* pada Kondisi Ekstrem:** Penambahan *80% Quantile Prediction Interval* (PI80 coverage `91,67%`), mesin deviasi 14-hari `± 2σ`, dan *sensor outage fallback* (`FALLBACK_HISTORICAL_MEAN`) pada AgroFarm v2 membuktikan bahwa sistem AI pertanian dapat tetap beroperasi aman saat hujan ekstrem (`-2 hari` panen) maupun saat sensor IoT padam `≥ 3 hari`, tanpa memicu kegagalan berantai ke hilir.
+5. **Efektivitas Pola *Propose–Validate–Negotiate–Commit* & *Impact-Preview HITL*:** Mekanisme Global Orchestrator berbasis LangGraph mereduksi *Food Loss Rate* saat gangguan dari **15,47% menjadi 0,00%** hanya dalam **4,23 detik**, sementara *Impact-Preview Confirmation Console* dan *Canonical Lineage* menjaga transparansi penuh (*glass-box*) sebelum operator menyetujui keputusan berisiko tinggi.
 
 ## 10.2 Keterbatasan Penelitian (*Limitations*)
 
@@ -1211,8 +1297,8 @@ Penerapan sistem *Multi-Agent AI* lintas perusahaan membuka permukaan serangan (
 ## 10.4 Dampak Akademis, Ekonomi, dan Keberlanjutan (*Impact*)
 
 - **Dampak Ekonomi Ekosistem:** Pada skala satu koperasi regional berkapasitas 4,5 ton tomat/hari, penurunan *food loss* sebesar 13,38%–15,47% setara dengan penyelamatan **~600–700 kg tomat per hari** atau **~220 ton/tahun**, yang menghasilkan peningkatan nilai tambah bersih ekosistem sekitar **Rp5,6–7,9 juta per siklus harian** (lebih dari **Rp2 miliar/tahun** per klaster koperasi), dengan biaya operasional komputasi LLM yang dapat diabaikan (~Rp60.000/tahun pada 1 siklus/hari).
-- **Dampak Keberlanjutan & Ketahanan Pangan:** Pengurangan susut pangan pascapanen berkontribusi langsung pada target **Sustainable Development Goals (SDG) 12.3** (mengurangi separuh kehilangan dan limbah pangan global) serta menekan emisi gas rumah kaca dari pembusukan organik dan jarak tempuh truk pendingin (-31,15% jarak rute CVRP).
-- **Dampak Akademis:** Repositori terbuka `agrichain-agentic-ai` menyediakan *testbed* reprodusibel bagi peneliti kecerdasan artifisial untuk mengeksplorasi arsitektur *neuro-symbolic multi-enterprise agents*, *heterogeneous LLM routing*, dan tata kelola risiko AI berbasis standar industri (GS1 EPCIS 2.0 & NIST AI RMF 1.0).
+- **Dampak Keberlanjutan & Ketahanan Pangan:** Pengurangan susut pangan pascapanen berkontribusi langsung pada target **Sustainable Development Goals (SDG) 12.3** (mengurangi separuh kehilangan dan limbah pangan global) serta menekan emisi gas rumah kaca dari pembusukan organik dan jarak tempuh truk pendingin (**-31,15%** jarak rute OR-Tools VRPTW dengan 0 pelanggaran jendela waktu).
+- **Dampak Akademis:** Repositori terbuka `agrichain-agentic-ai` (v2.0) menyediakan *testbed* reprodusibel bagi peneliti kecerdasan artifisial untuk mengeksplorasi arsitektur *neuro-symbolic multi-enterprise agents*, *heterogeneous LLM routing*, *server-side RBAC data sovereignty*, dan tata kelola risiko AI berbasis standar industri (GS1 EPCIS 2.0 & NIST AI RMF 1.0).
 
 ---
 
@@ -1220,12 +1306,12 @@ Penerapan sistem *Multi-Agent AI* lintas perusahaan membuka permukaan serangan (
 
 ## 11.1 Kesimpulan
 
-Berdasarkan perancangan, implementasi penuh repositori **`agrichain-agentic-ai`**, pengujian otomatis, dan evaluasi empiris pada Bab 1 hingga Bab 10, keempat rumusan masalah penelitian terjawab secara terukur sebagai berikut:
+Berdasarkan perancangan, implementasi penuh repositori **`agrichain-agentic-ai` v2.0** (14 *endpoint* REST FastAPI, *Decoupled Role-Adaptive Cockpit*, dan **10/10 pengujian otomatis `pytest`**), serta evaluasi empiris pada Bab 1 hingga Bab 10, keempat rumusan masalah penelitian terjawab secara terukur sebagai berikut:
 
-1. **Arsitektur Ekosistem *Multi-Enterprise* Berdaulat Data:** Ekosistem berhasil dirancang dan diimplementasikan dengan memisahkan secara tegas **Local Enterprise Intelligence** (5 perusahaan independen: AgroFarm, Koperasi Tani, FreshFood Processing, ColdChain Logistics, SuperMart dengan basis data heterogen terisolasi) dan **Global Ecosystem Intelligence** (*Global Agentic Control Center*) melalui *Authorized API Gateway* berprinsip *Zero-Direct-DB-Access*. Hasil pengujian dan Ablasi 1 memverifikasi **0 kebocoran atribut privat** (100% *data sovereignty* vs 15 field terekspos pada *Single-Agent*) sekaligus meningkatkan keadilan distribusi keuntungan antarperusahaan (*Jain's Fairness Index* naik dari **0,8355 → 0,9332**).
-2. **Efektivitas Global Orchestrator Berbasis MILP-FEFO dan Negosiasi Terbatas:** Rancangan **Global Orchestrator Agent (`AGT-06`)** berbasis **LangGraph `StateGraph`** dengan pola *Propose–Validate–Negotiate–Commit*, formulasi **MILP-FEFO** (PuLP CBC), *bounded negotiation* ($R_{\max}=3$), dan gerbang HITL (NIST AI RMF 1.0) terbukti sangat tangguh. Pada 30 siklus gangguan (*Cold Storage Failure* dan *Compound Disruption*), sistem menekan *Food Loss Rate* dari **15,47% → 0,00%**, memulihkan *Order Fulfillment Rate* dari **92,92% → 98,25%**, menurunkan biaya total **-7,35%**, menaikkan profit bersih **+39,3%**, dan mempertahankan **0,0% pelanggaran kendala** (dibanding 100,0% pelanggaran pada *Pure LLM* tanpa MILP) dalam waktu *replanning* **4,23 detik**.
-3. **Keunggulan Arsitektur 6 Agen dengan Model AI & LLM Heterogen:** Pemaduan **6 model domain AI/optimasi berbeda** (Random Forest MAE 7,24%, LightGBM MAPE 4,28%, 2D-Conv CNN Akurasi 98,67%, Isolation Forest F1 95,32% + OR-Tools CVRP reduksi jarak 31,15%, XGBoost MAPE 3,72%, dan PuLP MILP-FEFO) bersama **6 keluarga LLM berbeda** (*Qwen 2.5 14B, Claude 3.5 Sonnet, Gemini 2.5 Flash, Llama 3.1 8B, Mistral Small 3, GPT-4o*) lulus seluruh target KPI lokal sekaligus menghasilkan **penghematan biaya token sebesar 41,71%** dan **penurunan latensi respons 10,19%** (hingga **-78,2%** pada *edge alert* ColdChain) dibandingkan arsitektur homogen 6× GPT-4o.
-4. **Kesiapan Dataset Dummy, Protokol Standar, dan Tata Kelola Risiko:** Generator dataset dummy telah menghasilkan **19.575 rekaman koheren lintas 5 perusahaan + 3.000 citra RGB tomat**, seluruh komunikasi terstandarisasi dalam amplop **A2A + FIPA-ACL + GS1 EPCIS 2.0**, integritas *hash-chained audit trail* terverifikasi 100%, serta seluruh 3 skenario uji kegagalan (*Food Safety Hard Block*, *3-Round Deadlock*, *Compound Disruption*) tertangani secara *fail-safe* dengan eskalasi HITL.
+1. **Arsitektur Ekosistem *Multi-Enterprise* Berdaulat Data (*Server-Side RBAC* & *Lineage*):** Ekosistem berhasil diimplementasikan dengan memisahkan secara tegas **Local Enterprise Intelligence** (5 perusahaan independen dengan basis data heterogen terisolasi) dan **Global Ecosystem Intelligence** melalui *FastAPI Multi-Enterprise Gateway v2.0* (14 *endpoint*) berprinsip *Zero-Direct-DB-Access* dan **Server-Side Privacy Redaction** berbasis `X-Scoped-Token`, dilengkapi *canonical cross-enterprise lineage* (`block_id → po_ref`). Hasil pengujian otomatis dan Ablasi 1 memverifikasi **0 kebocoran atribut privat** (100% *data sovereignty* vs 15 field terekspos pada *Single-Agent*) sekaligus meningkatkan keadilan distribusi keuntungan antarperusahaan (*Jain's Fairness Index* naik dari **0,8355 → 0,9332**).
+2. **Efektivitas Global Orchestrator Berbasis MILP-FEFO dan Negosiasi Terbatas:** Rancangan **Global Orchestrator Agent (`AGT-06`)** berbasis **LangGraph `StateGraph`** dengan pola *Propose–Validate–Negotiate–Commit*, formulasi **MILP-FEFO** (PuLP CBC, solve `20,67 ms`), *bounded negotiation* ($R_{\max}=3$), 8 skenario lingkungan adaptif, dan *Impact-Preview HITL Console* (NIST AI RMF 1.0) terbukti sangat tangguh. Pada 30 siklus gangguan, sistem menekan *Food Loss Rate* dari **15,47% → 0,00%**, memulihkan *Order Fulfillment Rate* dari **92,92% → 98,25%**, menurunkan biaya total **-7,35%**, menaikkan profit bersih **+39,3%**, dan mempertahankan **0,0% pelanggaran kendala** (dibanding 100,0% pelanggaran pada *Pure LLM* tanpa MILP) dalam waktu *replanning* **4,23 detik**.
+3. **Keunggulan Arsitektur 6 Agen dengan Model AI v2.0 & LLM Heterogen:** Pemaduan **6 klaster model domain AI/optimasi berbeda**—AgroFarm v2 (**Random Forest 250 Trees + NDVI + 80% Quantile PI**, MAE **6,83%**, $R^2 = \mathbf{0,9449}$, PI80 Cov **91,67%**), Koperasi (**LightGBM** MAPE **4,28%**), FreshFood (**2D-Conv CNN** Akurasi **98,67%**, *Reject Recall* **100%**), ColdChain v2 (**Isolation Forest SOP `7–12°C`** F1 **95,32%** + **XGBoost ETA** MAE **7,66 menit** + **OR-Tools VRPTW** reduksi jarak **-31,15%** dengan **0 pelanggaran jendela waktu**), SuperMart (**XGBoost** MAPE **3,72%**), dan Global Control Center (**PuLP MILP-FEFO**)—bersama **6 keluarga LLM berbeda** (*Qwen 2.5 14B, Claude 3.5 Sonnet, Gemini 2.5 Flash, Llama 3.1 8B, Mistral Small 3, GPT-4o*) lulus seluruh target KPI lokal sekaligus menghemat biaya token **41,71%** dan menurunkan latensi respons **10,19%** (hingga **-78,2%** pada *edge alert* ColdChain) dibandingkan arsitektur homogen 6× GPT-4o.
+4. **Kesiapan Dataset Dummy, Protokol Standar, dan Ketangguhan Kondisi Ekstrem:** Generator dataset dummy telah menghasilkan **19.575 rekaman koheren lintas 5 perusahaan + 3.000 citra RGB tomat + 600 riwayat trip ETA**, seluruh komunikasi terstandarisasi dalam amplop **A2A + FIPA-ACL + GS1 EPCIS 2.0**, integritas *concurrency-safe SHA-256 audit trail* terverifikasi 100%, **10/10 pengujian `pytest` lulus**, serta seluruh **5 skenario uji kegagalan & kondisi ekstrem** (*Food Safety Hard Block*, *3-Round Deadlock*, *Compound Disruption*, *AgroFarm Extreme Rain*, dan *Sensor Outage Fallback*) tertangani secara *fail-safe* dengan eskalasi HITL.
 
 ## 11.2 Saran dan Pekerjaan Lanjutan (*Future Work*)
 
