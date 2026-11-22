@@ -259,3 +259,133 @@ def test_server_side_rbac_data_explorer_redaction():
         headers={"X-Scoped-Token": "tok_invalid_hacker"},
     )
     assert r_bad.status_code == 403
+
+
+def test_freshfood_v21_qc_feedback_fefo_schedule_and_valorization():
+    client = TestClient(app)
+
+    # 1. Food Safety Hard-Block -> emits CRITICAL QC feedback to AgroFarm + COMPOST_BIOGAS_RECOVERY plan
+    r_qc = client.post(
+        "/api/v1/freshfood/qc-inspect",
+        headers={"X-Scoped-Token": "tok_freshfood_local_v1"},
+        json={
+            "lot_id": "H003",
+            "block_id": "BLK-11",
+            "qty_kg": 1000.0,
+            "ph_level": 4.95,
+            "pesticide_residue_ppm": 0.08,
+            "microbial_pass": False,
+            "defect_ratio": 0.24,
+        },
+    )
+    assert r_qc.status_code == 200
+    body = r_qc.json()
+    assert body["safety_verdict"]["food_safety_approved"] is False
+    assert body["safety_verdict"]["hard_block_triggered"] is True
+    assert body["qc_feedback_to_agrofarm"]["severity"] == "CRITICAL"
+    assert body["qc_feedback_to_agrofarm"]["block_id"] == "BLK-11"
+    assert body["waste_valorization_plan"]["disposal_channel"] == "COMPOST_BIOGAS_RECOVERY"
+    assert body["waste_valorization_plan"]["human_food_chain_entry"] is False
+
+    # 2. FEFO Line Schedule + Dynamic Receiving Dock Window extension when overtime=True
+    r_reg = client.post("/api/v1/freshfood/schedule", json={"include_overtime": False})
+    r_ot = client.post("/api/v1/freshfood/schedule", json={"include_overtime": True})
+    assert r_reg.status_code == 200 and r_ot.status_code == 200
+    assert r_reg.json()["receiving_dock_window"]["close_time"] == "11:40"
+    assert r_ot.json()["receiving_dock_window"]["close_time"] == "14:00"
+    assert r_ot.json()["fefo_schedule"]["scheduled_lots"][0]["lot_id"] == "H003"
+
+
+def test_supermart_v21_7d_horizon_po_crud_and_goods_receipt_sla():
+    client = TestClient(app)
+
+    # 1. 7-Day Forecast + Server-Side Ceiling Price Redaction (Global redacted vs SuperMart unlocked)
+    r_g = client.get(
+        "/api/v1/supermart/forecast-7d?demand_surge=true&early_harvest_signal=true",
+        headers={"X-Scoped-Token": "tok_orchestrator_global_scope_v1"},
+    )
+    assert r_g.status_code == 200
+    bg = r_g.json()
+    assert len(bg["horizon_7d"]) == 7
+    assert bg["flash_promo_absorption"]["enabled"] is True
+    assert bg["flash_promo_absorption"]["extra_absorption_cap_kg"] == 300.0
+    assert "REDACTED" in str(bg["ceiling_price_grade_a_rp"])
+
+    r_own = client.get(
+        "/api/v1/supermart/forecast-7d",
+        headers={"X-Scoped-Token": "tok_supermart_local_v1"},
+    )
+    assert r_own.status_code == 200
+    assert isinstance(r_own.json()["ceiling_price_grade_a_rp"], (int, float))
+
+    # 2. Koperasi Local Price Forecast (Floor price redacted for Global vs unlocked for Koperasi)
+    r_kp_g = client.post(
+        "/api/v1/koperasi/price-forecast",
+        headers={"X-Scoped-Token": "tok_orchestrator_global_scope_v1"},
+        json={"grade": "B"},
+    )
+    assert r_kp_g.status_code == 200 and "REDACTED" in str(r_kp_g.json()["floor_price_rp"])
+    r_kp_o = client.post(
+        "/api/v1/koperasi/price-forecast",
+        headers={"X-Scoped-Token": "tok_koperasi_local_v1"},
+        json={"grade": "B"},
+    )
+    assert r_kp_o.status_code == 200 and isinstance(r_kp_o.json()["floor_price_rp"], (int, float))
+
+    # 3. SuperMart PO Guardrails: Grade C rejected (422), Grade B > 30% rejected (422), Price > ceiling rejected (422), Valid PO OK
+    assert client.post(
+        "/api/v1/supermart/po",
+        headers={"X-Scoped-Token": "tok_supermart_local_v1"},
+        json={"po_id": "PO-BAD-C", "grade": "C", "qty_kg": 500, "agreed_price_rp": 4000},
+    ).status_code == 422
+    assert client.post(
+        "/api/v1/supermart/po",
+        headers={"X-Scoped-Token": "tok_supermart_local_v1"},
+        json={"po_id": "PO-BAD-SUB", "grade": "B", "qty_kg": 500, "agreed_price_rp": 6500, "grade_b_sub_pct": 45.0},
+    ).status_code == 422
+    assert client.post(
+        "/api/v1/supermart/po",
+        headers={"X-Scoped-Token": "tok_supermart_local_v1"},
+        json={"po_id": "PO-BAD-PRICE", "grade": "A", "qty_kg": 500, "agreed_price_rp": 12000},
+    ).status_code == 422
+    r_po_ok = client.post(
+        "/api/v1/supermart/po",
+        headers={"X-Scoped-Token": "tok_supermart_local_v1"},
+        json={"po_id": "PO-TEST-V21", "lot_id": "H001", "grade": "A", "qty_kg": 1000, "agreed_price_rp": 10000},
+    )
+    assert r_po_ok.status_code == 200
+    assert r_po_ok.json()["purchase_order"]["status"] == "CONFIRMED"
+
+    # 4. Goods Receipt SLA check (7-12 C SOP)
+    r_sla_ok = client.post(
+        "/api/v1/supermart/goods-receipt-sla",
+        headers={"X-Scoped-Token": "tok_supermart_local_v1"},
+        json={"lot_id": "H001", "delivered_temp_c": 9.4, "arrival_min": 95, "deadline_min": 260},
+    )
+    assert r_sla_ok.status_code == 200
+    assert r_sla_ok.json()["sla_verdict"]["sla_status"] == "ACCEPTED_ON_TIME"
+
+    r_sla_hot = client.post(
+        "/api/v1/supermart/goods-receipt-sla",
+        headers={"X-Scoped-Token": "tok_supermart_local_v1"},
+        json={"lot_id": "H001", "delivered_temp_c": 14.5, "arrival_min": 95, "deadline_min": 260},
+    )
+    assert r_sla_hot.status_code == 200
+    assert r_sla_hot.json()["sla_verdict"]["sla_status"] == "REJECTED_TEMP_BREACH"
+
+
+def test_cross_enterprise_closed_loop_vrptw_dock_sync():
+    orch = AgriChainOrchestrator()
+    st_rain = orch.run_cycle(trigger_mode="EXTREME_RAIN", adaptive_replanning=True)
+    synced = st_rain["vrptw_plan"].get("dock_windows_synced_nodes", [])
+    assert "FreshFood_Plant" in synced
+    assert "SuperMart_DC" in synced
+    assert st_rain["vrptw_plan"]["time_window_violations"] == 0
+    assert len(st_rain["supermart_horizon_7d"]["horizon_7d"]) == 7
+    assert st_rain["supermart_horizon_7d"]["flash_promo_absorption"]["enabled"] is True
+    assert len(st_rain["goods_receipt_sla"]) >= 1
+    assert all(s["sla_status"] == "ACCEPTED_ON_TIME" for s in st_rain["goods_receipt_sla"])
+
+    st_fail = orch.run_cycle(trigger_mode="FOOD_SAFETY_FAIL", failed_food_safety_lots=["H003"])
+    assert len(st_fail["freshfood_qc_feedback"]["feedback_to_agrofarm"]) >= 1
+    assert len(st_fail["freshfood_qc_feedback"]["waste_valorization_plan"]) >= 1

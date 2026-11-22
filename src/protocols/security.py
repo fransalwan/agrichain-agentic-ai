@@ -3,8 +3,17 @@ from __future__ import annotations
 
 import hashlib
 import json
+import threading
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
+
+try:
+    import msvcrt
+except ImportError:
+    msvcrt = None  # type: ignore
+
+_AUDIT_THREAD_LOCK = threading.Lock()
 
 from src.protocols.fipa_epcis import now_wib_iso
 
@@ -153,29 +162,49 @@ class ImmutableAuditTrail:
         input_reference: Optional[str] = None,
         human_approval: Optional[str] = None,
     ) -> Dict[str, Any]:
-        # Reload latest hash in case another process/instance appended
-        self._last_hash = self._load_last_hash()
-        enriched = dict(details)
-        if model_version:
-            enriched["model_version"] = model_version
-        if input_reference:
-            enriched["input_reference"] = input_reference
-        if human_approval:
-            enriched["human_approval"] = human_approval
+        """Atomic cross-thread & cross-process locked append to preserve SHA-256 chain integrity."""
+        lock_file = self.log_path.with_suffix(".lock")
+        with _AUDIT_THREAD_LOCK:
+            with open(lock_file, "a+b") as lf:
+                if msvcrt is not None:
+                    for _ in range(50):
+                        try:
+                            lf.seek(0)
+                            msvcrt.locking(lf.fileno(), msvcrt.LK_NBLCK, 1)
+                            break
+                        except OSError:
+                            time.sleep(0.02)
+                try:
+                    self._last_hash = self._load_last_hash()
+                    enriched = dict(details)
+                    if model_version:
+                        enriched["model_version"] = model_version
+                    if input_reference:
+                        enriched["input_reference"] = input_reference
+                    if human_approval:
+                        enriched["human_approval"] = human_approval
 
-        entry = {
-            "timestamp": now_wib_iso(),
-            "event_type": event_type,
-            "actor": actor,
-            "details": enriched,
-            "prev_hash": self._last_hash,
-        }
-        canonical = json.dumps(entry, sort_keys=True, default=str).encode("utf-8")
-        entry["hash"] = hashlib.sha256(canonical).hexdigest()
-        self._last_hash = entry["hash"]
-        with open(self.log_path, "a", encoding="utf-8") as f:
-            f.write(json.dumps(entry, default=str) + "\n")
-        return entry
+                    entry = {
+                        "timestamp": now_wib_iso(),
+                        "event_type": event_type,
+                        "actor": actor,
+                        "details": enriched,
+                        "prev_hash": self._last_hash,
+                    }
+                    canonical = json.dumps(entry, sort_keys=True, default=str).encode("utf-8")
+                    entry["hash"] = hashlib.sha256(canonical).hexdigest()
+                    self._last_hash = entry["hash"]
+                    with open(self.log_path, "a", encoding="utf-8") as f:
+                        f.write(json.dumps(entry, default=str) + "\n")
+                        f.flush()
+                    return entry
+                finally:
+                    if msvcrt is not None:
+                        try:
+                            lf.seek(0)
+                            msvcrt.locking(lf.fileno(), msvcrt.LK_UNLCK, 1)
+                        except OSError:
+                            pass
 
     def verify_chain(self) -> bool:
         if not self.log_path.exists():

@@ -250,9 +250,9 @@ class FreshFoodAgent(BaseEnterpriseAgent):
     def card(self) -> AgentCard:
         return self.get_agent_card(
             endpoint="/api/v1/freshfood",
-            capabilities=["classify_tomato_cnn", "verify_food_safety_lab", "schedule_factory_fefo"],
+            capabilities=["classify_tomato_cnn", "verify_food_safety_lab", "schedule_factory_fefo", "emit_qc_feedback_and_dock_window"],
             private_fields=["secret_recipe_formula", "internal_line_cost_rp"],
-            autonomy="Kritis-Terproteksi (Penolakan food safety mutlak; overtime > 500 kg wajib persetujuan Factory Manager)",
+            autonomy="Kritis-Terproteksi (Penolakan food safety mutlak; overtime > 500 kg wajib persetujuan Quality Control & Production Manager)",
         )
 
     def inspect_and_report_capacity(
@@ -260,9 +260,14 @@ class FreshFoodAgent(BaseEnterpriseAgent):
         conversation_id: str,
         lots: List[Dict[str, Any]],
         failed_food_safety_lots: List[str] | None = None,
+        overtime_expected: bool = False,
     ) -> A2AMessage:
         failed_set = set(failed_food_safety_lots or [])
         qc_results = []
+        qc_feedback_to_agrofarm = []
+        waste_valorization_plan = []
+        block_map = {"H001": "BLK-07", "H002": "BLK-03", "H003": "BLK-11"}
+
         for lot in lots:
             is_failed = lot["lot_id"] in failed_set
             lab = {
@@ -273,26 +278,87 @@ class FreshFoodAgent(BaseEnterpriseAgent):
             }
             defect = 0.24 if is_failed else (0.02 if lot["grade"] == "A" else (0.08 if lot["grade"] == "B" else 0.14))
             safety = self.model.verify_food_safety_hard_block(lab, defect)
-            qc_results.append({
+            qc_item = {
                 "lot_id": lot["lot_id"],
+                "block_id": lot.get("block_id", block_map.get(lot["lot_id"], "BLK-01")),
                 "cnn_grade": lot["grade"],
                 "cnn_confidence": 0.94,
                 "defect_ratio": defect,
                 "food_safety_approved": safety["food_safety_approved"],
                 "hard_block_triggered": safety["hard_block_triggered"],
                 "violation_reasons": safety["violation_reasons"],
-            })
+            }
+            qc_results.append(qc_item)
+
+            # Closed-Loop QC Feedback to AgroFarm (AGT-01) when defect >= 12% or lab violation occurs
+            if safety["hard_block_triggered"]:
+                qc_feedback_to_agrofarm.append({
+                    "target_enterprise": "AgroFarm (AGT-01)",
+                    "block_id": qc_item["block_id"],
+                    "lot_id": lot["lot_id"],
+                    "severity": "CRITICAL",
+                    "findings": safety["violation_reasons"],
+                    "recommendation": "Hentikan petik blok terkait, perpanjang masa henti pestisida (PHI) +5 hari, & lakukan sanitasi air irigasi.",
+                })
+                waste_valorization_plan.append({
+                    "lot_id": lot["lot_id"],
+                    "blocked_qty_kg": float(lot.get("qty_kg", 0.0)),
+                    "disposal_channel": "COMPOST_BIOGAS_RECOVERY",
+                    "human_food_chain_entry": False,
+                    "est_recovery_value_rp": round(float(lot.get("qty_kg", 0.0)) * 450.0, 0),
+                    "note": "Dialihkan ke mitra kompos/biogas agar tidak terbuang ke TPA sekaligus menjaga 0% kontaminasi pangan.",
+                })
+            elif defect >= 0.12:
+                qc_feedback_to_agrofarm.append({
+                    "target_enterprise": "AgroFarm (AGT-01)",
+                    "block_id": qc_item["block_id"],
+                    "lot_id": lot["lot_id"],
+                    "severity": "ADVISORY",
+                    "findings": [f"SURFACE_DEFECT_{int(defect*100)}PCT"],
+                    "recommendation": "Percepat petik Grade C sebelum over-ripe & perbaiki bantalan peti panen lapangan.",
+                })
+
+        # Dynamic Receiving Dock Window exported to ColdChain OR-Tools VRPTW (minutes from 08:00 WIB)
+        receiving_dock_window = {
+            "node": "FreshFood_Plant",
+            "open_time": "08:15",
+            "close_time": "14:00" if overtime_expected else "11:40",
+            "window_min_from_0800": [15, 360 if overtime_expected else 220],
+            "unloading_slots": 3 if overtime_expected else 2,
+            "overtime_dock_extended": overtime_expected,
+        }
+
+        fefo_inputs = [
+            {
+                "lot_id": l["lot_id"],
+                "grade": l["grade"],
+                "qty_kg": float(l.get("qty_kg", 0.0)),
+                "shelf_life_days": int(l.get("shelf_life_days", 3)),
+                "food_safety_approved": next((q["food_safety_approved"] for q in qc_results if q["lot_id"] == l["lot_id"]), True),
+            }
+            for l in lots
+        ]
+        fefo_schedule = self.model.schedule_fefo(
+            fefo_inputs,
+            regular_cap_kg=self.regular_capacity_kg,
+            overtime_cap_kg=self.overtime_capacity_kg,
+            include_overtime=overtime_expected,
+        )
 
         res = self.router.invoke_structured(
             self.agent_id,
             "multimodal_qc_inspection_and_capacity",
             {"qc_results": qc_results},
             lambda ctx: {
-                "thought": "Verified CNN visual grades and food safety lab metrics with multimodal VLM.",
+                "thought": "Verified CNN visual grades, food safety lab guardrails, FEFO schedule, AgroFarm QC feedback, and VRPTW dock window.",
                 "regular_capacity_kg": self.regular_capacity_kg,
                 "overtime_available_kg": self.overtime_capacity_kg,
                 "overtime_surcharge_rp_per_kg": self.overtime_surcharge_rp,
                 "qc_reports": ctx["qc_results"],
+                "receiving_dock_window": receiving_dock_window,
+                "qc_feedback_to_agrofarm": qc_feedback_to_agrofarm,
+                "waste_valorization_plan": waste_valorization_plan,
+                "fefo_line_schedule": fefo_schedule,
             },
         )
         epcis = EPCISEvent(
@@ -345,9 +411,9 @@ class ColdChainAgent(BaseEnterpriseAgent):
     def card(self) -> AgentCard:
         return self.get_agent_card(
             endpoint="/api/v1/coldchain",
-            capabilities=["detect_temp_anomaly_iforest", "optimize_cvrp_ortools", "query_3pl_backup_capacity"],
+            capabilities=["detect_temp_anomaly_iforest", "optimize_vrptw_ortools", "predict_eta_xgboost", "manage_fleet_shipments_crud"],
             private_fields=["other_client_gps", "internal_fleet_lease_rp", "logistics_margin_rp"],
-            autonomy="Reaktif-Otonom (Alert instan otomatis; kontrak sewa 3PL diverifikasi Warehouse Manager)",
+            autonomy="Reaktif-Otonom (Alert instan otomatis; kontrak sewa 3PL & armada diverifikasi Fleet & Cold Chain Manager)",
         )
 
     def check_telemetry_and_capacity(self, conversation_id: str, inject_cold_failure: bool = False) -> A2AMessage:
@@ -418,12 +484,18 @@ class SuperMartAgent(BaseEnterpriseAgent):
     def card(self) -> AgentCard:
         return self.get_agent_card(
             endpoint="/api/v1/supermart",
-            capabilities=["forecast_demand_xgboost", "compute_purchase_order", "validate_procurement_offer"],
+            capabilities=["forecast_demand_xgboost_7d", "compute_newsvendor_po", "evaluate_goods_receipt_sla", "flash_promo_absorption"],
             private_fields=["ceiling_price_rp", "retail_margin_pct", "customer_pii"],
             autonomy="Otonom Terbatas (PO otomatis jika <= ceiling_price; substitusi Grade B butuh persetujuan Purchasing Manager)",
         )
 
-    def forecast_and_plan_po(self, conversation_id: str, demand_override_kg: float | None = None, demand_surge: bool = False) -> A2AMessage:
+    def forecast_and_plan_po(
+        self,
+        conversation_id: str,
+        demand_override_kg: float | None = None,
+        demand_surge: bool = False,
+        early_harvest_signal: bool = False,
+    ) -> A2AMessage:
         if demand_override_kg is not None:
             pred_demand = float(demand_override_kg)
         else:
@@ -432,6 +504,25 @@ class SuperMartAgent(BaseEnterpriseAgent):
                 pred_demand = max(pred_demand, 2800.0)
 
         po = self.model.compute_newsvendor_po(pred_demand)
+        horizon_7d = self.model.forecast_7day_horizon(
+            start_day_of_week=5 if demand_surge else 2,
+            demand_surge=demand_surge,
+        )
+        # Dynamic Receiving Windows exported to ColdChain OR-Tools VRPTW (minutes from 08:00 WIB)
+        receiving_windows = {
+            "SuperMart_DC": {"open_time": "08:30", "close_time": "12:20", "window_min_from_0800": [30, 260]},
+            "SuperMart_B2": {"open_time": "08:40", "close_time": "13:20", "window_min_from_0800": [40, 320]},
+        }
+        flash_promo_absorption = {
+            "enabled": bool(early_harvest_signal),
+            "extra_absorption_cap_kg": 300.0 if early_harvest_signal else 0.0,
+            "required_coop_discount_pct": 8.0 if early_harvest_signal else 0.0,
+            "reason": (
+                "Panen maju AgroFarm (EXTREME_RAIN): SuperMart siap mengaktifkan Flash Promo akhir pekan untuk menyerap hingga +300 kg Grade A dengan diskon pasokan >= 8%."
+                if early_harvest_signal
+                else "Permintaan standar — tidak perlu kampanye Flash Promo darurat."
+            ),
+        }
 
         res = self.router.invoke_structured(
             self.agent_id,
@@ -440,9 +531,14 @@ class SuperMartAgent(BaseEnterpriseAgent):
             lambda ctx: {
                 "demand_forecast_kg": ctx["po"]["forecast_demand_kg"],
                 "recommended_po_kg": ctx["po"]["recommended_po_kg"],
+                "critical_fractile": ctx["po"]["critical_fractile"],
+                "safety_buffer_kg": ctx["po"]["safety_buffer_kg"],
                 "demand_surge_flag": ctx["demand_surge"],
                 "grade_b_substitution_allowed": ctx["demand_surge"],
                 "max_grade_b_share_pct": 30.0 if ctx["demand_surge"] else 0.0,
+                "horizon_7d_forecast": horizon_7d,
+                "receiving_windows": receiving_windows,
+                "flash_promo_absorption": flash_promo_absorption,
                 "ceiling_price_rp": self._private_ceiling_price_grade_a,  # Blocked by outbound firewall!
             },
         )
@@ -454,3 +550,17 @@ class SuperMartAgent(BaseEnterpriseAgent):
             readPoint={"id": "urn:epc:id:sgln:8991234.00005.SM-DC"},
         )
         return self.build_safe_message(conversation_id, "AGT-06:GlobalOrchestrator", FIPAPerformative.INFORM, res, epcis_event=epcis)
+
+    def verify_incoming_delivery_sla(
+        self,
+        delivered_temp_c: float,
+        arrival_min: int,
+        deadline_min: int = 260,
+        lot_id: str = "H001",
+    ) -> Dict[str, Any]:
+        return self.model.evaluate_goods_receipt_sla(
+            delivered_temp_c=delivered_temp_c,
+            arrival_min=arrival_min,
+            deadline_min=deadline_min,
+            lot_id=lot_id,
+        )

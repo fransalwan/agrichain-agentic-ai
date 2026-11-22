@@ -126,6 +126,79 @@ class SuperMartDemandModel:
             "recommended_po_kg": round(po_qty, 1),
         }
 
+    def forecast_7day_horizon(
+        self,
+        start_day_of_week: int = 2,
+        month: int = 11,
+        price_rp: float = 14000.0,
+        demand_surge: bool = False,
+        season: str = "Wet",
+    ) -> List[Dict[str, Any]]:
+        """Rolling 7-day demand forecast (H+1 .. H+7) across 3 SuperMart stores for AgroFarm & Koperasi planning."""
+        day_names = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"]
+        out: List[Dict[str, Any]] = []
+        for h in range(1, 8):
+            dow = (start_day_of_week + h - 1) % 7
+            is_wknd = 1 if dow >= 5 else 0
+            promo_flag = 1 if (demand_surge and h <= 2) or (is_wknd == 1 and h in (4, 5)) else 0
+            pred_kg = self.forecast_total_chain_demand(
+                day_of_week=dow,
+                month=month,
+                price_rp=price_rp - (1000.0 if promo_flag else 0.0),
+                is_promo=promo_flag,
+                season=season,
+            )
+            if demand_surge and h == 1:
+                pred_kg = max(pred_kg, 2800.0)
+            po_info = self.compute_newsvendor_po(pred_kg)
+            out.append({
+                "horizon": f"H+{h}",
+                "day_name": day_names[dow],
+                "is_weekend": bool(is_wknd),
+                "promo_active": bool(promo_flag),
+                "forecast_demand_kg": round(pred_kg, 1),
+                "recommended_po_kg": po_info["recommended_po_kg"],
+            })
+        return out
+
+    @staticmethod
+    def evaluate_goods_receipt_sla(
+        delivered_temp_c: float,
+        arrival_min: int,
+        deadline_min: int = 260,
+        lot_id: str = "H001",
+    ) -> Dict[str, Any]:
+        """Verify incoming ColdChain delivery SLA against tomato 7.0-12.0 C SOP & dock deadline."""
+        temp_ok = settings.tomato_safe_temp_min_c <= float(delivered_temp_c) <= settings.tomato_safe_temp_max_c
+        on_time = int(arrival_min) <= int(deadline_min)
+        if not temp_ok:
+            status = "REJECTED_TEMP_BREACH"
+            action = (
+                f"Suhu kedatangan {delivered_temp_c:.1f}°C melanggar SOP tomat "
+                f"({settings.tomato_safe_temp_min_c}–{settings.tomato_safe_temp_max_c}°C) — klaim SLA ke ColdChain & tahan penerimaan."
+            )
+            penalty_rp = 1_250_000.0
+        elif not on_time:
+            delay = int(arrival_min) - int(deadline_min)
+            status = "ACCEPTED_WITH_DELAY_CLAIM"
+            action = f"Keterlambatan +{delay} menit melewati jendela dermaga — diterima bersyarat dengan potongan SLA."
+            penalty_rp = float(delay * 15_000)
+        else:
+            status = "ACCEPTED_ON_TIME"
+            action = f"Lot {lot_id} diterima tepat waktu (+{arrival_min} mnt <= {deadline_min} mnt) dengan suhu aman {delivered_temp_c:.1f}°C."
+            penalty_rp = 0.0
+        return {
+            "lot_id": lot_id,
+            "delivered_temp_c": round(float(delivered_temp_c), 1),
+            "temp_compliant": temp_ok,
+            "arrival_min": int(arrival_min),
+            "deadline_min": int(deadline_min),
+            "on_time": on_time,
+            "sla_status": status,
+            "sla_penalty_rp": penalty_rp,
+            "action_note": action,
+        }
+
     def save(self, path: Path = ARTIFACTS_DIR / "supermart_xgb.pkl") -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         with open(path, "wb") as f:

@@ -10,4 +10,5 @@ venv/
 .streamlit/secrets.toml
 data/generated_images/
 *.log
+*.lock
 *_submission.zip

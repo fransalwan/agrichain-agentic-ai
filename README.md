@@ -1,11 +1,11 @@
-# 🍅 agrichain-agentic-ai (v2.0)
+# 🍅 agrichain-agentic-ai (v2.1)
 
 **Smart Agriculture & Food Supply Chain — *Heterogeneous Multi-Enterprise Agentic AI Ecosystem* untuk Optimasi Produksi Pertanian, Distribusi Pangan, Negosiasi Lintas Perusahaan, dan *Adaptive Replanning***
 
 ![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
 ![LangGraph](https://img.shields.io/badge/Orchestration-LangGraph%20StateGraph-1F4E79)
 ![Optimization](https://img.shields.io/badge/Optimization-PuLP%20MILP--FEFO%20%2B%20OR--Tools%20VRPTW-2B6CB0)
-![Tests](https://img.shields.io/badge/Pytest-10%2F10%20Passed-2E7D32)
+![Tests](https://img.shields.io/badge/Pytest-13%2F13%20Passed-2E7D32)
 ![Standards](https://img.shields.io/badge/Standards-A2A%20%7C%20FIPA--ACL%20%7C%20GS1%20EPCIS%202.0%20%7C%20NIST%20AI%20RMF%201.0-0F766E)
 
 > **Proyek Magister Ilmu Komputer (S2 — Konsentrasi Kecerdasan Artifisial)**  
@@ -24,8 +24,8 @@
 2. **Pilar 2 — Pendalaman AI Lokal (`AGT-01` AgroFarm v2 & `AGT-04` ColdChain v2):**
    - **AgroFarm v2 (`rf-v2.0`):** Random Forest 250 pohon + fitur **NDVI** + **80% Quantile Prediction Interval (`p10–p90`)** + *Feature Importance* + pembanding *baseline* (*Hist Mean* & *Linear Reg*) + *Crop Monitoring Deviation Engine* (**14 hari ± 2σ**) + *Sensor Outage Safety Fallback* (offline ≥ 3 hari → `FALLBACK_HISTORICAL_MEAN`) + skenario **`EXTREME_RAIN`** (jendela panen maju `-2 hari`).
    - **ColdChain v2 (`iforest-vrptw-v2.0`):** Google OR-Tools **VRPTW (*Time Windows*)** dengan 4 skenario (`NORMAL`, `ROAD_DISRUPTION`, `VEHICLE_BREAKDOWN`, `COLD_STORAGE_DROP`) & koordinat geospasial Yogyakarta/Sleman/Bantul + **XGBoost ETA Regressor** (`MAE 7,66 menit`) + deteksi anomali suhu **Isolation Forest** berbasis SOP `7–12°C`.
-3. **Pilar 3 — *Decoupled FastAPI Multi-Enterprise Gateway v2.0*:** Endpoint REST khusus AgroFarm (`/monitoring`, `/predict`), ColdChain (`/fleet` & `/shipments` CRUD dengan validasi ketat, `/vrptw`, `/eta`), *Server-Side Privacy Data Explorer* (`/api/v1/data-explorer/{enterprise_id}/{table_name}`), serta `/api/v1/orchestrator/run-cycle` dengan *Executive Briefing* & *lineage*.
-4. **Pilar 4 — *Role-Adaptive Enterprise Cockpit v2.0 (High-Contrast Light Mode)*:** UI terpisah via HTTP (`ApiBridge` + `X-Scoped-Token`), tema **Light Mode berkontras tinggi** (`.streamlit/config.toml` + WCAG AAA `#0F172A` di atas `#F8FAFC`/`#FFFFFF`), navigasi adaptif **1 stakeholder utama per enterprise** + 1 operator global, **5 UI State Wajib** (*Loading, Empty, Error + Retry, Stale/Partial Data Warning, Success + SHA-256 Audit*), **Impact-Preview HITL Confirmation Console**, dan **Peta Geospasial VRPTW Interaktif**.
+3. **Pilar 3 — *Decoupled FastAPI Multi-Enterprise Gateway v2.1 (Full 5-Enterprise Parity, 20 Endpoint)*:** Endpoint REST lokal lengkap untuk **seluruh 5 enterprise** — AgroFarm (`/monitoring`, `/predict`), Koperasi (`/price-forecast`), FreshFood (`/qc-inspect`, `/schedule`), ColdChain (`/fleet` & `/shipments` CRUD, `/vrptw`, `/eta`), SuperMart (`/forecast-7d`, `/po` CRUD, `/goods-receipt-sla`), *Server-Side Privacy Data Explorer*, serta LangGraph Orchestrator dengan *Closed-Loop Handshakes* (VRPTW *dynamic dock sync*, *QC Feedback → AgroFarm*, *7-Day Demand Horizon → Hulu*, *Flash-Promo Absorption*, & *Goods Receipt SLA*).
+4. **Pilar 4 — *Role-Adaptive Enterprise Cockpit v2.1 (High-Contrast Light Mode)*:** UI terpisah via HTTP (`ApiBridge` + `X-Scoped-Token`), tema **Light Mode berkontras tinggi** (`.streamlit/config.toml` + WCAG AAA `#0F172A` di atas `#F8FAFC`/`#FFFFFF`), *dedicated workspace* untuk **seluruh 6 peran** (1 stakeholder utama per enterprise + 1 operator global), **5 UI State Wajib**, **Impact-Preview HITL Confirmation Console**, dan **Peta Geospasial VRPTW Interaktif**.
 
 | ID Agen | Enterprise / Layer | Primary Stakeholder (1 per Enterprise) | Model Domain AI / Optimasi (v2.0) | Model LLM Backbone | Basis Data Lokal |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -124,7 +124,7 @@ Proyek ini sudah dilengkapi konfigurasi siap pakai di [`.vscode/launch.json`](./
      ```
 5. **Jalankan Pengujian & Reproduksi Eksperimen:**
    ```bash
-   # Pengujian otomatis (10/10 unit + server-side RBAC + AgroFarm/ColdChain v2 + FastAPI integration tests)
+   # Pengujian otomatis (13/13 unit + closed-loop parity + server-side RBAC + FastAPI integration tests)
    pytest tests/test_ecosystem.py -v
 
    # Latih ulang 5 model ML v2.0 (termasuk NDVI 80% PI & XGBoost ETA + VRPTW)
@@ -152,26 +152,32 @@ Proyek ini sudah dilengkapi konfigurasi siap pakai di [`.vscode/launch.json`](./
 4. **Menit 4 — Pendalaman AI Lokal AgroFarm v2 & ColdChain v2:**
    - Di **`AgroFarm v2 (AGT-01)`**, tampilkan tabel *Crop Monitoring 14d ± 2σ*, grafik *Feature Importance*, dan *Live Yield & PI80 Predictor*.
    - Di **`ColdChain v2 (AGT-04)`**, bandingkan skenario VRPTW di **Peta Geospasial Yogyakarta/Sleman/Bantul**, tambahkan kendaraan/shipment baru via form CRUD yang tervalidasi API (deadline & suhu `7–12°C`), serta simulasikan **XGBoost ETA**.
-5. **Menit 5 — FastAPI Swagger UI v2.0 & Verifikasi `pytest`:**
-   - Buka `http://127.0.0.1:8000/docs` dan jalankan `pytest tests/test_ecosystem.py -v` (**10/10 PASSED**).
+5. **Menit 5 — FastAPI Swagger UI v2.1 (20 Endpoint) & Verifikasi `pytest`:**
+   - Buka `http://127.0.0.1:8000/docs` dan jalankan `pytest tests/test_ecosystem.py -v` (**13/13 PASSED**).
 
 ---
 
-## *Endpoint* FastAPI Multi-Enterprise Gateway v2.0 (`src/api/main.py`)
+## *Endpoint* FastAPI Multi-Enterprise Gateway v2.1 (`src/api/main.py` — 20 Endpoint)
 
 | Method | Endpoint | Fungsi |
 | :---: | :--- | :--- |
-| `GET` | `/api/v1/health` | Status layanan v2.0, SOP suhu tomat (`7,0–12,0°C`), jumlah agen (6), & validasi SHA-256 |
+| `GET` | `/api/v1/health` | Status layanan, SOP suhu tomat (`7,0–12,0°C`), jumlah agen (6), & validasi SHA-256 |
 | `GET` | `/.well-known/agent.json` | A2A *Agent Discovery Cards* seluruh 6 agen heterogen |
 | `GET` | `/api/v1/enterprises/{enterprise_id}/status` | Status *local microservice*, DB lokal, metrik ML aktual, & field privat yang dilindungi |
 | `GET` | `/api/v1/agrofarm/monitoring` | Evaluasi deviasi 14 hari ± 2σ per blok lahan + deteksi *stale sensor* |
-| `POST` | `/api/v1/agrofarm/predict` | Prediksi hasil panen RF + NDVI + 80% Quantile PI + jendela panen & *Feature Importance* |
+| `POST` | `/api/v1/agrofarm/predict` | Prediksi panen RF + NDVI + 80% Quantile PI + jendela panen & *Feature Importance* |
+| `POST` | `/api/v1/koperasi/price-forecast` | Prediksi harga pasar LightGBM + *Server-Side Floor Price Redaction* |
+| `POST` | `/api/v1/freshfood/qc-inspect` | Uji *Food Safety Hard-Block* + *QC Feedback → AgroFarm* + *Compost/Biogas Valorization* |
+| `POST` | `/api/v1/freshfood/schedule` | Penjadwalan lini FEFO + *Dynamic Receiving Dock Window* tersinkron ke ColdChain VRPTW |
 | `GET` / `POST` | `/api/v1/coldchain/fleet` | Master armada reefer & driver (CRUD berizin RBAC `coldchain`/`global` + SHA-256 audit) |
 | `GET` / `POST` | `/api/v1/coldchain/shipments` | Inbox permintaan pengiriman dengan validasi ketat `deadline > ready_time` & rentang suhu |
 | `POST` | `/api/v1/coldchain/vrptw` | Optimasi rute Google OR-Tools **VRPTW** (*Time Windows*) + pembandingan 4 skenario |
 | `POST` | `/api/v1/coldchain/eta` | Prediksi durasi perjalanan berbasis **XGBoost ETA Regressor** + *error band* |
-| `GET` | `/api/v1/data-explorer/{enterprise_id}/{table_name}` | Query database lokal terisolasi dengan **Server-Side Privacy Redaction** berbasis `X-Scoped-Token` |
-| `POST` | `/api/v1/orchestrator/run-cycle` | Menjalankan 1 siklus LangGraph Orchestrator (8 skenario) + `lineage` + `executive_briefing` + `vrptw_plan` |
+| `GET` | `/api/v1/supermart/forecast-7d` | *Rolling forecast* 7 hari XGBoost + *Flash-Promo Absorption* + *Server-Side Ceiling Redaction* |
+| `GET` / `POST` | `/api/v1/supermart/po` | Manajemen *Purchase Order* (validasi Grade C dilarang, sub Grade B ≤ 30%, ≤ *ceiling price*) |
+| `POST` | `/api/v1/supermart/goods-receipt-sla` | Verifikasi SLA kedatangan ColdChain (SOP `7,0–12,0°C` & ketepatan deadline dermaga) |
+| `GET` | `/api/v1/data-explorer/{enterprise_id}/{table_name}` | Query 5 DB lokal terisolasi dengan **Server-Side Privacy Redaction** (`X-Scoped-Token`) |
+| `POST` | `/api/v1/orchestrator/run-cycle` | 1 siklus LangGraph (8 skenario) + `lineage` + `vrptw_plan` + `freshfood_qc_feedback` + `supermart_horizon_7d` + `goods_receipt_sla` |
 | `POST` | `/api/v1/orchestrator/hitl/{cycle_id}/approve` | Persetujuan operator HITL (tercatat hash SHA-256 ke `audit_trail.jsonl`) |
 | `POST` | `/api/v1/orchestrator/hitl/{cycle_id}/reject` | Penolakan operator HITL dengan catatan audit SHA-256 |
 | `GET` | `/api/v1/audit/trail` | Mengambil catatan *hash-chained audit trail* terbaru + status verifikasi kriptografi |
@@ -194,10 +200,10 @@ agrichain-agentic-ai/
 │   ├── models/                          # 5 model ML v2.0 (RF+NDVI+PI80, LightGBM, CNN, IF+XGB-ETA+VRPTW, XGB) + MILP-FEFO
 │   ├── llm/                             # 6 System Prompts + Multi-Provider 6-LLM Router (LIVE & SIMULATED)
 │   ├── agents/                          # 5 Enterprise Agents + LangGraph Orchestrator v2.0 (Lineage & Briefing)
-│   ├── api/main.py                      # FastAPI Decoupled Gateway v2.0 (14 Endpoint + Server-Side Redaction)
+│   ├── api/main.py                      # FastAPI Decoupled Gateway v2.1 (20 Endpoint + Full 5-Enterprise Parity)
 │   ├── experiments/run_experiments.py   # Benchmark 4 Kondisi x 30 siklus + 3 Ablasi + 3 Failure Cases
-│   └── dashboard/app.py                 # Streamlit Decoupled Role-Adaptive Cockpit v2.0 (ApiBridge + 5 UI States)
-├── tests/test_ecosystem.py              # 10 Automated Unit, RBAC, AgroFarm/ColdChain v2 & FastAPI Integration Tests
+│   └── dashboard/app.py                 # Streamlit Role-Adaptive Light-Mode Cockpit v2.1 (6 Dedicated Role Views)
+├── tests/test_ecosystem.py              # 13 Automated Unit, RBAC, Closed-Loop Parity & FastAPI Integration Tests
 ├── docs/screenshots/                    # 7 Screenshot aktual aplikasi v2.0 & FastAPI Swagger UI
 ├── data/                                # Dataset dummy tergenerasi & 5 database lokal terisolasi
 ├── results/                             # Model terlatih v2.0 (.pkl), metrik JSON, audit_trail.jsonl, & 3 grafik

@@ -69,6 +69,9 @@ class EcosystemState(TypedDict, total=False):
     agent_statuses: List[Dict[str, Any]]
     agrofarm_monitoring: List[Dict[str, Any]]
     vrptw_plan: Dict[str, Any]
+    freshfood_qc_feedback: Dict[str, Any]
+    supermart_horizon_7d: Dict[str, Any]
+    goods_receipt_sla: List[Dict[str, Any]]
     lineage: List[Dict[str, Any]]
     executive_briefing: str
     data_freshness_warning: Optional[str]
@@ -332,20 +335,69 @@ class AgriChainOrchestrator:
                 rec["block_id"] = "BLK-03"
 
         # Parallel fan-out snapshot collection from 5 independent enterprises (Brokered Single-Gate / Zero-Direct-DB)
-        m_sm = self.supermart.forecast_and_plan_po(cid, demand_override_kg=state.get("demand_override_kg"), demand_surge=inject_surge)
+        m_sm = self.supermart.forecast_and_plan_po(
+            cid,
+            demand_override_kg=state.get("demand_override_kg"),
+            demand_surge=inject_surge,
+            early_harvest_signal=inject_rain,
+        )
         m_af = self.agrofarm.forecast_harvest(cid, plot_recs, use_showcase_volumes=state.get("use_showcase_numbers", True))
         raw_lots = m_af.payload["batches"]
         m_kp = self.koperasi.aggregate_and_quote(cid, raw_lots, use_showcase_prices=state.get("use_showcase_numbers", True))
         quoted_lots = m_kp.payload["aggregated_lots"]
-        m_ff = self.freshfood.inspect_and_report_capacity(cid, quoted_lots, failed_food_safety_lots=failed_fs)
+        m_ff = self.freshfood.inspect_and_report_capacity(
+            cid,
+            quoted_lots,
+            failed_food_safety_lots=failed_fs,
+            overtime_expected=inject_cold,
+        )
         m_cc = self.coldchain.check_telemetry_and_capacity(cid, inject_cold_failure=inject_cold)
 
         for m in (m_sm, m_af, m_kp, m_ff, m_cc):
             self._record_msg(state, m)
 
-        # Solve real ColdChain OR-Tools VRPTW + XGBoost ETA for the active scenario
+        # Dynamic Cross-Enterprise Dock Window Handshake (FreshFood + SuperMart -> ColdChain OR-Tools VRPTW)
+        ff_dock = m_ff.payload.get("receiving_dock_window", {})
+        sm_wins = m_sm.payload.get("receiving_windows", {})
+        ext_tw: Dict[str, tuple[int, int]] = {}
+        if "window_min_from_0800" in ff_dock:
+            ext_tw["FreshFood_Plant"] = (int(ff_dock["window_min_from_0800"][0]), int(ff_dock["window_min_from_0800"][1]))
+        for node_name, info in sm_wins.items():
+            if "window_min_from_0800" in info:
+                ext_tw[node_name] = (int(info["window_min_from_0800"][0]), int(info["window_min_from_0800"][1]))
+
         vrptw_scen = "COLD_STORAGE_DROP" if inject_cold else ("ROAD_DISRUPTION" if inject_rain else "NORMAL")
-        state["vrptw_plan"] = self.coldchain.model.solve_vrptw(scenario=vrptw_scen)
+        vrptw_plan = self.coldchain.model.solve_vrptw(scenario=vrptw_scen, external_time_windows=ext_tw)
+        state["vrptw_plan"] = vrptw_plan
+
+        # Store FreshFood Closed-Loop QC Feedback + SuperMart 7-Day Horizon & Flash-Promo Absorption
+        state["freshfood_qc_feedback"] = {
+            "feedback_to_agrofarm": m_ff.payload.get("qc_feedback_to_agrofarm", []),
+            "waste_valorization_plan": m_ff.payload.get("waste_valorization_plan", []),
+            "receiving_dock_window": ff_dock,
+            "fefo_line_schedule": m_ff.payload.get("fefo_line_schedule", {}),
+        }
+        state["supermart_horizon_7d"] = {
+            "horizon_7d": m_sm.payload.get("horizon_7d_forecast", []),
+            "flash_promo_absorption": m_sm.payload.get("flash_promo_absorption", {}),
+            "receiving_windows": sm_wins,
+            "critical_fractile": m_sm.payload.get("critical_fractile", 0.346),
+            "safety_buffer_kg": m_sm.payload.get("safety_buffer_kg", 0.0),
+        }
+
+        # Evaluate Closed-Loop Goods Receipt SLA (ColdChain VRPTW arrival vs SuperMart & FreshFood deadlines + 7-12 C SOP)
+        sla_checks: List[Dict[str, Any]] = []
+        reefer_temp = 9.2 if not inject_cold else 9.6  # Direct-haul reefers remain within 7-12 C even if WH01 fails
+        for r in vrptw_plan.get("routes", []):
+            for stop in r.get("coords", []):
+                sname = stop["name"]
+                if sname == "SuperMart_DC":
+                    ddl = int(ext_tw.get("SuperMart_DC", (30, 260))[1])
+                    sla_checks.append(self.supermart.verify_incoming_delivery_sla(reefer_temp, stop["arrival_min"], ddl, lot_id="H001"))
+                elif sname == "FreshFood_Plant":
+                    ddl = int(ext_tw.get("FreshFood_Plant", (15, 220))[1])
+                    sla_checks.append(self.supermart.verify_incoming_delivery_sla(reefer_temp, stop["arrival_min"], ddl, lot_id="H003"))
+        state["goods_receipt_sla"] = sla_checks
 
         # Merge QC food_safety status + AgroFarm v2 telemetry into shared batch objects
         qc_map = {q["lot_id"]: q for q in m_ff.payload["qc_reports"]}

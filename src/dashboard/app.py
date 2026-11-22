@@ -620,6 +620,24 @@ def render_agrofarm_workspace(api: ApiBridge, api_online: bool, state: Dict[str,
             )
             st.plotly_chart(fig_fi, use_container_width=True)
 
+    # Closed-Loop Cross-Enterprise Inputs received by AgroFarm (v2.1 Parity)
+    fb_col, dem_col = st.columns(2)
+    with fb_col:
+        st.markdown("#### 🔁 QC Feedback Loop dari FreshFood (`AGT-03 → AGT-01`)")
+        fb_items = state.get("freshfood_qc_feedback", {}).get("feedback_to_agrofarm", [])
+        if fb_items:
+            st.dataframe(pd.DataFrame(fb_items), use_container_width=True, hide_index=True)
+        else:
+            st.info("✅ Tidak ada temuan cacat/residu kritis dari FreshFood pada siklus ini.")
+    with dem_col:
+        st.markdown("#### 📈 Sinyal Permintaan 7-Hari dari SuperMart (`AGT-05 → AGT-01`)")
+        h7 = state.get("supermart_horizon_7d", {}).get("horizon_7d", [])
+        if h7:
+            st.dataframe(pd.DataFrame(h7)[["horizon", "day_name", "forecast_demand_kg", "recommended_po_kg", "promo_active"]], use_container_width=True, hide_index=True)
+            fp = state.get("supermart_horizon_7d", {}).get("flash_promo_absorption", {})
+            if fp.get("enabled"):
+                st.success(f"🔥 **Flash-Promo Absorption Aktif:** SuperMart siap menyerap hingga **+{fp['extra_absorption_cap_kg']:.0f} kg** Grade A (diskon ≥ {fp['required_coop_discount_pct']:.0f}%).")
+
 
 def render_coldchain_workspace(api: ApiBridge, api_online: bool, state: Dict[str, Any], ml_metrics: Dict[str, Any], role_info: Dict[str, Any]) -> None:
     st.subheader("❄️ ColdChain Logistics Cockpit v2 — VRPTW, XGBoost ETA, Fleet/Shipments CRUD & Monitor 7–12°C")
@@ -769,46 +787,232 @@ def render_coldchain_workspace(api: ApiBridge, api_online: bool, state: Dict[str
             )
 
 
-def render_freshfood_module(state: Dict[str, Any], ml_metrics: Dict[str, Any]) -> None:
-    st.subheader("🏭 FreshFood Processing Cockpit — 2D-Conv CNN Visual QC & Food Safety Hard-Block")
+def render_freshfood_module(api: ApiBridge, api_online: bool, state: Dict[str, Any], ml_metrics: Dict[str, Any], role_info: Dict[str, Any]) -> None:
+    st.subheader("🏭 FreshFood Processing Cockpit v2.1 — CNN Visual QC, Hard-Block, FEFO & AgroFarm Feedback")
     m_ff = ml_metrics.get("freshfood_cnn", {})
-    k1, k2, k3, k4 = st.columns(4)
+    ff_ctx = state.get("freshfood_qc_feedback", {})
+    dock = ff_ctx.get("receiving_dock_window", {"open_time": "08:15", "close_time": "11:40", "unloading_slots": 2})
+
+    k1, k2, k3, k4, k5 = st.columns(5)
     k1.metric("CNN Accuracy", f"{m_ff.get('test_accuracy_pct', 98.67)}%", "Target >= 90%")
     k2.metric("Macro-F1", f"{m_ff.get('test_macro_f1', 0.9878)}")
     k3.metric("Reject Recall", f"{m_ff.get('reject_recall_pct', 100.0)}%", "0 Missed Reject")
     k4.metric("Overtime Status", "AKTIF (+500 kg)" if state["global_kpis"].get("overtime_activated") else "REGULER (2.000 kg)")
+    k5.metric("Dock Window → VRPTW", f"{dock.get('open_time', '08:15')}–{dock.get('close_time', '11:40')}", f"{dock.get('unloading_slots', 2)} slot bongkar")
 
-    samples = load_tomato_rgb_sample(n_per_class=2)
-    if samples:
-        orch = load_local_orchestrator()
-        preds = orch.freshfood.model.classify_images(np.stack([s["image"] for s in samples]))
-        cols = st.columns(4)
-        for i, (s, pr) in enumerate(zip(samples, preds)):
-            up = Image.fromarray(s["image"].astype(np.uint8)).resize((120, 120), Image.Resampling.NEAREST)
-            tag = "🔴 REJECT" if pr["predicted_grade"] == "Reject" else f"🟢 Grade {pr['predicted_grade']}"
-            cols[i % 4].image(up, caption=f"#{s['index']} True:{s['true_grade']} → {tag} ({pr['confidence']*100:.1f}%)")
+    ff_tabs = st.tabs([
+        "🍅 Galeri RGB CNN & Hard-Block Lab API",
+        "⚙️ Penjadwalan Lini FEFO & Dock Window",
+        "🔁 QC Feedback → AgroFarm & Valorisasi Limbah",
+    ])
+
+    with ff_tabs[0]:
+        samples = load_tomato_rgb_sample(n_per_class=2)
+        if samples:
+            orch = load_local_orchestrator()
+            preds = orch.freshfood.model.classify_images(np.stack([s["image"] for s in samples]))
+            cols = st.columns(4)
+            for i, (s, pr) in enumerate(zip(samples, preds)):
+                up = Image.fromarray(s["image"].astype(np.uint8)).resize((120, 120), Image.Resampling.NEAREST)
+                tag = "🔴 REJECT" if pr["predicted_grade"] == "Reject" else f"🟢 Grade {pr['predicted_grade']}"
+                cols[i % 4].image(up, caption=f"#{s['index']} True:{s['true_grade']} → {tag} ({pr['confidence']*100:.1f}%)")
+
+        st.divider()
+        st.markdown("#### 🧪 Simulator Uji Lab Food Safety Hard-Block (`POST /api/v1/freshfood/qc-inspect`)")
+        with st.form("ff_qc_form"):
+            q1, q2, q3, q4 = st.columns(4)
+            qc_lot = q1.text_input("Lot ID", value="H003")
+            qc_blk = q2.text_input("Block ID", value="BLK-11")
+            qc_ph = q3.number_input("pH (Aman 4.0–4.6)", 3.0, 6.0, 4.35, 0.05)
+            qc_pest = q4.number_input("Pestisida ppm (≤ 0.05)", 0.0, 0.20, 0.02, 0.01)
+            q5, q6, q7 = st.columns(3)
+            qc_def = q5.slider("Rasio Cacat Permukaan", 0.0, 0.40, 0.14, 0.02)
+            qc_mic = q6.checkbox("Lolos Uji Mikroba?", value=True)
+            qc_qty = q7.number_input("Volume Lot (kg)", 100.0, 3000.0, 1000.0, 100.0)
+            if st.form_submit_button("🔬 Jalankan Inspeksi QC & Audit via API"):
+                payload = {"lot_id": qc_lot, "block_id": qc_blk, "qty_kg": qc_qty, "ph_level": qc_ph, "pesticide_residue_ppm": qc_pest, "microbial_pass": qc_mic, "defect_ratio": qc_def}
+                if api_online:
+                    ok_q, res_q = api.post("/api/v1/freshfood/qc-inspect", payload, role_info["token"])
+                    if ok_q:
+                        v = res_q["safety_verdict"]
+                        if v["food_safety_approved"]:
+                            st.success(f"✅ Lot `{qc_lot}` LOLOS Food Safety! Audit Hash: `{res_q['audit_hash'][:14]}...`")
+                        else:
+                            st.error(f"⛔ HARD-BLOCK AKTIF (`0 kg` ke pangan): `{', '.join(v['violation_reasons'])}` | Valorisasi: `{res_q['waste_valorization_plan']['disposal_channel']}`")
+                        if res_q.get("qc_feedback_to_agrofarm"):
+                            st.warning(f"🔁 **Feedback dikirim ke AgroFarm `{qc_blk}`:** {res_q['qc_feedback_to_agrofarm']['recommendation']}")
+                    else:
+                        st.error(f"API Error: {res_q}")
+
+    with ff_tabs[1]:
+        inc_ot = st.checkbox("Aktifkan Shift Lembur (+500 kg & perpanjang dock hingga 14:00 WIB)", value=bool(state["global_kpis"].get("overtime_activated")), key="ff_ot_sim")
+        if api_online:
+            ok_sc, res_sc = api.post("/api/v1/freshfood/schedule", {"include_overtime": inc_ot}, role_info["token"])
+            sched_data = res_sc["fefo_schedule"] if ok_sc else ff_ctx.get("fefo_line_schedule", {})
+            dk_data = res_sc["receiving_dock_window"] if ok_sc else dock
+        else:
+            sched_data = ff_ctx.get("fefo_line_schedule", {})
+            dk_data = dock
+        st.info(f"🚚 **Dock Window Tersinkron ke ColdChain VRPTW:** Node `{dk_data.get('node')}` buka `{dk_data.get('open_time')}–{dk_data.get('close_time')} WIB` (`{dk_data.get('unloading_slots')} slot` bongkar) | Utilisasi Lini: **`{sched_data.get('capacity_utilization_pct', 0)}%`**")
+        if sched_data.get("scheduled_lots"):
+            st.dataframe(pd.DataFrame(sched_data["scheduled_lots"]), use_container_width=True, hide_index=True)
+
+    with ff_tabs[2]:
+        fb_items = ff_ctx.get("feedback_to_agrofarm", [])
+        val_items = ff_ctx.get("waste_valorization_plan", [])
+        if fb_items:
+            st.markdown("**🔁 Umpan Balik Kualitas ke AgroFarm (`AGT-01`)**")
+            st.dataframe(pd.DataFrame(fb_items), use_container_width=True, hide_index=True)
+        else:
+            st.success("✅ Tidak ada peringatan mutu yang perlu dikirim ke AgroFarm pada siklus ini.")
+        if val_items:
+            st.markdown("**♻️ Rencana Valorisasi Limbah Non-Pangan (`COMPOST_BIOGAS_RECOVERY`)**")
+            st.dataframe(pd.DataFrame(val_items), use_container_width=True, hide_index=True)
 
 
-def render_koperasi_and_supermart_modules(state: Dict[str, Any], ml_metrics: Dict[str, Any], role_info: Dict[str, Any]) -> None:
+def render_supermart_workspace(api: ApiBridge, api_online: bool, state: Dict[str, Any], ml_metrics: Dict[str, Any], role_info: Dict[str, Any]) -> None:
+    st.subheader("🛒 SuperMart Procurement Cockpit v2.1 — 7-Day XGBoost Horizon, Newsvendor PO & Goods Receipt SLA")
+    m_sm = ml_metrics.get("supermart_xgb", {})
+    sm_ctx = state.get("supermart_horizon_7d", {})
+    is_owner = role_info["enterprise_key"] == "supermart"
+    is_surge = state["trigger_mode"] in ("DEMAND_SURGE", "COMPOUND")
+    is_rain = state["trigger_mode"] == "EXTREME_RAIN"
+
+    if api_online:
+        ok_f7, f7_data = api.get("/api/v1/supermart/forecast-7d", role_info["token"], params={"demand_surge": is_surge, "early_harvest_signal": is_rain})
+    else:
+        ok_f7, f7_data = False, {}
+
+    h7_rows = f7_data["horizon_7d"] if ok_f7 else sm_ctx.get("horizon_7d", [])
+    fp_info = f7_data["flash_promo_absorption"] if ok_f7 else sm_ctx.get("flash_promo_absorption", {})
+    ceil_a = f7_data.get("ceiling_price_grade_a_rp", "REDACTED") if ok_f7 else ("Rp10,500" if is_owner else "🔒 REDACTED")
+
+    k1, k2, k3, k4, k5 = st.columns(5)
+    k1.metric("XGBoost Test MAPE", f"{m_sm.get('test_mape_pct', 3.72)}%", f"R² {m_sm.get('test_r2', 0.9215)}")
+    k2.metric("Newsvendor CF", f"{sm_ctx.get('critical_fractile', 0.346)}", "Konservatif Anti-Spoilage")
+    k3.metric("Substitusi Grade B", "≤ 30% (HITL)" if is_surge else "0% (Grade A Only)")
+    k4.metric("Flash-Promo Pull", f"+{fp_info.get('extra_absorption_cap_kg', 0):.0f} kg" if fp_info.get("enabled") else "Standar")
+    k5.metric("Ceiling Price Scope", f"Rp{ceil_a:,.0f} 🔓" if isinstance(ceil_a, (int, float)) else "REDACTED 🔒")
+
+    sm_tabs = st.tabs([
+        "📈 Rolling Forecast 7-Hari (→ Hulu)",
+        "🧾 Purchase Orders (PO CRUD) & Ceiling Guardrail",
+        "✅ Goods Receipt SLA (ColdChain → SuperMart)",
+    ])
+
+    with sm_tabs[0]:
+        if h7_rows:
+            df_h7 = pd.DataFrame(h7_rows)
+            fig_h7 = go.Figure()
+            fig_h7.add_trace(go.Bar(x=df_h7["horizon"] + " (" + df_h7["day_name"] + ")", y=df_h7["forecast_demand_kg"], name="Forecast Permintaan (kg)", marker_color="#1F4E79"))
+            fig_h7.add_trace(go.Scatter(x=df_h7["horizon"] + " (" + df_h7["day_name"] + ")", y=df_h7["recommended_po_kg"], name="Rekomendasi PO Newsvendor (kg)", mode="lines+markers", line=dict(color="#D97706", width=3)))
+            fig_h7.update_layout(
+                title=dict(text="Proyeksi Permintaan Tomat 7 Hari (H+1 s.d. H+7) — Dibagikan ke AgroFarm & Koperasi", font=dict(color="#0F172A", size=14)),
+                template="plotly_white",
+                paper_bgcolor="#FFFFFF",
+                plot_bgcolor="#FFFFFF",
+                font=dict(color="#0F172A"),
+                yaxis_title="Volume (kg)",
+                yaxis=dict(gridcolor="#E2E8F0"),
+                height=320,
+                legend=dict(orientation="h", yanchor="top", y=-0.20, xanchor="center", x=0.5),
+                margin=dict(l=10, r=10, t=40, b=50),
+            )
+            st.plotly_chart(fig_h7, use_container_width=True)
+            st.dataframe(df_h7, use_container_width=True, hide_index=True)
+
+    with sm_tabs[1]:
+        p1, p2 = st.columns([1.25, 1.0])
+        with p1:
+            st.markdown("#### 📋 Daftar Purchase Order Aktif (`GET /api/v1/supermart/po`)")
+            ok_po, po_list = api.get("/api/v1/supermart/po", role_info["token"]) if api_online else (False, {})
+            if ok_po:
+                st.dataframe(pd.DataFrame(po_list["purchase_orders"]), use_container_width=True, hide_index=True)
+        with p2:
+            with st.form("sm_po_form", clear_on_submit=True):
+                st.markdown("**Terbitkan PO Baru (Validasi Ceiling Price & Grade B ≤ 30%)**")
+                pf1, pf2 = st.columns(2)
+                po_id = pf1.text_input("PO ID", value="PO-SM-002")
+                po_lot = pf2.text_input("Lot ID", value="H001")
+                po_gr = pf1.selectbox("Grade", ["A", "B", "C"])
+                po_qty = pf2.number_input("Qty (kg)", 100.0, 5000.0, 1200.0, 100.0)
+                po_pr = pf1.number_input("Harga Sepakat (Rp/kg)", 3000.0, 15000.0, 10000.0, 100.0)
+                po_sub = pf2.number_input("Porsi Sub Grade B (%)", 0.0, 50.0, 0.0, 5.0)
+                if st.form_submit_button("💾 Submit PO ke FastAPI"):
+                    ok_cp, res_cp = api.post(
+                        "/api/v1/supermart/po",
+                        {"po_id": po_id, "lot_id": po_lot, "grade": po_gr, "qty_kg": po_qty, "agreed_price_rp": po_pr, "grade_b_sub_pct": po_sub},
+                        role_info["token"],
+                    )
+                    if ok_cp:
+                        st.success(f"✅ {res_cp['action']} `{po_id}` tersimpan! Audit Hash: `{res_cp['audit_hash'][:14]}...`")
+                        st.rerun()
+                    else:
+                        st.error(f"Validasi / Kebijakan Ditolak: {res_cp}")
+
+    with sm_tabs[2]:
+        sla_list = state.get("goods_receipt_sla", [])
+        if sla_list:
+            st.markdown("#### 🚚 Evaluasi SLA Kedatangan ColdChain Siklus Aktif (SOP `7,0–12,0°C`)")
+            st.dataframe(pd.DataFrame(sla_list), use_container_width=True, hide_index=True)
+        st.markdown("#### 🧪 Simulator Verifikasi Goods Receipt SLA (`POST /api/v1/supermart/goods-receipt-sla`)")
+        with st.form("sm_sla_form"):
+            sl1, sl2, sl3 = st.columns(3)
+            sl_temp = sl1.number_input("Suhu Truk Saat Tiba (°C)", 2.0, 20.0, 9.4, 0.2)
+            sl_arr = sl2.number_input("Waktu Tiba (+menit dari 08:00)", 10, 400, 95, 5)
+            sl_ddl = sl3.number_input("Batas Deadline Dermaga (+menit)", 60, 400, 260, 10)
+            if st.form_submit_button("🔎 Verifikasi SLA Kedatangan"):
+                if api_online:
+                    ok_sl, res_sl = api.post("/api/v1/supermart/goods-receipt-sla", {"lot_id": "H001", "delivered_temp_c": sl_temp, "arrival_min": int(sl_arr), "deadline_min": int(sl_ddl)}, role_info["token"])
+                    if ok_sl:
+                        sv = res_sl["sla_verdict"]
+                        if sv["sla_status"] == "ACCEPTED_ON_TIME":
+                            st.success(f"✅ **{sv['sla_status']}** — {sv['action_note']}")
+                        elif sv["sla_status"] == "ACCEPTED_WITH_DELAY_CLAIM":
+                            st.warning(f"⚠️ **{sv['sla_status']}** (Klaim Rp{sv['sla_penalty_rp']:,.0f}) — {sv['action_note']}")
+                        else:
+                            st.error(f"⛔ **{sv['sla_status']}** (Klaim Rp{sv['sla_penalty_rp']:,.0f}) — {sv['action_note']}")
+
+
+def render_koperasi_workspace(api: ApiBridge, api_online: bool, state: Dict[str, Any], ml_metrics: Dict[str, Any], role_info: Dict[str, Any]) -> None:
+    st.subheader("🤝 Koperasi Tani Cockpit v2.1 — LightGBM Price, Contract Net & Private Floor Price Guardrail")
+    m_kp = ml_metrics.get("koperasi_lgbm", {})
+    is_owner = role_info["enterprise_key"] == "koperasi"
+    k1, k2, k3, k4 = st.columns(4)
+    k1.metric("LightGBM Test MAPE", f"{m_kp.get('test_mape_pct', 4.28)}%", f"MAE Rp{m_kp.get('test_mae_rp', 240.1)}/kg")
+    k2.metric("Test R²", f"{m_kp.get('test_r2', 0.9853)}")
+    k3.metric("Negotiation Rounds", f"{state['global_kpis'].get('negotiation_rounds_used', 0)}/3")
+    k4.metric("Floor Price Scope", "UNLOCKED 🔓" if is_owner else "REDACTED 🔒")
+
     c1, c2 = st.columns(2)
-    orch = load_local_orchestrator()
     with c1:
-        st.subheader("🤝 Koperasi Tani — LightGBM & Contract Net")
-        m_kp = ml_metrics.get("koperasi_lgbm", {})
-        st.metric("LightGBM Test MAPE", f"{m_kp.get('test_mape_pct', 4.28)}%", f"MAE Rp{m_kp.get('test_mae_rp', 240.1)}/kg")
-        kg = st.selectbox("Grade Tomat", ["A", "B", "C"], index=1, key="kp_g")
-        ko = st.number_input("Simulasi Tawaran Pembeli (Rp/kg)", 2000, 15000, 6400, 100, key="kp_o")
-        ask = orch.koperasi.model.predict_price(grade=kg)
+        st.markdown("#### 💹 Simulator Prediksi Harga & Contract Net (`POST /api/v1/koperasi/price-forecast`)")
+        kg = st.selectbox("Grade Tomat", ["A", "B", "C"], index=1, key="kp_g_v21")
+        ko = st.number_input("Simulasi Tawaran Pembeli (Rp/kg)", 2000, 15000, 6400, 100, key="kp_o_v21")
+        if api_online:
+            ok_kp, kp_res = api.post("/api/v1/koperasi/price-forecast", {"grade": kg}, role_info["token"])
+            ask_rp = kp_res["predicted_market_price_rp"] if ok_kp else load_local_orchestrator().koperasi.model.predict_price(grade=kg)
+            fl_disp = kp_res["floor_price_rp"] if ok_kp else "🔒 REDACTED"
+        else:
+            ask_rp = load_local_orchestrator().koperasi.model.predict_price(grade=kg)
+            fl_disp = "🔒 REDACTED"
+        orch = load_local_orchestrator()
         auc = orch.koperasi.model.evaluate_contract_net_bids("SIM", 500.0, orch.koperasi._private_floor_prices[kg], [{"buyer_id": "Buyer", "qty_kg": 500.0, "offer_price_rp": ko}])
-        st.caption(f"Referensi LightGBM: `Rp{ask:,.0f}/kg` | Status: **{auc['status']}**")
+        st.info(f"Harga Acuan LightGBM: **`Rp{ask_rp:,.0f}/kg`** | Floor Price (Scope `{role_info['enterprise_key']}`): **`{fl_disp}`** | Hasil Lelang: **`{auc['status']}`**")
     with c2:
-        st.subheader("🛒 SuperMart — XGBoost & Newsvendor PO")
-        m_sm = ml_metrics.get("supermart_xgb", {})
-        st.metric("XGBoost Demand MAPE", f"{m_sm.get('test_mape_pct', 3.72)}%", f"R² {m_sm.get('test_r2', 0.9215)}")
-        sp = st.checkbox("Promo Weekend Aktif", value=False, key="sm_p")
-        fd = orch.supermart.model.forecast_total_chain_demand(day_of_week=5 if sp else 2, is_promo=1 if sp else 0)
-        po = orch.supermart.model.compute_newsvendor_po(fd)
-        st.caption(f"Forecast 3 Gerai: `{po['forecast_demand_kg']:,.1f} kg` | Rekomendasi PO: **`{po['recommended_po_kg']:,.1f} kg`**")
+        st.markdown("#### 🔁 Sinyal Lintas Enterprise untuk Koperasi")
+        val_items = state.get("freshfood_qc_feedback", {}).get("waste_valorization_plan", [])
+        if val_items:
+            st.warning("♻️ **Notice Valorisasi FreshFood:** Ada lot ditolak keamanan pangan yang dialihkan ke kompos/biogas:")
+            st.dataframe(pd.DataFrame(val_items), use_container_width=True, hide_index=True)
+        else:
+            st.success("✅ Seluruh lot aktif lolos QC FreshFood dan siap diserap kanal komersial.")
+
+
+def render_koperasi_and_supermart_modules(api: ApiBridge, api_online: bool, state: Dict[str, Any], ml_metrics: Dict[str, Any], role_info: Dict[str, Any]) -> None:
+    render_koperasi_workspace(api, api_online, state, ml_metrics, role_info)
+    st.divider()
+    render_supermart_workspace(api, api_online, state, ml_metrics, role_info)
 
 
 def render_decision_trace_and_audit(api: ApiBridge, api_online: bool, state: Dict[str, Any], role_info: Dict[str, Any]) -> None:
@@ -930,7 +1134,7 @@ def main() -> None:
         f"""
         <div class="role-banner">
             <div>
-                <div style="font-size:1.22rem; font-weight:700;">🍅 AgriChain Agentic AI v2.0 — {selected_role}</div>
+                <div style="font-size:1.22rem; font-weight:700;">🍅 AgriChain Agentic AI v2.1 — {selected_role}</div>
                 <div style="font-size:0.83rem; opacity:0.92;">{role_info['scope_desc']}</div>
             </div>
             <div style="display:flex; gap:0.45rem; flex-wrap:wrap;">
@@ -970,10 +1174,50 @@ def main() -> None:
             render_decision_trace_and_audit(api, api_online, state, role_info)
         return
 
+    if ent_key == "koperasi":
+        kp_tabs = st.tabs([
+            "🤝 Koperasi Price & Contract Net (Floor Unlocked)",
+            "🌐 Ecosystem Impact & 7-Day Demand",
+            "🗄️ Koperasi Local DB Explorer (MySQL)",
+            "🧭 Decision Trace & Audit",
+        ])
+        with kp_tabs[0]:
+            render_koperasi_workspace(api, api_online, state, ml_metrics, role_info)
+        with kp_tabs[1]:
+            st.markdown(f"<div class='brief-box'><b>📋 Executive Briefing:</b> {state.get('executive_briefing', '')}</div>", unsafe_allow_html=True)
+            h7 = state.get("supermart_horizon_7d", {}).get("horizon_7d", [])
+            if h7:
+                st.markdown("#### 📈 Sinyal Permintaan 7-Hari dari SuperMart (`AGT-05 → AGT-02`)")
+                st.dataframe(pd.DataFrame(h7), use_container_width=True, hide_index=True)
+            st.plotly_chart(build_sankey(state["milp_result"]["allocations"], state["milp_result"]["unallocated_kg"]), use_container_width=True)
+        with kp_tabs[2]:
+            render_server_data_explorer(api, api_online, role_info, selected_role, default_ent="koperasi")
+        with kp_tabs[3]:
+            render_decision_trace_and_audit(api, api_online, state, role_info)
+        return
+
+    if ent_key == "freshfood":
+        ff_role_tabs = st.tabs([
+            "🏭 FreshFood QC, Hard-Block & FEFO Schedule",
+            "🌐 Ecosystem Impact & Dock Sync",
+            "🗄️ FreshFood Local DB Explorer (MongoDB)",
+            "🧭 Decision Trace & Audit",
+        ])
+        with ff_role_tabs[0]:
+            render_freshfood_module(api, api_online, state, ml_metrics, role_info)
+        with ff_role_tabs[1]:
+            st.markdown(f"<div class='brief-box'><b>📋 Executive Briefing:</b> {state.get('executive_briefing', '')}</div>", unsafe_allow_html=True)
+            st.plotly_chart(build_decision_shift_chart(base_state, state), use_container_width=True)
+        with ff_role_tabs[2]:
+            render_server_data_explorer(api, api_online, role_info, selected_role, default_ent="freshfood")
+        with ff_role_tabs[3]:
+            render_decision_trace_and_audit(api, api_online, state, role_info)
+        return
+
     if ent_key == "coldchain":
         cc_tabs = st.tabs([
             "❄️ ColdChain Fleet Operations (VRPTW + ETA + CRUD)",
-            "🌐 Ecosystem Impact & Sankey",
+            "🌐 Ecosystem Impact & Dock Handshake",
             "🗄️ ColdChain Local DB Explorer",
             "🧭 Agent Activity & Audit",
         ])
@@ -981,6 +1225,9 @@ def main() -> None:
             render_coldchain_workspace(api, api_online, state, ml_metrics, role_info)
         with cc_tabs[1]:
             st.markdown(f"<div class='brief-box'><b>📋 Executive Briefing:</b> {state.get('executive_briefing', '')}</div>", unsafe_allow_html=True)
+            synced = state.get("vrptw_plan", {}).get("dock_windows_synced_nodes", [])
+            if synced:
+                st.success(f"🔗 **VRPTW Dock Handshake Tersinkron Dinamis:** `{', '.join(synced)}` (dari FreshFood & SuperMart)")
             st.plotly_chart(build_decision_shift_chart(base_state, state), use_container_width=True)
         with cc_tabs[2]:
             render_server_data_explorer(api, api_online, role_info, selected_role, default_ent="coldchain")
@@ -988,7 +1235,25 @@ def main() -> None:
             render_decision_trace_and_audit(api, api_online, state, role_info)
         return
 
-    # Global Control Center + Koperasi / FreshFood / SuperMart Shared Command Center
+    if ent_key == "supermart":
+        sm_role_tabs = st.tabs([
+            "🛒 SuperMart 7-Day Horizon, PO & SLA (Ceiling Unlocked)",
+            "🌐 Ecosystem Impact & Lineage",
+            "🗄️ SuperMart Local DB Explorer (MySQL)",
+            "🧭 Decision Trace & Audit",
+        ])
+        with sm_role_tabs[0]:
+            render_supermart_workspace(api, api_online, state, ml_metrics, role_info)
+        with sm_role_tabs[1]:
+            st.markdown(f"<div class='brief-box'><b>📋 Executive Briefing:</b> {state.get('executive_briefing', '')}</div>", unsafe_allow_html=True)
+            st.plotly_chart(build_sankey(state["milp_result"]["allocations"], state["milp_result"]["unallocated_kg"]), use_container_width=True)
+        with sm_role_tabs[2]:
+            render_server_data_explorer(api, api_online, role_info, selected_role, default_ent="supermart")
+        with sm_role_tabs[3]:
+            render_decision_trace_and_audit(api, api_online, state, role_info)
+        return
+
+    # Global Control Center (AGT-06) — 6-Tab Full Ecosystem Oversight
     tabs = st.tabs([
         "🌐 Global Center",
         "🧭 Trace, Lineage & Audit",
@@ -1067,9 +1332,9 @@ def main() -> None:
         render_coldchain_workspace(api, api_online, state, ml_metrics, role_info)
 
     with tabs[4]:
-        render_freshfood_module(state, ml_metrics)
+        render_freshfood_module(api, api_online, state, ml_metrics, role_info)
         st.divider()
-        render_koperasi_and_supermart_modules(state, ml_metrics, role_info)
+        render_koperasi_and_supermart_modules(api, api_online, state, ml_metrics, role_info)
 
     with tabs[5]:
         render_server_data_explorer(api, api_online, role_info, selected_role, default_ent=ent_key if ent_key != "global" else "koperasi")

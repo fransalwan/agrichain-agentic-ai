@@ -19,11 +19,12 @@ from src.protocols.security import (
 )
 
 app = FastAPI(
-    title="AgriChain Agentic AI — Multi-Enterprise API Gateway v2.0",
-    version="2.0.0",
+    title="AgriChain Agentic AI — Multi-Enterprise API Gateway v2.1",
+    version="2.1.0",
     description=(
-        "Decoupled A2A / FIPA-ACL / GS1 EPCIS 2.0 API Gateway with Server-Side Data Sovereignty Redaction, "
-        "AgroFarm NDVI/PI80 Services, ColdChain VRPTW + XGBoost ETA + Fleet/Shipments CRUD, and LangGraph Orchestrator."
+        "Decoupled A2A / FIPA-ACL / GS1 EPCIS 2.0 API Gateway with Full 5-Enterprise Local Service Parity, "
+        "Server-Side Data Sovereignty Redaction, Closed-Loop QC Feedback & VRPTW Dock Sync, 7-Day Demand Horizon, "
+        "Goods Receipt SLA Verification, and LangGraph Orchestrator."
     ),
 )
 
@@ -42,6 +43,11 @@ _shipment_store: List[Dict[str, Any]] = [
     {"shipment_id": "SH001", "lot_id": "H001", "product": "Tomato", "grade": "A", "quantity_kg": 2000, "pickup": "Koperasi_Hub", "destination": "SuperMart_DC", "ready_time": "08:00", "deadline": "12:00", "req_temp_min_c": 7.0, "req_temp_max_c": 12.0, "shelf_life_hours": 120, "priority": "High", "status": "Ready for Planning"},
     {"shipment_id": "SH002", "lot_id": "H002", "product": "Tomato", "grade": "B", "quantity_kg": 1500, "pickup": "Koperasi_Hub", "destination": "FreshFood_Plant", "ready_time": "08:00", "deadline": "13:00", "req_temp_min_c": 7.0, "req_temp_max_c": 12.0, "shelf_life_hours": 72, "priority": "High", "status": "Ready for Planning"},
     {"shipment_id": "SH003", "lot_id": "H003", "product": "Tomato", "grade": "C", "quantity_kg": 1000, "pickup": "Koperasi_Hub", "destination": "FreshFood_Plant", "ready_time": "08:00", "deadline": "11:00", "req_temp_min_c": 7.0, "req_temp_max_c": 12.0, "shelf_life_hours": 48, "priority": "Critical", "status": "Ready for Planning"},
+]
+
+# Local SuperMart Purchase Orders Store (v2.1 Parity)
+_supermart_po_store: List[Dict[str, Any]] = [
+    {"po_id": "PO-SM-001", "lot_id": "H001", "grade": "A", "qty_kg": 2000.0, "agreed_price_rp": 10000.0, "branch": "SuperMart_DC", "receiving_window": "08:30–12:20", "grade_b_sub_pct": 0.0, "status": "CONFIRMED"},
 ]
 
 
@@ -132,6 +138,57 @@ class ETARequest(BaseModel):
     num_stops: int = Field(default=2, ge=1)
     weather_severity: int = Field(default=0, ge=0, le=2)
     departure_hour: int = Field(default=8, ge=0, le=23)
+
+
+class KoperasiPriceRequest(BaseModel):
+    grade: str = "A"
+    season: str = "Wet"
+    month: int = Field(default=11, ge=1, le=12)
+    regional_supply_ton: float = Field(default=42.0, gt=0)
+    qty_kg: float = Field(default=2000.0, gt=0)
+    shelf_life_days: int = Field(default=5, ge=1)
+
+
+class FreshFoodQCRequest(BaseModel):
+    lot_id: str = "H003"
+    block_id: str = "BLK-11"
+    qty_kg: float = Field(default=1000.0, gt=0)
+    ph_level: float = 4.35
+    brix_pct: float = 4.8
+    pesticide_residue_ppm: float = 0.02
+    microbial_pass: bool = True
+    defect_ratio: float = Field(default=0.14, ge=0.0, le=1.0)
+
+
+class FreshFoodScheduleRequest(BaseModel):
+    include_overtime: bool = False
+    failed_lots: List[str] = Field(default_factory=list)
+
+
+class SuperMartPOCreateRequest(BaseModel):
+    po_id: str = Field(..., min_length=3)
+    lot_id: str = "H001"
+    grade: str = "A"
+    qty_kg: float = Field(..., gt=0)
+    agreed_price_rp: float = Field(..., gt=0)
+    branch: str = "SuperMart_DC"
+    receiving_window: str = "08:30–12:20"
+    grade_b_sub_pct: float = Field(default=0.0, ge=0.0, le=100.0)
+
+    @model_validator(mode="after")
+    def validate_po_guardrails(self):
+        if self.grade == "C":
+            raise ValueError("SuperMart tidak pernah menerima Grade C untuk rak ritel segar")
+        if self.grade_b_sub_pct > 30.0:
+            raise ValueError("Substitusi Grade B tidak boleh melebihi batas kebijakan 30%")
+        return self
+
+
+class GoodsReceiptSLARequest(BaseModel):
+    lot_id: str = "H001"
+    delivered_temp_c: float = 9.2
+    arrival_min: int = Field(default=85, ge=0)
+    deadline_min: int = Field(default=260, gt=0)
 
 
 # ---------------------------------------------------------------------------
@@ -306,6 +363,217 @@ def predict_coldchain_eta(req: ETARequest) -> Dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
+# Koperasi Tani Local Service (AGT-02 — v2.1 Parity)
+# ---------------------------------------------------------------------------
+@app.post("/api/v1/koperasi/price-forecast", tags=["Koperasi Local Service (AGT-02)"])
+def koperasi_price_forecast(
+    req: KoperasiPriceRequest,
+    x_scoped_token: str = Header(default="tok_orchestrator_global_scope_v1"),
+) -> Dict[str, Any]:
+    scope = resolve_token_scope(x_scoped_token)
+    if scope == "unauthorized":
+        raise HTTPException(status_code=403, detail="Invalid X-Scoped-Token")
+    orch = get_orchestrator()
+    pred_rp = orch.koperasi.model.predict_price(
+        grade=req.grade,
+        season=req.season,
+        month=req.month,
+        regional_supply_ton=req.regional_supply_ton,
+        qty_kg=req.qty_kg,
+        shelf_life_days=req.shelf_life_days,
+    )
+    floor_priv = orch.koperasi._private_floor_prices.get(req.grade, 3400.0)
+    return {
+        "enterprise": "Koperasi Tani",
+        "grade": req.grade,
+        "predicted_market_price_rp": pred_rp,
+        "floor_price_rp": floor_priv if scope == "koperasi" else "🔒 REDACTED (Server-Side Firewall)",
+        "caller_scope": scope,
+        "timestamp": now_wib_iso(),
+    }
+
+
+# ---------------------------------------------------------------------------
+# FreshFood Processing Local Service (AGT-03 — v2.1 Parity)
+# ---------------------------------------------------------------------------
+@app.post("/api/v1/freshfood/qc-inspect", tags=["FreshFood Local Service (AGT-03)"])
+def freshfood_qc_inspect(
+    req: FreshFoodQCRequest,
+    x_scoped_token: str = Header(default="tok_freshfood_local_v1"),
+) -> Dict[str, Any]:
+    scope = resolve_token_scope(x_scoped_token)
+    if scope == "unauthorized":
+        raise HTTPException(status_code=403, detail="Invalid X-Scoped-Token")
+    orch = get_orchestrator()
+    lab = {
+        "ph_level": req.ph_level,
+        "brix_pct": req.brix_pct,
+        "pesticide_residue_ppm": req.pesticide_residue_ppm,
+        "microbial_pass": req.microbial_pass,
+    }
+    safety = orch.freshfood.model.verify_food_safety_hard_block(lab, req.defect_ratio)
+    feedback = None
+    valorization = None
+    if safety["hard_block_triggered"]:
+        feedback = {
+            "target_enterprise": "AgroFarm (AGT-01)",
+            "block_id": req.block_id,
+            "lot_id": req.lot_id,
+            "severity": "CRITICAL",
+            "findings": safety["violation_reasons"],
+            "recommendation": "Hentikan petik blok terkait, perpanjang masa henti pestisida (PHI) +5 hari, & sanitasi air irigasi.",
+        }
+        valorization = {
+            "lot_id": req.lot_id,
+            "blocked_qty_kg": req.qty_kg,
+            "disposal_channel": "COMPOST_BIOGAS_RECOVERY",
+            "human_food_chain_entry": False,
+            "est_recovery_value_rp": round(req.qty_kg * 450.0, 0),
+        }
+    elif req.defect_ratio >= 0.12:
+        feedback = {
+            "target_enterprise": "AgroFarm (AGT-01)",
+            "block_id": req.block_id,
+            "lot_id": req.lot_id,
+            "severity": "ADVISORY",
+            "findings": [f"SURFACE_DEFECT_{int(req.defect_ratio*100)}PCT"],
+            "recommendation": "Percepat petik sebelum over-ripe & perbaiki bantalan peti panen.",
+        }
+    entry = orch.audit.record(
+        "FRESHFOOD_QC_INSPECTION",
+        f"QCProdManager({scope})",
+        {"lot_id": req.lot_id, "approved": safety["food_safety_approved"], "reasons": safety["violation_reasons"]},
+        model_version="freshfood-cnn-v2.1",
+        input_reference=req.lot_id,
+    )
+    return {
+        "lot_id": req.lot_id,
+        "block_id": req.block_id,
+        "safety_verdict": safety,
+        "qc_feedback_to_agrofarm": feedback,
+        "waste_valorization_plan": valorization,
+        "audit_hash": entry["hash"],
+        "timestamp": now_wib_iso(),
+    }
+
+
+@app.post("/api/v1/freshfood/schedule", tags=["FreshFood Local Service (AGT-03)"])
+def freshfood_fefo_schedule(req: FreshFoodScheduleRequest) -> Dict[str, Any]:
+    orch = get_orchestrator()
+    failed = set(req.failed_lots)
+    default_lots = [
+        {"lot_id": "H001", "grade": "A", "qty_kg": 2000.0, "shelf_life_days": 5, "food_safety_approved": "H001" not in failed},
+        {"lot_id": "H002", "grade": "B", "qty_kg": 1500.0, "shelf_life_days": 3, "food_safety_approved": "H002" not in failed},
+        {"lot_id": "H003", "grade": "C", "qty_kg": 1000.0, "shelf_life_days": 2, "food_safety_approved": "H003" not in failed},
+    ]
+    sched = orch.freshfood.model.schedule_fefo(
+        default_lots,
+        regular_cap_kg=orch.freshfood.regular_capacity_kg,
+        overtime_cap_kg=orch.freshfood.overtime_capacity_kg,
+        include_overtime=req.include_overtime,
+    )
+    dock_window = {
+        "node": "FreshFood_Plant",
+        "open_time": "08:15",
+        "close_time": "14:00" if req.include_overtime else "11:40",
+        "window_min_from_0800": [15, 360 if req.include_overtime else 220],
+        "unloading_slots": 3 if req.include_overtime else 2,
+    }
+    return {"fefo_schedule": sched, "receiving_dock_window": dock_window, "timestamp": now_wib_iso()}
+
+
+# ---------------------------------------------------------------------------
+# SuperMart Local Service (AGT-05 — v2.1 Parity)
+# ---------------------------------------------------------------------------
+@app.get("/api/v1/supermart/forecast-7d", tags=["SuperMart Local Service (AGT-05)"])
+def supermart_forecast_7d(
+    demand_surge: bool = False,
+    early_harvest_signal: bool = False,
+    x_scoped_token: str = Header(default="tok_orchestrator_global_scope_v1"),
+) -> Dict[str, Any]:
+    scope = resolve_token_scope(x_scoped_token)
+    if scope == "unauthorized":
+        raise HTTPException(status_code=403, detail="Invalid X-Scoped-Token")
+    orch = get_orchestrator()
+    horizon = orch.supermart.model.forecast_7day_horizon(
+        start_day_of_week=5 if demand_surge else 2,
+        demand_surge=demand_surge,
+    )
+    receiving_windows = {
+        "SuperMart_DC": {"open_time": "08:30", "close_time": "12:20", "window_min_from_0800": [30, 260]},
+        "SuperMart_B2": {"open_time": "08:40", "close_time": "13:20", "window_min_from_0800": [40, 320]},
+    }
+    flash_promo = {
+        "enabled": early_harvest_signal,
+        "extra_absorption_cap_kg": 300.0 if early_harvest_signal else 0.0,
+        "required_coop_discount_pct": 8.0 if early_harvest_signal else 0.0,
+    }
+    return {
+        "enterprise": "SuperMart",
+        "caller_scope": scope,
+        "horizon_7d": horizon,
+        "receiving_windows": receiving_windows,
+        "flash_promo_absorption": flash_promo,
+        "ceiling_price_grade_a_rp": orch.supermart._private_ceiling_price_grade_a if scope == "supermart" else "🔒 REDACTED (Server-Side Firewall)",
+        "ceiling_price_grade_b_surge_rp": orch.supermart._private_ceiling_price_grade_b_surge if scope == "supermart" else "🔒 REDACTED (Server-Side Firewall)",
+        "timestamp": now_wib_iso(),
+    }
+
+
+@app.get("/api/v1/supermart/po", tags=["SuperMart Local Service (AGT-05)"])
+def list_supermart_pos() -> Dict[str, Any]:
+    return {"count": len(_supermart_po_store), "purchase_orders": _supermart_po_store, "timestamp": now_wib_iso()}
+
+
+@app.post("/api/v1/supermart/po", tags=["SuperMart Local Service (AGT-05)"])
+def create_supermart_po(
+    req: SuperMartPOCreateRequest,
+    x_scoped_token: str = Header(default="tok_supermart_local_v1"),
+) -> Dict[str, Any]:
+    scope = resolve_token_scope(x_scoped_token)
+    if scope not in ("supermart", "global"):
+        raise HTTPException(status_code=403, detail="Only SuperMart Purchasing Manager or Global Operator may issue POs")
+    orch = get_orchestrator()
+    ceil = orch.supermart._private_ceiling_price_grade_a if req.grade == "A" else orch.supermart._private_ceiling_price_grade_b_surge
+    if req.agreed_price_rp > ceil:
+        raise HTTPException(status_code=422, detail="Harga PO melebihi kebijakan harga beli maksimum privat SuperMart (CEILING_PRICE_EXCEEDED)")
+    item = {**req.model_dump(), "status": "PENDING_HITL" if req.grade_b_sub_pct > 0 else "CONFIRMED"}
+    existing_idx = next((i for i, p in enumerate(_supermart_po_store) if p["po_id"] == item["po_id"]), None)
+    action = "UPDATE_PO" if existing_idx is not None else "CREATE_PO"
+    if existing_idx is not None:
+        _supermart_po_store[existing_idx] = item
+    else:
+        _supermart_po_store.append(item)
+    entry = orch.audit.record(action, f"PurchasingManager({scope})", item, model_version="supermart-po-v2.1", input_reference=req.po_id)
+    return {"action": action, "purchase_order": item, "audit_hash": entry["hash"]}
+
+
+@app.post("/api/v1/supermart/goods-receipt-sla", tags=["SuperMart Local Service (AGT-05)"])
+def supermart_goods_receipt_sla(
+    req: GoodsReceiptSLARequest,
+    x_scoped_token: str = Header(default="tok_supermart_local_v1"),
+) -> Dict[str, Any]:
+    scope = resolve_token_scope(x_scoped_token)
+    if scope == "unauthorized":
+        raise HTTPException(status_code=403, detail="Invalid X-Scoped-Token")
+    orch = get_orchestrator()
+    verdict = orch.supermart.verify_incoming_delivery_sla(
+        delivered_temp_c=req.delivered_temp_c,
+        arrival_min=req.arrival_min,
+        deadline_min=req.deadline_min,
+        lot_id=req.lot_id,
+    )
+    entry = orch.audit.record(
+        "GOODS_RECEIPT_SLA_CHECK",
+        f"PurchasingManager({scope})",
+        verdict,
+        model_version="supermart-sla-v2.1",
+        input_reference=req.lot_id,
+    )
+    return {"sla_verdict": verdict, "audit_hash": entry["hash"], "timestamp": now_wib_iso()}
+
+
+# ---------------------------------------------------------------------------
 # Server-Side Privacy-Enforced Data Explorer Endpoint (Pillar 1)
 # ---------------------------------------------------------------------------
 ALLOWED_TABLES = {
@@ -416,6 +684,9 @@ def run_orchestrator_cycle(
         "agent_statuses": result["agent_statuses"],
         "agrofarm_monitoring": result.get("agrofarm_monitoring", []),
         "vrptw_plan": result.get("vrptw_plan", {}),
+        "freshfood_qc_feedback": result.get("freshfood_qc_feedback", {}),
+        "supermart_horizon_7d": result.get("supermart_horizon_7d", {}),
+        "goods_receipt_sla": result.get("goods_receipt_sla", []),
         "lineage": result.get("lineage", []),
         "executive_briefing": result.get("executive_briefing", ""),
         "data_freshness_warning": result.get("data_freshness_warning"),

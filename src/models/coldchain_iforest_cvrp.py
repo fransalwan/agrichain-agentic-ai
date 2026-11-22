@@ -249,6 +249,7 @@ class ColdChainMonitoringAndRouting:
         demands_kg: Optional[List[int]] = None,
         vehicle_capacities: Optional[List[int]] = None,
         traffic_level: int = 1,
+        external_time_windows: Optional[Dict[str, tuple[int, int]]] = None,
     ) -> Dict[str, Any]:
         """Solve Capacitated Vehicle Routing Problem with Time Windows (VRPTW) via Google OR-Tools + XGBoost ETA."""
         dist_matrix = [
@@ -280,6 +281,16 @@ class ColdChainMonitoringAndRouting:
             (40, 320),   # 4: SuperMart_B2
             (30, 340),   # 5: Partner3PL_WH
         ]
+        # Dynamic Cross-Enterprise Dock Window Handshake from FreshFood & SuperMart
+        synced_nodes: List[str] = []
+        if external_time_windows:
+            name_to_idx = {meta["name"]: idx for idx, meta in enumerate(COLDCHAIN_NODE_META)}
+            for node_name, win in external_time_windows.items():
+                if node_name in name_to_idx:
+                    lo_m, hi_m = int(win[0]), int(win[1])
+                    if 0 <= lo_m < hi_m <= 420:
+                        time_windows[name_to_idx[node_name]] = (lo_m, hi_m)
+                        synced_nodes.append(node_name)
         service_time_min = [0, 15, 15, 10, 12, 12]
         # Travel time matrix (minutes) at avg 40 km/h scaled by scenario
         time_matrix = [
@@ -390,6 +401,7 @@ class ColdChainMonitoringAndRouting:
             "time_window_violations": tw_violations,
             "transport_cost_rp": float(opt_km * 9500),
             "node_coordinates": COLDCHAIN_NODE_META,
+            "dock_windows_synced_nodes": synced_nodes,
         }
 
     @staticmethod
