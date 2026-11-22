@@ -147,23 +147,22 @@ Proyek ini sudah dilengkapi konfigurasi siap pakai di [`.vscode/launch.json`](./
 
 ---
 
-## Panduan Alur Demo 5 Menit (8 Skenario Adaptif & Perubahan Keputusan Terukur)
+## Panduan Alur Demo Presentasi Kelompok (Mode Storyboard 1-Klik)
 
-1. **Menit 1 — *Server-Side* RBAC & Navigasi Adaptif (1 Stakeholder per Enterprise):**
-   - Dalam peran default **`Global Control Center Operator (AGT-06)`**, buka tab **`Data Explorer & Eval`** dan pilih `Koperasi Tani — market_price_negotiations`: kolom `floor_price_rp` otomatis tampil **`🔒 REDACTED (Server-Side Firewall)`** langsung dari respons API FastAPI.
-   - Pindah peran di *sidebar* ke **`Farm Manager — AgroFarm (AGT-01)`**, **`Cooperative Manager — Koperasi Tani (AGT-02)`**, **`Quality Control & Production Manager — FreshFood (AGT-03)`**, **`Fleet & Cold Chain Manager — ColdChain (AGT-04)`**, atau **`Purchasing Manager — SuperMart (AGT-05)`** untuk melihat ruang kerja adaptif *Light Mode* sekaligus pembukaan kolom privat miliknya sendiri.
-2. **Menit 2 — Bukti Perubahan Keputusan Terukur (8 Skenario Gangguan):**
-   - Uji **`COLD_STORAGE_FAILURE`** (kapasitas ruang dingin `3.000 → 1.000 kg`): alokasi `500 kg` berpindah otomatis ke `FreshFood_OT` dengan FLR `0,00%` dan Impact-Preview HITL Console muncul sebelum eksekusi.
-   - Uji **`EXTREME_RAIN`** (AgroFarm BLK-11): curah hujan `96 mm/14h` & NDVI turun `0,41` → jendela panen maju **`-2 hari`**, hasil turun ~13,9% dengan interval 80% Quantile PI melebar.
-   - Uji **`SENSOR_OUTAGE`**: sensor offline ≥ 3 hari → muncul *banner* kuning **Stale / Partial Data Warning** dan model berpindah aman ke `FALLBACK_HISTORICAL_MEAN`.
-   - Uji **`FOOD_SAFETY_FAIL`** (lot `H003` diblokir mutlak `0 kg`) & **`DEADLOCK`** (berhenti tepat di ronde 3/3 → eskalasi HITL).
-3. **Menit 3 — *Glass-Box* Decision Trace, Canonical Lineage & HITL SHA-256 Audit:**
-   - Buka tab **`Decision Trace, Lineage & Audit`** untuk melihat rantai data end-to-end (`BLK-07 → H001 → QC-H001 → SH001 → TRIP-01 → V001 → PO-SM-001`), 7-node LangGraph trace, pesan FIPA-ACL/EPCIS, lalu klik **`Approve & Commit via API`** dan verifikasi integritas rantai SHA-256 (`VERIFIED ✅`).
-4. **Menit 4 — Pendalaman AI Lokal AgroFarm v2 & ColdChain v2:**
-   - Di **`AgroFarm v2 (AGT-01)`**, tampilkan tabel *Crop Monitoring 14d ± 2σ*, grafik *Feature Importance*, dan *Live Yield & PI80 Predictor*.
-   - Di **`ColdChain v2 (AGT-04)`**, bandingkan skenario VRPTW di **Peta Geospasial Yogyakarta/Sleman/Bantul**, tambahkan kendaraan/shipment baru via form CRUD yang tervalidasi API (deadline & suhu `7–12°C`), serta simulasikan **XGBoost ETA**.
-5. **Menit 5 — FastAPI Swagger UI v2.1 (20 Endpoint) & Verifikasi `pytest`:**
-   - Buka `http://127.0.0.1:8000/docs` dan jalankan `pytest tests/test_ecosystem.py -v` (**13/13 PASSED**).
+Dashboard dilengkapi **`🎬 Mode Presentasi (1-Klik Storyboard)`** di baris paling atas, **Live Closed-Loop 5-Enterprise Strip**, **Side-by-Side Live RBAC Proof**, dan tombol **`🔄 Reset`** di *sidebar* sehingga keempat anggota kelompok dapat mendemokan bagian masing-masing secara mulus:
+
+1. **`1️⃣ Al · Koperasi` (`M. Al lail Qadrillah — AGT-02`):**
+   - Otomatis masuk sebagai *Cooperative Manager* (`NORMAL`), menampilkan *LightGBM Price Forecast* + *Contract Net Auction*, lalu buka tab **`Koperasi Local DB Explorer`** untuk menampilkan bukti *Side-by-Side* 1-layar (`Token Global → 🔒 REDACTED` vs `Token Koperasi → floor_price_rp 🔓 UNLOCKED`).
+2. **`2️⃣ Monanta · AgroFarm` (`Monanta Alfiareza — AGT-01`):**
+   - Otomatis masuk sebagai *Farm Manager* (`EXTREME_RAIN`): tabel deviasi **NDVI 14-Hari ± 2σ** (`BLK-11` hujan 96 mm → panen maju `-2 hari`), simulator **RF + 80% Quantile PI** yang tersinkron otomatis, serta sinyal masuk *Flash-Promo SuperMart* (`+300 kg`). *(Bisa juga diuji `SENSOR_OUTAGE` untuk `FALLBACK_HISTORICAL_MEAN`.)*
+3. **`3️⃣ Dimas · ColdChain` (`Dimas Prabowo — AGT-04`):**
+   - Otomatis masuk sebagai *Fleet & Cold Chain Manager* (`COLD_STORAGE_FAILURE`): **Peta Geospasial OR-Tools VRPTW** otomatis tersinkron ke skenario `COLD_STORAGE_DROP` & *dock window* FreshFood/SuperMart (`0` pelanggaran TW), ditambah tab **Fleet/Shipments CRUD** serta **XGBoost ETA & Monitor 7–12°C**.
+4. **`4️⃣ Frans · FreshFood` (`Frans Alwan Purba — AGT-03`):**
+   - Otomatis masuk sebagai *QC & Production Manager* (`FOOD_SAFETY_FAIL`): galeri **CNN RGB 4-Kelas** berdampingan dengan **Simulator Hard-Block Lab API** (blokir mutlak `0 kg` ke pangan), tab **FEFO & Dock Window**, serta **QC Feedback → AgroFarm & Valorisasi Kompos/Biogas**.
+5. **`5️⃣ Frans · SuperMart` (`Frans Alwan Purba — AGT-05`):**
+   - Otomatis masuk sebagai *Purchasing Manager* (`DEMAND_SURGE`): **Proyeksi 7-Hari XGBoost (`H+1..H+7`)** ke hulu, tab **PO CRUD** (guardrail Grade C ditolak, substitusi Grade B ≤ 30% & `ceiling_price` terbuka lokal), serta tab **Goods Receipt SLA 7–12°C**.
+6. **`6️⃣ Frans · Global HITL` (`Frans Alwan Purba — AGT-06`) & Swagger 20 Endpoint:**
+   - Otomatis masuk sebagai *Global Control Center Operator* (`COMPOUND`): tampilkan **Live 5-Enterprise Closed-Loop Strip**, grafik **Sankey & Decision Shift** *above-the-fold*, klik **`✅ Approve & Commit`** pada *HITL Quick Bar*, verifikasi rantai **SHA-256 (`VERIFIED ✅`)** di tab *Trace, Lineage & Audit*, serta tunjukkan `http://127.0.0.1:8000/docs` (**20 endpoint**) & `pytest tests/test_ecosystem.py -v` (**13/13 PASSED**).
 
 ---
 

@@ -34,7 +34,7 @@ from src.agents.orchestrator import AgriChainOrchestrator
 from src.protocols.fipa_epcis import now_wib_iso
 
 st.set_page_config(
-    page_title="AgriChain Agentic AI v2.0 — Multi-Enterprise Cockpit",
+    page_title="AgriChain Agentic AI v2.1 — Demo-Ready Multi-Enterprise Cockpit",
     page_icon="🍅",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -66,8 +66,8 @@ st.markdown(
         color: #334155 !important;
     }
     .block-container {
-        padding-top: 2.8rem;
-        padding-bottom: 2.2rem;
+        padding-top: 2.0rem;
+        padding-bottom: 1.8rem;
     }
     h1, h2, h3, h4, h5, p, li, label, .stMarkdown {
         color: #0F172A !important;
@@ -205,6 +205,43 @@ st.markdown(
     .msg-card { background:#FFFFFF; border:1px solid #CBD5E1; border-left:4px solid #2B6CB0; color:#0F172A !important; border-radius:6px; padding:0.55rem 0.9rem; margin-bottom:0.4rem; }
     .msg-card * { color:#0F172A !important; }
     .empty-card { background:#FFFFFF; border:1px dashed #64748B; border-radius:8px; padding:1.4rem; text-align:center; color:#334155 !important; margin:0.6rem 0; }
+    /* Demo Storyboard & Live Closed-Loop 5-Enterprise Strip */
+    .demo-guide-box {
+        background: #F0F9FF;
+        border: 1px solid #7DD3FC;
+        border-left: 5px solid #0284C7;
+        color: #0C4A6E !important;
+        padding: 0.6rem 0.95rem;
+        border-radius: 7px;
+        margin-bottom: 0.65rem;
+        font-size: 0.88rem;
+        line-height: 1.42;
+    }
+    .demo-guide-box * { color: #0C4A6E !important; }
+    .loop-strip {
+        display: flex;
+        align-items: stretch;
+        justify-content: space-between;
+        gap: 0.35rem;
+        margin-bottom: 0.7rem;
+        flex-wrap: nowrap;
+    }
+    .loop-node {
+        flex: 1;
+        border-radius: 8px;
+        padding: 0.5rem 0.65rem;
+        border: 1px solid #CBD5E1;
+        background: #FFFFFF;
+        min-width: 0;
+    }
+    .loop-ok { background: #F0FDF4; border-color: #86EFAC; border-top: 4px solid #15803D; }
+    .loop-warn { background: #FFFBEB; border-color: #FCD34D; border-top: 4px solid #D97706; }
+    .loop-danger { background: #FEF2F2; border-color: #FCA5A5; border-top: 4px solid #DC2626; }
+    .loop-title { font-size: 0.80rem; font-weight: 700; color: #0F172A !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .loop-sub { font-size: 0.74rem; color: #334155 !important; margin-top: 0.15rem; line-height: 1.25; }
+    .loop-arrow { display: flex; align-items: center; color: #1F4E79 !important; font-weight: 800; font-size: 1.05rem; padding: 0 0.05rem; }
+    .rbac-pill-red { background:#FEE2E2; color:#991B1B !important; border:1px solid #FCA5A5; padding:0.2rem 0.55rem; border-radius:6px; font-weight:700; font-size:0.8rem; display:inline-block; margin-bottom:0.4rem; }
+    .rbac-pill-green { background:#DCFCE7; color:#166534 !important; border:1px solid #86EFAC; padding:0.2rem 0.55rem; border-radius:6px; font-weight:700; font-size:0.8rem; display:inline-block; margin-bottom:0.4rem; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -263,6 +300,167 @@ SCENARIO_LABELS = {
     "COMPOUND": "COMPOUND — Cold Storage Failure + Demand Surge Simultan",
     "DEADLOCK": "DEADLOCK — Tawaran Pembeli < Floor Price (3 Ronde → HITL)",
 }
+
+# ---------------------------------------------------------------------------
+# Guided 1-Click Presentation Storyboard (Aligned to 4-Member Group Roles)
+# ---------------------------------------------------------------------------
+DEMO_PRESETS: List[Dict[str, Any]] = [
+    {
+        "id": "al_koperasi",
+        "btn": "1️⃣ Al · Koperasi",
+        "presenter": "M. Al lail Qadrillah — Koperasi Tani (AGT-02)",
+        "role": "Cooperative Manager — Koperasi Tani (AGT-02)",
+        "scenario": "NORMAL",
+        "tip": "Tunjukkan LightGBM Price Forecast + Contract Net Auction, lalu klik tab <b>Koperasi Local DB Explorer</b> untuk bukti side-by-side <code>floor_price_rp</code> (Global 🔒 REDACTED vs Koperasi 🔓 UNLOCKED).",
+    },
+    {
+        "id": "monanta_agrofarm",
+        "btn": "2️⃣ Monanta · AgroFarm",
+        "presenter": "Monanta Alfiareza — AgroFarm (AGT-01)",
+        "role": "Farm Manager — AgroFarm (AGT-01)",
+        "scenario": "EXTREME_RAIN",
+        "tip": "Tunjukkan tabel <b>Deviasi NDVI 14-Hari ± 2σ</b> (BLK-11 hujan 96 mm → panen maju <code>-2 hari</code>), Simulator RF + 80% PI yang otomatis tersinkron, serta sinyal masuk <b>Flash-Promo SuperMart (+300 kg)</b>.",
+    },
+    {
+        "id": "dimas_coldchain",
+        "btn": "3️⃣ Dimas · ColdChain",
+        "presenter": "Dimas Prabowo — ColdChain Logistics (AGT-04)",
+        "role": "Fleet & Cold Chain Manager — ColdChain (AGT-04)",
+        "scenario": "COLD_STORAGE_FAILURE",
+        "tip": "Tunjukkan <b>Peta Geospasial OR-Tools VRPTW</b> (otomatis sinkron skenario <code>COLD_STORAGE_DROP</code> & <i>dock window</i> FreshFood/SuperMart, 0 pelanggaran TW), tab CRUD Armada/Shipments, serta <b>XGBoost ETA</b> & SOP <code>7–12°C</code>.",
+    },
+    {
+        "id": "frans_freshfood",
+        "btn": "4️⃣ Frans · FreshFood",
+        "presenter": "Frans Alwan Purba — FreshFood Processing (AGT-03)",
+        "role": "Quality Control & Production Manager — FreshFood (AGT-03)",
+        "scenario": "FOOD_SAFETY_FAIL",
+        "tip": "Tunjukkan <b>Galeri CNN RGB 4-Kelas</b> berdampingan dengan <b>Simulator Hard-Block</b> (klik Inspeksi QC untuk lihat <code>0 kg</code> blokir mutlak), tab <b>FEFO & Dock Window</b>, serta <b>QC Feedback → AgroFarm & Valorisasi Kompos/Biogas</b>.",
+    },
+    {
+        "id": "frans_supermart",
+        "btn": "5️⃣ Frans · SuperMart",
+        "presenter": "Frans Alwan Purba — SuperMart (AGT-05)",
+        "role": "Purchasing Manager — SuperMart (AGT-05)",
+        "scenario": "DEMAND_SURGE",
+        "tip": "Tunjukkan <b>Proyeksi 7-Hari XGBoost (H+1..H+7)</b> yang dikirim ke hulu, tab <b>PO CRUD</b> (guardrail Grade C ditolak, substitusi Grade B ≤ 30% & <code>ceiling_price</code> terbuka lokal), serta tab <b>Goods Receipt SLA 7–12°C</b>.",
+    },
+    {
+        "id": "frans_global",
+        "btn": "6️⃣ Frans · Global HITL",
+        "presenter": "Frans Alwan Purba — Global Control Center (AGT-06)",
+        "role": "Global Control Center Operator (AGT-06)",
+        "scenario": "COMPOUND",
+        "tip": "Tunjukkan <b>Live Closed-Loop 5-Enterprise Strip</b>, grafik <b>Sankey & Decision Shift</b>, klik <b>Approve & Commit via API</b> pada HITL Bar, lalu buka tab <b>Trace, Lineage & Audit</b> untuk membuktikan rantai <b>SHA-256 VERIFIED</b>.",
+    },
+]
+
+
+def apply_demo_preset(preset: Dict[str, Any]) -> None:
+    """Callback executed BEFORE widget instantiation to switch role & scenario cleanly."""
+    st.session_state["sel_role"] = preset["role"]
+    st.session_state["sel_scenario"] = preset["scenario"]
+    st.session_state["active_demo_id"] = preset["id"]
+    st.session_state["sim_stale_ui"] = False
+    st.session_state["use_sliders"] = False
+
+
+def reset_demo_state() -> None:
+    """Reset cockpit cleanly to default Global Operator demo starting point."""
+    st.session_state["sel_role"] = list(ROLE_PROFILES.keys())[0]
+    st.session_state["sel_scenario"] = "COLD_STORAGE_FAILURE"
+    st.session_state["active_demo_id"] = None
+    st.session_state["sim_stale_ui"] = False
+    st.session_state["use_sliders"] = False
+    st.session_state["adaptive_toggle"] = True
+    st.session_state["routing_choice"] = "Heterogeneous (6 LLM)"
+    st.session_state["solver_choice"] = "Neuro-Symbolic MILP-FEFO"
+    st.session_state.pop("last_sig", None)
+
+
+def render_closed_loop_strip(state: Dict[str, Any]) -> None:
+    """Render a 1-glance horizontal 5-enterprise closed-loop handshake strip."""
+    trig = state.get("trigger_mode", "NORMAL")
+    kpis = state.get("global_kpis", {})
+    af_mon = state.get("agrofarm_monitoring", [])
+    af_alert = any(b.get("status") != "NORMAL" for b in af_mon)
+    af_cls = "loop-danger" if trig == "EXTREME_RAIN" else ("loop-warn" if trig == "SENSOR_OUTAGE" or af_alert else "loop-ok")
+    af_txt = (
+        "BLK-11 Hujan 96mm (-2h)" if trig == "EXTREME_RAIN"
+        else ("BLK-11 Stale Fallback" if trig == "SENSOR_OUTAGE"
+              else f"Supply {state.get('total_supply_kg', 4500):,.0f} kg · 2σ OK")
+    )
+
+    rounds = kpis.get("negotiation_rounds_used", 0)
+    kp_cls = "loop-danger" if trig == "DEADLOCK" else ("loop-warn" if rounds > 0 else "loop-ok")
+    kp_txt = "DEADLOCK 3/3 → HITL" if trig == "DEADLOCK" else (f"Contract Net R{rounds}/3" if rounds > 0 else "Harga Stabil · Floor 🔒")
+
+    ff_ot = bool(kpis.get("overtime_activated"))
+    ff_ctx = state.get("freshfood_qc_feedback", {})
+    dock = ff_ctx.get("receiving_dock_window", {"open_time": "08:15", "close_time": "11:40"})
+    ff_cls = "loop-danger" if trig == "FOOD_SAFETY_FAIL" else ("loop-warn" if ff_ot else "loop-ok")
+    ff_txt = (
+        "Hard-Block H003 (0 kg) + Compost" if trig == "FOOD_SAFETY_FAIL"
+        else (f"Overtime +500kg · Dock {dock.get('open_time')}–{dock.get('close_time')}" if ff_ot
+              else f"Reguler · Dock {dock.get('open_time')}–{dock.get('close_time')}")
+    )
+
+    drop_pct = state.get("capacity_drop_pct", 0)
+    vr_km = state.get("vrptw_plan", {}).get("optimized_distance_km", 263)
+    cc_cls = "loop-danger" if drop_pct >= 40 else ("loop-warn" if drop_pct > 0 else "loop-ok")
+    cc_txt = f"Cap {state.get('cold_storage_cap_kg', 3000):,.0f}kg (-{drop_pct:.0f}%) · VRPTW {vr_km:.0f}km" if drop_pct > 0 else f"SOP 7–12°C · VRPTW {vr_km:.0f}km"
+
+    sm_h7 = state.get("supermart_horizon_7d", {})
+    fp_on = sm_h7.get("flash_promo_absorption", {}).get("enabled", False)
+    sla_list = state.get("goods_receipt_sla", [])
+    sla_ok = all(x.get("sla_status") == "ACCEPTED_ON_TIME" for x in sla_list) if sla_list else True
+    sm_cls = "loop-warn" if trig in ("DEMAND_SURGE", "COMPOUND") or fp_on else ("loop-ok" if sla_ok else "loop-danger")
+    sm_txt = (
+        "Flash-Promo +300kg · 7d Sync" if fp_on
+        else (f"Surge {state.get('supermart_demand_kg', 2000):,.0f}kg · Sub B ≤30%" if trig in ("DEMAND_SURGE", "COMPOUND")
+              else f"Demand {state.get('supermart_demand_kg', 2000):,.0f}kg · SLA OK")
+    )
+
+    st.markdown(
+        f"""
+        <div class="loop-strip">
+            <div class="loop-node {af_cls}"><div class="loop-title">🌱 AgroFarm (AGT-01)</div><div class="loop-sub">{af_txt}</div></div>
+            <div class="loop-arrow">→</div>
+            <div class="loop-node {kp_cls}"><div class="loop-title">🤝 Koperasi (AGT-02)</div><div class="loop-sub">{kp_txt}</div></div>
+            <div class="loop-arrow">→</div>
+            <div class="loop-node {ff_cls}"><div class="loop-title">🏭 FreshFood (AGT-03)</div><div class="loop-sub">{ff_txt}</div></div>
+            <div class="loop-arrow">→</div>
+            <div class="loop-node {cc_cls}"><div class="loop-title">❄️ ColdChain (AGT-04)</div><div class="loop-sub">{cc_txt}</div></div>
+            <div class="loop-arrow">→</div>
+            <div class="loop-node {sm_cls}"><div class="loop-title">🛒 SuperMart (AGT-05)</div><div class="loop-sub">{sm_txt}</div></div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_demo_storyboard() -> None:
+    """Render 1-click presenter storyboard buttons + active talking points."""
+    active_id = st.session_state.get("active_demo_id")
+    cols = st.columns(len(DEMO_PRESETS))
+    for col, preset in zip(cols, DEMO_PRESETS):
+        is_active = active_id == preset["id"]
+        col.button(
+            preset["btn"],
+            key=f"demo_btn_{preset['id']}",
+            type="primary" if is_active else "secondary",
+            use_container_width=True,
+            on_click=apply_demo_preset,
+            args=(preset,),
+        )
+    if active_id:
+        cur = next((p for p in DEMO_PRESETS if p["id"] == active_id), None)
+        if cur:
+            st.markdown(
+                f"<div class='demo-guide-box'><b>🎬 Presenter Aktif — {cur['presenter']}</b> "
+                f"(Skenario: <code>{cur['scenario']}</code>): {cur['tip']}</div>",
+                unsafe_allow_html=True,
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -396,8 +594,8 @@ def build_sankey(allocations: List[Dict[str, Any]], unallocated: Dict[str, float
         paper_bgcolor="#FFFFFF",
         plot_bgcolor="#FFFFFF",
         font=dict(color="#0F172A", size=12),
-        height=350,
-        margin=dict(l=10, r=10, t=38, b=10),
+        height=315,
+        margin=dict(l=10, r=10, t=34, b=8),
     )
     return fig
 
@@ -426,9 +624,9 @@ def build_decision_shift_chart(baseline_state: Dict[str, Any], active_state: Dic
         barmode="group",
         yaxis_title="Volume (kg)",
         yaxis=dict(range=[0, max(max(s_base.values()), max(s_act.values()), 100) * 1.18], gridcolor="#E2E8F0"),
-        height=355,
+        height=320,
         legend=dict(orientation="h", yanchor="top", y=-0.22, xanchor="center", x=0.5, font=dict(color="#0F172A")),
-        margin=dict(l=10, r=10, t=44, b=55),
+        margin=dict(l=10, r=10, t=40, b=48),
     )
     return fig
 
@@ -516,6 +714,39 @@ def render_server_data_explorer(api: ApiBridge, api_online: bool, role_info: Dic
     if redacted:
         st.warning(f"🔒 **Server-Side Data Sovereignty Aktif:** Kolom `{', '.join(redacted)}` otomatis dihapus oleh FastAPI sebelum dikirim ke UI karena token `{selected_role}` bukan pemilik DB `{ent_key}`.")
 
+    # Instant Side-by-Side Live RBAC Proof for tables with private attributes
+    owner_token_map = {
+        "koperasi": ("tok_koperasi_local_v1", "Cooperative Manager — Koperasi (Pemilik DB)"),
+        "agrofarm": ("tok_agrofarm_local_v1", "Farm Manager — AgroFarm (Pemilik DB)"),
+    }
+    has_private_tbl = (ent_key, tbl_name) in (("koperasi", "market_price_negotiations"), ("agrofarm", "private_costs"))
+    if api_online and has_private_tbl:
+        show_sbs = st.toggle(
+            "⚔️ Mode Bukti Langsung (1-Layar): Bandingkan Token Global vs Token Pemilik DB",
+            value=True,
+            key=f"sbs_rbac_{default_ent}_{ent_key}_{tbl_name}",
+        )
+        if show_sbs:
+            ok_g, d_glob = api.get(f"/api/v1/data-explorer/{ent_key}/{tbl_name}", "tok_orchestrator_global_scope_v1", params={"search": search_q, "limit": 6})
+            own_tok, own_lbl = owner_token_map[ent_key]
+            ok_o, d_own = api.get(f"/api/v1/data-explorer/{ent_key}/{tbl_name}", own_tok, params={"search": search_q, "limit": 6})
+            if ok_g and ok_o:
+                df_g, df_o = pd.DataFrame(d_glob["records"]), pd.DataFrame(d_own["records"])
+                priv_cols = d_glob["redacted_columns"]
+                show_cols = [c for c in (list(df_g.columns[:3]) + priv_cols) if c in df_g.columns]
+                show_cols = list(dict.fromkeys(show_cols))
+                for pc in priv_cols:
+                    if pc in df_g.columns:
+                        df_g[pc] = "🔒 REDACTED (Server)"
+                c_left, c_right = st.columns(2)
+                with c_left:
+                    st.markdown("<span class='rbac-pill-red'>🔒 Token Global (AGT-06) — Atribut Privat Ter-redaksi</span>", unsafe_allow_html=True)
+                    st.dataframe(df_g[show_cols], use_container_width=True, hide_index=True)
+                with c_right:
+                    st.markdown(f"<span class='rbac-pill-green'>🔓 {own_lbl} — Akses Lokal Terbuka</span>", unsafe_allow_html=True)
+                    st.dataframe(df_o[show_cols], use_container_width=True, hide_index=True)
+                st.divider()
+
     if df.empty:
         st.markdown("<div class='empty-card'><b>Tidak ada data yang cocok dengan pencarian Anda.</b><br/>Kosongkan kotak pencarian atau pilih tabel enterprise lain.</div>", unsafe_allow_html=True)
     else:
@@ -564,14 +795,17 @@ def render_agrofarm_workspace(api: ApiBridge, api_online: bool, state: Dict[str,
     c_sim, c_fi = st.columns([1.15, 1.0])
     with c_sim:
         st.markdown("#### 🎛️ Simulator Prediksi RF + 80% PI + Jendela Panen (Via FastAPI)")
+        trig_key = state["trigger_mode"]
+        is_rain_trig = trig_key == "EXTREME_RAIN"
+        is_outage_trig = trig_key == "SENSOR_OUTAGE"
         sc1, sc2 = st.columns(2)
-        s_area = sc1.slider("Luas Blok (ha)", 0.4, 2.0, 0.70, 0.05)
-        s_ndvi = sc2.slider("Indeks NDVI", 0.30, 0.88, 0.64, 0.01)
-        s_rain = sc1.slider("Curah Hujan (mm)", 0.0, 120.0, 24.0, 2.0)
-        s_age = sc2.slider("Umur Tanaman (hari)", 65, 90, 78, 1)
+        s_area = sc1.slider("Luas Blok (ha)", 0.4, 2.0, 0.70, 0.05, key=f"af_area_{trig_key}")
+        s_ndvi = sc2.slider("Indeks NDVI", 0.30, 0.88, 0.41 if is_rain_trig else 0.64, 0.01, key=f"af_ndvi_{trig_key}")
+        s_rain = sc1.slider("Curah Hujan (mm)", 0.0, 120.0, 96.0 if is_rain_trig else 24.0, 2.0, key=f"af_rain_{trig_key}")
+        s_age = sc2.slider("Umur Tanaman (hari)", 65, 90, 78, 1, key=f"af_age_{trig_key}")
         c_chk1, c_chk2 = st.columns(2)
-        sim_rain = c_chk1.checkbox("Simulasi Hujan Ekstrem (>90 mm)", value=(state["trigger_mode"] == "EXTREME_RAIN"))
-        sim_off = c_chk2.checkbox("Simulasi Sensor Mati 3 Hari (Fallback)", value=(state["trigger_mode"] == "SENSOR_OUTAGE"))
+        sim_rain = c_chk1.checkbox("Simulasi Hujan Ekstrem (>90 mm)", value=is_rain_trig, key=f"af_simrain_{trig_key}")
+        sim_off = c_chk2.checkbox("Simulasi Sensor Mati 3 Hari (Fallback)", value=is_outage_trig, key=f"af_simoff_{trig_key}")
 
         payload = {
             "block_id": "BLK-11",
@@ -656,9 +890,12 @@ def render_coldchain_workspace(api: ApiBridge, api_online: bool, state: Dict[str
     ])
 
     with cc_tabs[0]:
+        vrptw_opts = ["NORMAL", "ROAD_DISRUPTION", "VEHICLE_BREAKDOWN", "COLD_STORAGE_DROP"]
+        trig_map = {"COLD_STORAGE_FAILURE": 3, "COMPOUND": 3, "EXTREME_RAIN": 1}
+        default_vr_idx = trig_map.get(state["trigger_mode"], 0)
         vc1, vc2, vc3 = st.columns([1.6, 1.0, 1.0])
-        vrptw_scen = vc1.selectbox("Skenario Optimasi OR-Tools VRPTW", ["NORMAL", "ROAD_DISRUPTION", "VEHICLE_BREAKDOWN", "COLD_STORAGE_DROP"])
-        vrptw_traf = vc2.selectbox("Tingkat Kemacetan", [(0, "Low"), (1, "Medium"), (2, "High")], index=1, format_func=lambda x: x[1])[0]
+        vrptw_scen = vc1.selectbox("Skenario Optimasi OR-Tools VRPTW (Auto-Sync)", vrptw_opts, index=default_vr_idx, key=f"vrptw_scen_{state['trigger_mode']}")
+        vrptw_traf = vc2.selectbox("Tingkat Kemacetan", [(0, "Low"), (1, "Medium"), (2, "High")], index=1, format_func=lambda x: x[1], key=f"vrptw_traf_{state['trigger_mode']}")[0]
         run_vrptw = vc3.button("⚡ Jalankan VRPTW + Compare", type="primary", use_container_width=True)
 
         if api_online:
@@ -676,7 +913,7 @@ def render_coldchain_workspace(api: ApiBridge, api_online: bool, state: Dict[str
         with m_col:
             st.plotly_chart(build_geospatial_vrptw_map(active_plan), use_container_width=True)
         with t_col:
-            st.markdown("#### 📋 Perbandingan Skenario & Jadwal Armada VRPTW")
+            st.markdown("#### 📋 Ringkasan & Jadwal VRPTW")
             comp_df = pd.DataFrame([
                 {"Metrik": "Total Jarak (km)", "Normal Baseline": norm_plan["optimized_distance_km"], f"Skenario {vrptw_scen}": active_plan["optimized_distance_km"]},
                 {"Metrik": "Biaya Transport (Rp)", "Normal Baseline": norm_plan["transport_cost_rp"], f"Skenario {vrptw_scen}": active_plan["transport_cost_rp"]},
@@ -807,42 +1044,49 @@ def render_freshfood_module(api: ApiBridge, api_online: bool, state: Dict[str, A
     ])
 
     with ff_tabs[0]:
-        samples = load_tomato_rgb_sample(n_per_class=2)
-        if samples:
-            orch = load_local_orchestrator()
-            preds = orch.freshfood.model.classify_images(np.stack([s["image"] for s in samples]))
-            cols = st.columns(4)
-            for i, (s, pr) in enumerate(zip(samples, preds)):
-                up = Image.fromarray(s["image"].astype(np.uint8)).resize((120, 120), Image.Resampling.NEAREST)
-                tag = "🔴 REJECT" if pr["predicted_grade"] == "Reject" else f"🟢 Grade {pr['predicted_grade']}"
-                cols[i % 4].image(up, caption=f"#{s['index']} True:{s['true_grade']} → {tag} ({pr['confidence']*100:.1f}%)")
+        col_cnn, col_lab = st.columns([1.05, 1.25])
+        with col_cnn:
+            st.markdown("#### 🍅 Sampel Visual CNN RGB (4 Kelas Mutu)")
+            samples = load_tomato_rgb_sample(n_per_class=1)
+            if samples:
+                orch = load_local_orchestrator()
+                preds = orch.freshfood.model.classify_images(np.stack([s["image"] for s in samples]))
+                r1_c1, r1_c2 = st.columns(2)
+                r2_c1, r2_c2 = st.columns(2)
+                grid_slots = [r1_c1, r1_c2, r2_c1, r2_c2]
+                for slot, s, pr in zip(grid_slots, samples, preds):
+                    up = Image.fromarray(s["image"].astype(np.uint8)).resize((104, 104), Image.Resampling.NEAREST)
+                    tag = "🔴 REJECT" if pr["predicted_grade"] == "Reject" else f"🟢 Grade {pr['predicted_grade']}"
+                    slot.image(up, caption=f"True:{s['true_grade']} → {tag} ({pr['confidence']*100:.1f}%)")
 
-        st.divider()
-        st.markdown("#### 🧪 Simulator Uji Lab Food Safety Hard-Block (`POST /api/v1/freshfood/qc-inspect`)")
-        with st.form("ff_qc_form"):
-            q1, q2, q3, q4 = st.columns(4)
-            qc_lot = q1.text_input("Lot ID", value="H003")
-            qc_blk = q2.text_input("Block ID", value="BLK-11")
-            qc_ph = q3.number_input("pH (Aman 4.0–4.6)", 3.0, 6.0, 4.35, 0.05)
-            qc_pest = q4.number_input("Pestisida ppm (≤ 0.05)", 0.0, 0.20, 0.02, 0.01)
-            q5, q6, q7 = st.columns(3)
-            qc_def = q5.slider("Rasio Cacat Permukaan", 0.0, 0.40, 0.14, 0.02)
-            qc_mic = q6.checkbox("Lolos Uji Mikroba?", value=True)
-            qc_qty = q7.number_input("Volume Lot (kg)", 100.0, 3000.0, 1000.0, 100.0)
-            if st.form_submit_button("🔬 Jalankan Inspeksi QC & Audit via API"):
-                payload = {"lot_id": qc_lot, "block_id": qc_blk, "qty_kg": qc_qty, "ph_level": qc_ph, "pesticide_residue_ppm": qc_pest, "microbial_pass": qc_mic, "defect_ratio": qc_def}
-                if api_online:
-                    ok_q, res_q = api.post("/api/v1/freshfood/qc-inspect", payload, role_info["token"])
-                    if ok_q:
-                        v = res_q["safety_verdict"]
-                        if v["food_safety_approved"]:
-                            st.success(f"✅ Lot `{qc_lot}` LOLOS Food Safety! Audit Hash: `{res_q['audit_hash'][:14]}...`")
+        with col_lab:
+            st.markdown("#### 🧪 Simulator Uji Lab Food Safety Hard-Block (`POST /api/v1/freshfood/qc-inspect`)")
+            is_fs_fail = state["trigger_mode"] == "FOOD_SAFETY_FAIL"
+            with st.form(f"ff_qc_form_{state['trigger_mode']}"):
+                q1, q2 = st.columns(2)
+                qc_lot = q1.text_input("Lot ID", value="H003")
+                qc_blk = q2.text_input("Block ID", value="BLK-11")
+                q3, q4 = st.columns(2)
+                qc_ph = q3.number_input("pH (Aman 4.0–4.6)", 3.0, 6.0, 4.85 if is_fs_fail else 4.35, 0.05)
+                qc_pest = q4.number_input("Pestisida ppm (≤ 0.05)", 0.0, 0.20, 0.08 if is_fs_fail else 0.02, 0.01)
+                q5, q6 = st.columns(2)
+                qc_def = q5.slider("Rasio Cacat Permukaan", 0.0, 0.40, 0.24 if is_fs_fail else 0.14, 0.02)
+                qc_qty = q6.number_input("Volume Lot (kg)", 100.0, 3000.0, 1000.0, 100.0)
+                qc_mic = st.checkbox("Lolos Uji Mikroba?", value=not is_fs_fail)
+                if st.form_submit_button("🔬 Jalankan Inspeksi QC & Audit via API"):
+                    payload = {"lot_id": qc_lot, "block_id": qc_blk, "qty_kg": qc_qty, "ph_level": qc_ph, "pesticide_residue_ppm": qc_pest, "microbial_pass": qc_mic, "defect_ratio": qc_def}
+                    if api_online:
+                        ok_q, res_q = api.post("/api/v1/freshfood/qc-inspect", payload, role_info["token"])
+                        if ok_q:
+                            v = res_q["safety_verdict"]
+                            if v["food_safety_approved"]:
+                                st.success(f"✅ Lot `{qc_lot}` LOLOS Food Safety! Audit Hash: `{res_q['audit_hash'][:14]}...`")
+                            else:
+                                st.error(f"⛔ HARD-BLOCK AKTIF (`0 kg` ke pangan): `{', '.join(v['violation_reasons'])}` | Valorisasi: `{res_q['waste_valorization_plan']['disposal_channel']}`")
+                            if res_q.get("qc_feedback_to_agrofarm"):
+                                st.warning(f"🔁 **Feedback dikirim ke AgroFarm `{qc_blk}`:** {res_q['qc_feedback_to_agrofarm']['recommendation']}")
                         else:
-                            st.error(f"⛔ HARD-BLOCK AKTIF (`0 kg` ke pangan): `{', '.join(v['violation_reasons'])}` | Valorisasi: `{res_q['waste_valorization_plan']['disposal_channel']}`")
-                        if res_q.get("qc_feedback_to_agrofarm"):
-                            st.warning(f"🔁 **Feedback dikirim ke AgroFarm `{qc_blk}`:** {res_q['qc_feedback_to_agrofarm']['recommendation']}")
-                    else:
-                        st.error(f"API Error: {res_q}")
+                            st.error(f"API Error: {res_q}")
 
     with ff_tabs[1]:
         inc_ot = st.checkbox("Aktifkan Shift Lembur (+500 kg & perpanjang dock hingga 14:00 WIB)", value=bool(state["global_kpis"].get("overtime_activated")), key="ff_ot_sim")
@@ -1066,38 +1310,56 @@ def main() -> None:
     api_online, health_info = api.check_health()
     ml_metrics = load_ml_metrics()
 
-    # ---------------------- SIDEBAR ----------------------
+    # Initialize session_state keys cleanly so 1-click Demo Presets & Reset never clash
+    st.session_state.setdefault("sel_role", list(ROLE_PROFILES.keys())[0])
+    st.session_state.setdefault("sel_scenario", "COLD_STORAGE_FAILURE")
+    st.session_state.setdefault("demo_mode", True)
+    st.session_state.setdefault("sim_stale_ui", False)
+    st.session_state.setdefault("use_sliders", False)
+    st.session_state.setdefault("adaptive_toggle", True)
+    st.session_state.setdefault("routing_choice", "Heterogeneous (6 LLM)")
+    st.session_state.setdefault("solver_choice", "Neuro-Symbolic MILP-FEFO")
+
+    # ---------------------- COMPACT DEMO-READY SIDEBAR ----------------------
     with st.sidebar:
-        st.markdown("### 🔐 Login & Role-Adaptive RBAC")
-        selected_role = st.selectbox("Masuk Sebagai Peran", list(ROLE_PROFILES.keys()), index=0)
+        st.markdown("### 🎬 Kontrol Demo & Peran")
+        demo_mode = st.toggle("Mode Presentasi (1-Klik Storyboard)", key="demo_mode")
+        selected_role = st.selectbox("Masuk Sebagai Peran", list(ROLE_PROFILES.keys()), key="sel_role")
         role_info = ROLE_PROFILES[selected_role]
-        st.caption(f"👤 `{role_info['user']}`  \n🔑 `{role_info['token']}`")
+
+        scenario = st.selectbox(
+            "Skenario Lingkungan",
+            list(SCENARIO_LABELS.keys()),
+            format_func=lambda k: SCENARIO_LABELS[k],
+            key="sel_scenario",
+        )
+
+        sb1, sb2 = st.columns([1.65, 1.0])
+        run_btn = sb1.button("🚀 Jalankan Siklus", type="primary", use_container_width=True)
+        sb2.button("🔄 Reset", use_container_width=True, on_click=reset_demo_state)
+
         if api_online:
-            st.success("🟢 FastAPI Gateway Connected (Server-Side Firewall)")
+            st.success("🟢 FastAPI Live · Server-Side RBAC")
         else:
-            st.warning("🟡 FastAPI Offline — Mode Fallback Lokal")
+            st.warning("🟡 FastAPI Offline · Fallback Lokal")
 
-        st.divider()
-        st.markdown("### ⚡ Chaos & Environment Injector")
-        scenario = st.selectbox("Skenario Lingkungan", list(SCENARIO_LABELS.keys()), index=1, format_func=lambda k: SCENARIO_LABELS[k])
-        sim_stale_ui = st.checkbox("Simulasikan Stale Data Warning (>15 mnt)", value=False)
-        use_sliders = st.checkbox("Override Kapasitas / Demand Manual", value=False)
-        cold_ovr = float(st.slider("Cold Storage Efektif (kg)", 0, 3000, 1000, 100)) if use_sliders else None
-        dem_ovr = float(st.slider("Demand SuperMart (kg)", 1500, 3500, 2000, 100)) if use_sliders else None
-
-        st.markdown("### 🧠 Agentic & Ablasi")
-        adaptive = st.toggle("Adaptive Replanning & Contract Net", value=True)
-        routing_choice = st.radio("LLM Routing", ["Heterogeneous (6 LLM)", "Homogeneous (6× GPT-4o)"], index=0)
-        solver_choice = st.radio("Mesin Alokasi", ["Neuro-Symbolic MILP-FEFO", "Pure LLM Heuristic"], index=0)
-        run_btn = st.button("🚀 Jalankan Siklus Orkestrator", type="primary", use_container_width=True)
+        with st.expander("⚙️ Opsi Ablasi, Override & Token", expanded=False):
+            adaptive = st.toggle("Adaptive Replanning & Contract Net", key="adaptive_toggle")
+            routing_choice = st.radio("LLM Routing", ["Heterogeneous (6 LLM)", "Homogeneous (6× GPT-4o)"], key="routing_choice")
+            solver_choice = st.radio("Mesin Alokasi", ["Neuro-Symbolic MILP-FEFO", "Pure LLM Heuristic"], key="solver_choice")
+            sim_stale_ui = st.checkbox("Simulasikan Stale Data (>15 mnt)", key="sim_stale_ui")
+            use_sliders = st.checkbox("Override Kapasitas / Demand Manual", key="use_sliders")
+            cold_ovr = float(st.slider("Cold Storage Efektif (kg)", 0, 3000, 1000, 100)) if use_sliders else None
+            dem_ovr = float(st.slider("Demand SuperMart (kg)", 1500, 3500, 2000, 100)) if use_sliders else None
+            st.caption(f"👤 `{role_info['user']}`  \n🔑 `{role_info['token']}`")
 
     homo_flag = "Homogeneous" in routing_choice
     use_milp_flag = "MILP" in solver_choice
     sig = (scenario, adaptive, homo_flag, use_milp_flag, cold_ovr, dem_ovr, api_online)
 
-    # Execute active cycle + paired static baseline via FastAPI (Loading UI State)
+    # Execute active cycle + paired static baseline via FastAPI (clean spinner + toast, no residual top box)
     if "last_state" not in st.session_state or run_btn or st.session_state.get("last_sig") != sig:
-        with st.status("Menjalankan LangGraph Orchestrator + 6 Agen Heterogen...", expanded=False) as status_box:
+        with st.spinner("Menjalankan LangGraph Orchestrator + 6 Agen Heterogen..."):
             req_active = {
                 "trigger_mode": scenario,
                 "adaptive_replanning": adaptive,
@@ -1122,7 +1384,7 @@ def main() -> None:
             st.session_state["baseline_state"] = st_base
             st.session_state["last_sig"] = sig
             st.session_state["last_sync"] = now_wib_iso()
-            status_box.update(label=f"Siklus {st_act['cycle_id']} selesai!", state="complete")
+            st.toast(f"Siklus {st_act['cycle_id']} ({scenario}) selesai!", icon="🍅")
 
     state = st.session_state["last_state"]
     base_state = st.session_state["baseline_state"]
@@ -1134,10 +1396,10 @@ def main() -> None:
         f"""
         <div class="role-banner">
             <div>
-                <div style="font-size:1.22rem; font-weight:700;">🍅 AgriChain Agentic AI v2.1 — {selected_role}</div>
-                <div style="font-size:0.83rem; opacity:0.92;">{role_info['scope_desc']}</div>
+                <div style="font-size:1.18rem; font-weight:700;">🍅 AgriChain Agentic AI v2.1 — {selected_role}</div>
+                <div style="font-size:0.82rem; opacity:0.92;">{role_info['scope_desc']}</div>
             </div>
-            <div style="display:flex; gap:0.45rem; flex-wrap:wrap;">
+            <div style="display:flex; gap:0.42rem; flex-wrap:wrap;">
                 <span class="role-badge">{conn_pill}</span>
                 <span class="role-badge">Cycle: {state['cycle_id']}</span>
                 <span class="role-badge">Skenario: {scenario}</span>
@@ -1147,6 +1409,13 @@ def main() -> None:
         """,
         unsafe_allow_html=True,
     )
+
+    # 1-Click Guided Demo Presenter Storyboard (toggleable in sidebar)
+    if demo_mode:
+        render_demo_storyboard()
+
+    # Live 5-Enterprise Closed-Loop Handshake Strip
+    render_closed_loop_strip(state)
 
     # Mandatory Stale / Partial Data Warning Banner (Pillar 3)
     if sim_stale_ui or state.get("data_freshness_warning"):
@@ -1259,33 +1528,85 @@ def main() -> None:
         "🧭 Trace, Lineage & Audit",
         "🌱 AgroFarm v2",
         "❄️ ColdChain v2",
-        "🏭 FreshFood, Kop & Retail",
+        "🏭 FreshFood · Kop · Retail",
         "🗄️ Data Explorer & Eval",
     ])
 
     with tabs[0]:
-        # Executive Briefing + HITL Status Banner
+        # Compact Executive Briefing
         st.markdown(f"<div class='brief-box'><b>🧠 Executive Briefing (<code>AGT-06</code> Orchestrator):</b> {state.get('executive_briefing', '')}</div>", unsafe_allow_html=True)
+
+        # 6 Executive KPI Cards (fixed neutral 0.00% delta & untruncated cost label)
+        flr_diff = kpis["food_loss_rate_pct"] - base_kpis["food_loss_rate_pct"]
+        ofr_diff = kpis["order_fulfillment_rate_pct"] - base_kpis["order_fulfillment_rate_pct"]
+        prof_diff = (kpis["net_ecosystem_profit_rp"] - base_kpis["net_ecosystem_profit_rp"]) / 1e6
+        cost_diff = (kpis["total_supply_chain_cost_rp"] - base_kpis["total_supply_chain_cost_rp"]) / 1e6
+        fair_diff = kpis["jains_fairness_index"] - base_kpis["jains_fairness_index"]
+
+        c1, c2, c3, c4, c5, c6 = st.columns(6)
+        c1.metric(
+            "Food Loss Rate",
+            f"{kpis['food_loss_rate_pct']:.2f}%",
+            "0.00% (Aman)" if abs(flr_diff) < 1e-6 else f"{flr_diff:+.2f}% vs Statis",
+            delta_color="off" if abs(flr_diff) < 1e-6 else "inverse",
+        )
+        c2.metric(
+            "Order Fulfillment",
+            f"{kpis['order_fulfillment_rate_pct']:.1f}%",
+            "0.0% vs Statis" if abs(ofr_diff) < 1e-6 else f"{ofr_diff:+.1f}% vs Statis",
+            delta_color="off" if abs(ofr_diff) < 1e-6 else "normal",
+        )
+        c3.metric("Net Profit", f"Rp{kpis['net_ecosystem_profit_rp']/1e6:.2f} Jt", f"{prof_diff:+.2f} Jt", delta_color="off" if abs(prof_diff) < 1e-6 else "normal")
+        c4.metric("Total Cost", f"Rp{kpis['total_supply_chain_cost_rp']/1e6:.2f} Jt", f"{cost_diff:+.2f} Jt", delta_color="off" if abs(cost_diff) < 1e-6 else "inverse")
+        c5.metric("Jain's Fairness", f"{kpis['jains_fairness_index']:.4f}", f"{fair_diff:+.4f}", delta_color="off" if abs(fair_diff) < 1e-6 else "normal")
+        c6.metric("Replan & LLM Cost", f"{kpis['replanning_response_time_sec']:.2f} s", f"USD {kpis['llm_cost_usd']:.3f} | {kpis['constraint_violations']} viol.", delta_color="off")
+
+        # Slim Above-the-Fold HITL Action Bar + Expandable Impact Preview Console
         if state["hitl_status"] == "HUMAN_APPROVED":
             st.markdown("<div class='banner-ok'><b>✅ COMMITTED & HUMAN APPROVED:</b> Keputusan Adaptive Replanning telah disetujui operator dan tercatat di SHA-256 Audit Trail.</div>", unsafe_allow_html=True)
         elif state["hitl_status"] == "HUMAN_REJECTED":
             st.markdown("<div class='banner-danger'><b>⛔ REJECTED BY OPERATOR:</b> Rencana ditahan operator untuk negosiasi ulang.</div>", unsafe_allow_html=True)
         elif state["hitl_required"]:
-            st.markdown(f"<div class='banner-warn'><b>⚠️ HITL GOVERNANCE GATE AKTIF (NIST AI RMF 1.0):</b> <code>{', '.join(state['hitl_reasons'])}</code></div>", unsafe_allow_html=True)
+            hb1, hb2, hb3 = st.columns([3.0, 1.15, 0.95])
+            hb1.markdown(f"<div class='banner-warn' style='margin-bottom:0;'><b>⚠️ HITL GATE AKTIF (NIST AI RMF 1.0):</b> <code>{', '.join(state['hitl_reasons'])}</code></div>", unsafe_allow_html=True)
+            if hb2.button("✅ Approve & Commit", type="primary", use_container_width=True, key="hitl_quick_approve"):
+                if api_online:
+                    ok_a, res_a = api.post(
+                        f"/api/v1/orchestrator/hitl/{state['cycle_id']}/approve",
+                        {},
+                        role_info["token"],
+                        params={"operator_name": role_info["user"], "note": "Disetujui setelah meninjau Impact Preview & kepatuhan suhu 7-12C."},
+                    )
+                    if ok_a:
+                        state["hitl_status"] = "HUMAN_APPROVED"
+                        st.toast(f"Approved! Audit Hash: {res_a['audit_hash'][:14]}...", icon="✅")
+                        st.rerun()
+            if hb3.button("⛔ Reject", use_container_width=True, key="hitl_quick_reject"):
+                if api_online:
+                    ok_r, res_r = api.post(
+                        f"/api/v1/orchestrator/hitl/{state['cycle_id']}/reject",
+                        {},
+                        role_info["token"],
+                        params={"operator_name": role_info["user"], "note": "Ditahan operator untuk evaluasi ulang."},
+                    )
+                    if ok_r:
+                        state["hitl_status"] = "HUMAN_REJECTED"
+                        st.toast(f"Rejected! Audit Hash: {res_r['audit_hash'][:14]}...", icon="⛔")
+                        st.rerun()
 
-        # 6 Executive KPI Cards with Measured Delta vs Static Baseline
-        c1, c2, c3, c4, c5, c6 = st.columns(6)
-        c1.metric("Food Loss Rate", f"{kpis['food_loss_rate_pct']:.2f}%", f"{kpis['food_loss_rate_pct']-base_kpis['food_loss_rate_pct']:+.2f}% vs Statis", delta_color="inverse")
-        c2.metric("Order Fulfillment", f"{kpis['order_fulfillment_rate_pct']:.1f}%", f"{kpis['order_fulfillment_rate_pct']-base_kpis['order_fulfillment_rate_pct']:+.1f}% vs Statis")
-        c3.metric("Net Profit", f"Rp{kpis['net_ecosystem_profit_rp']/1e6:.2f} Jt", f"{(kpis['net_ecosystem_profit_rp']-base_kpis['net_ecosystem_profit_rp'])/1e6:+.2f} Jt")
-        c4.metric("Total Cost", f"Rp{kpis['total_supply_chain_cost_rp']/1e6:.2f} Jt", f"{(kpis['total_supply_chain_cost_rp']-base_kpis['total_supply_chain_cost_rp'])/1e6:+.2f} Jt", delta_color="inverse")
-        c5.metric("Jain's Fairness", f"{kpis['jains_fairness_index']:.4f}", f"{kpis['jains_fairness_index']-base_kpis['jains_fairness_index']:+.4f}")
-        c6.metric("Replan & LLM Cost", f"{kpis['replanning_response_time_sec']:.2f} s", f"USD {kpis['llm_cost_usd']:.5f} | {kpis['constraint_violations']} viol.", delta_color="off")
+        # Charts immediately visible above/near the fold!
+        g1, g2 = st.columns([1.12, 1.0])
+        with g1:
+            st.plotly_chart(build_sankey(state["milp_result"]["allocations"], state["milp_result"]["unallocated_kg"]), use_container_width=True)
+        with g2:
+            st.plotly_chart(build_decision_shift_chart(base_state, state), use_container_width=True)
 
-        # Impact-Preview HITL Confirmation Console (Pillar 3)
+        # Detailed Impact-Preview HITL Console (expandable for deep audit & custom operator note)
         if state["hitl_required"]:
-            with st.expander("🛡️ Impact-Preview Confirmation Console (HITL NIST AI RMF 1.0)", expanded=True):
+            with st.expander("🛡️ Detail Impact-Preview Confirmation Console & Catatan Audit Kustom", expanded=False):
+                ot_shift = "Overtime FreshFood (+500 kg) + Dock 08:15–14:00" if kpis.get("overtime_activated") else "Alokasi Reguler MILP-FEFO"
                 imp_df = pd.DataFrame([
+                    {"Indikator Dampak": "Aksi Adaptif Utama", "Statis (Tanpa Replan)": "Alokasi Statis (Tanpa Negosiasi)", "Rencana Adaptive": ot_shift, "Mitra Terdampak": "FreshFood, ColdChain"},
                     {"Indikator Dampak": "Food Loss Rate (%)", "Statis (Tanpa Replan)": f"{base_kpis['food_loss_rate_pct']:.2f}%", "Rencana Adaptive": f"{kpis['food_loss_rate_pct']:.2f}%", "Mitra Terdampak": "AgroFarm, Koperasi"},
                     {"Indikator Dampak": "Order Fulfillment (%)", "Statis (Tanpa Replan)": f"{base_kpis['order_fulfillment_rate_pct']:.1f}%", "Rencana Adaptive": f"{kpis['order_fulfillment_rate_pct']:.1f}%", "Mitra Terdampak": "SuperMart, FreshFood"},
                     {"Indikator Dampak": "Net Ecosystem Profit", "Statis (Tanpa Replan)": f"Rp{base_kpis['net_ecosystem_profit_rp']/1e6:.2f} Jt", "Rencana Adaptive": f"Rp{kpis['net_ecosystem_profit_rp']/1e6:.2f} Jt", "Mitra Terdampak": "Seluruh 5 Enterprise"},
@@ -1296,15 +1617,15 @@ def main() -> None:
                 h1, h2 = st.columns([1.8, 3.0])
                 op_name = h1.text_input("Operator / Approver", value=role_info["user"])
                 op_note = h2.text_input("Catatan Audit Keputusan", value="Disetujui setelah meninjau Impact Preview & kepatuhan suhu 7-12C.")
-                b1, b2, b3 = st.columns([1.1, 1.1, 2.8])
-                if b1.button("✅ Approve & Commit via API", type="primary", use_container_width=True):
+                b1, b2, b3 = st.columns([1.2, 1.1, 2.7])
+                if b1.button("✅ Approve dengan Catatan", type="primary", use_container_width=True, key="hitl_detail_approve"):
                     if api_online:
                         ok_a, res_a = api.post(f"/api/v1/orchestrator/hitl/{state['cycle_id']}/approve", {}, role_info["token"], params={"operator_name": op_name, "note": op_note})
                         if ok_a:
                             state["hitl_status"] = "HUMAN_APPROVED"
                             st.toast(f"Approved! Audit Hash: {res_a['audit_hash'][:14]}...", icon="✅")
                             st.rerun()
-                if b2.button("⛔ Reject & Hold via API", use_container_width=True):
+                if b2.button("⛔ Reject & Hold", use_container_width=True, key="hitl_detail_reject"):
                     if api_online:
                         ok_r, res_r = api.post(f"/api/v1/orchestrator/hitl/{state['cycle_id']}/reject", {}, role_info["token"], params={"operator_name": op_name, "note": op_note})
                         if ok_r:
@@ -1312,12 +1633,6 @@ def main() -> None:
                             st.toast(f"Rejected! Audit Hash: {res_r['audit_hash'][:14]}...", icon="⛔")
                             st.rerun()
                 b3.caption(f"Status: **{state['hitl_status']}** | Privacy Leaks: **{kpis['privacy_leaks_detected']}** | Ronde Negosiasi: **{kpis['negotiation_rounds_used']}/3**")
-
-        g1, g2 = st.columns([1.15, 1.0])
-        with g1:
-            st.plotly_chart(build_sankey(state["milp_result"]["allocations"], state["milp_result"]["unallocated_kg"]), use_container_width=True)
-        with g2:
-            st.plotly_chart(build_decision_shift_chart(base_state, state), use_container_width=True)
 
         st.subheader("📡 Live Agent Status Matrix (6 Agen Heterogen)")
         st.dataframe(pd.DataFrame(state.get("agent_statuses", [])), use_container_width=True, hide_index=True)
@@ -1332,9 +1647,19 @@ def main() -> None:
         render_coldchain_workspace(api, api_online, state, ml_metrics, role_info)
 
     with tabs[4]:
-        render_freshfood_module(api, api_online, state, ml_metrics, role_info)
-        st.divider()
-        render_koperasi_and_supermart_modules(api, api_online, state, ml_metrics, role_info)
+        sub_ent = st.radio(
+            "Pilih Sub-Modul Enterprise",
+            ["🏭 FreshFood Processing (AGT-03)", "🤝 Koperasi Tani (AGT-02)", "🛒 SuperMart Retail (AGT-05)"],
+            horizontal=True,
+            label_visibility="collapsed",
+            key="global_sub_ent_radio",
+        )
+        if "FreshFood" in sub_ent:
+            render_freshfood_module(api, api_online, state, ml_metrics, role_info)
+        elif "Koperasi" in sub_ent:
+            render_koperasi_workspace(api, api_online, state, ml_metrics, role_info)
+        else:
+            render_supermart_workspace(api, api_online, state, ml_metrics, role_info)
 
     with tabs[5]:
         render_server_data_explorer(api, api_online, role_info, selected_role, default_ent=ent_key if ent_key != "global" else "koperasi")
