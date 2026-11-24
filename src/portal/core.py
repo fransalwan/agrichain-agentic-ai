@@ -200,6 +200,82 @@ def channel_label(ch: str) -> str:
     return CHANNEL_LABELS.get(ch, ch)
 
 
+def _join(items: List[str]) -> str:
+    items = [i for i in items if i]
+    if len(items) <= 1:
+        return "".join(items)
+    return ", ".join(items[:-1]) + " dan " + items[-1]
+
+
+_PROPER_NOUNS = ("SuperMart", "FreshFood", "AgroFarm", "Koperasi", "ColdChain", "Lot", "Grade")
+_REASON_CLAUSES = {
+    "RETAIL_GRADE_B_SUBSTITUTION_REQUIRES_APPROVAL": "SuperMart perlu menerima Grade B sebagai pengganti",
+    "AGROFARM_SENSOR_OFFLINE_FALLBACK_ACTIVE": "sensor lahan mati sehingga perkiraan panen memakai data historis",
+    "FOOD_SAFETY_HARD_BLOCK_TRIGGERED": "ada lot yang diblokir karena gagal uji keamanan pangan",
+}
+
+
+def _reason_clause(code: str) -> str:
+    """An approval reason phrased to follow 'Karena …' mid-sentence."""
+    text = _REASON_CLAUSES.get(code) or humanize_reason(code)
+    return text if text.startswith(_PROPER_NOUNS) else text[:1].lower() + text[1:]
+
+
+def plain_briefing(state: Dict[str, Any]) -> str:
+    """Plain-language summary of a planning cycle for stakeholders.
+
+    Built from the same cycle data as the backend's technical executive_briefing, but
+    without jargon (MILP-FEFO, Jain's index, NIST codes).
+    """
+    k = state.get("global_kpis", {})
+    milp = state.get("milp_result", {})
+    supply = float(milp.get("total_supply_kg", 0))
+    loss = float(milp.get("total_loss_kg", 0))
+    parts: List[str] = []
+
+    if loss < 0.5:
+        parts.append(f"Semua {fmt_kg(supply)} tomat sudah dibagi ke mitra tanpa ada yang terbuang.")
+    else:
+        parts.append(f"{fmt_kg(supply - loss)} dari {fmt_kg(supply)} tomat sudah dibagi ke mitra; "
+                     f"{fmt_kg(loss)} ({fmt_pct(k.get('food_loss_rate_pct', 0), 1)}) terbuang atau diblokir.")
+
+    ofr = f"{fmt_pct(k.get('order_fulfillment_rate_pct', 0))} pesanan SuperMart terpenuhi"
+    if state.get("allow_grade_b_to_supermart"):
+        ofr += ", sebagian dengan tomat Grade B sebagai pengganti (maks. 30%) karena permintaan melonjak"
+    parts.append(ofr + ".")
+
+    if k.get("overtime_activated"):
+        parts.append("FreshFood menambah shift lembur (+500 kg) agar tidak ada tomat yang terbuang.")
+    if k.get("third_pl_activated"):
+        parts.append("Sebagian tomat dititipkan ke gudang mitra (3PL).")
+    reasons = state.get("hitl_reasons", []) if state.get("hitl_status") == "PENDING_APPROVAL" else []
+    drop = float(state.get("capacity_drop_pct") or 0)
+    if drop > 0 and not any(r.startswith("CAPACITY_DROP") for r in reasons):
+        parts.append(f"Kapasitas gudang dingin turun {fmt_num(drop, 0)}%.")
+    for v in state.get("freshfood_qc_feedback", {}).get("waste_valorization_plan", []):
+        parts.append(f"Lot {v.get('lot_id')} ({fmt_kg(v.get('blocked_qty_kg', 0))}) gagal uji keamanan pangan "
+                     "dan dialihkan ke kompos/biogas.")
+    if state.get("data_freshness_warning") and "AGROFARM_SENSOR_OFFLINE_FALLBACK_ACTIVE" not in reasons:
+        parts.append("Sebagian data sensor lahan sudah lama, jadi angka panen di blok terkait masih perkiraan kasar.")
+
+    fair = float(k.get("jains_fairness_index", 0))
+    spread = "merata" if fair >= 0.9 else ("cukup merata" if fair >= 0.8 else "kurang merata")
+    parts.append(f"Keuntungan gabungan kelima mitra {fmt_rp_short(k.get('net_ecosystem_profit_rp', 0))}, "
+                 f"dengan pembagian yang {spread} antar-mitra.")
+
+    status = state.get("hitl_status")
+    if status == "PENDING_APPROVAL":
+        who = "Anda" if st.session_state.get("role") == "global" else "pusat kendali"
+        parts.append(f"Karena {_join([_reason_clause(r) for r in reasons])}, rencana ini menunggu persetujuan {who}.")
+    elif status == "HUMAN_APPROVED":
+        parts.append("Rencana ini sudah disetujui operator.")
+    elif status == "HUMAN_REJECTED":
+        parts.append("Rencana ini ditolak operator dan akan disusun ulang.")
+    else:
+        parts.append("Tidak ada risiko yang melewati batas, jadi rencana dijalankan otomatis.")
+    return " ".join(parts)
+
+
 # ---------------------------------------------------------------------------
 # API client
 # ---------------------------------------------------------------------------

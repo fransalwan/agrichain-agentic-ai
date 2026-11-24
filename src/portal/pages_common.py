@@ -78,8 +78,8 @@ def global_overview() -> None:
         ).properties(height=alt.Step(34))
         st.altair_chart(chart, width="stretch")
 
-    with st.expander("Ringkasan dari agen AI", icon=":material/smart_toy:"):
-        st.write(state.get("executive_briefing", "-"))
+    with st.expander("Ringkasan siklus", icon=":material/summarize:"):
+        st.write(core.plain_briefing(state))
         st.caption(f"Siklus {state['cycle_id']} · diperbarui {core.fmt_time(state['_synced_at'])}")
 
 
@@ -168,8 +168,8 @@ def enterprise_overview(ent: str) -> None:
     ui.section("Status mitra", "Posisi Anda dalam rantai pasok tomat.")
     ui.partner_strip(state, highlight=ent)
 
-    with st.expander("Ringkasan dari agen AI", icon=":material/smart_toy:"):
-        st.write(state.get("executive_briefing", "-"))
+    with st.expander("Ringkasan siklus", icon=":material/summarize:"):
+        st.write(core.plain_briefing(state))
         st.caption(f"Siklus {state['cycle_id']} · diperbarui {core.fmt_time(state['_synced_at'])}")
 
 
