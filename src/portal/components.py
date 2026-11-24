@@ -109,7 +109,7 @@ def model_tags(url_path: str) -> None:
     if not tags:
         return
     with st.container(horizontal=True, gap="small", vertical_alignment="center"):
-        st.caption("Model:", width="content")
+        st.caption("Teknologi:", width="content")
         for kind, name, desc in tags:
             label, color, icon = _KIND[kind]
             st.badge(name, color=color, icon=icon, help=f"**{label}** · {desc}")
@@ -157,8 +157,28 @@ def section(title: str, caption: Optional[str] = None, icon: Optional[str] = Non
         st.caption(caption)
 
 
+# Default work page per partner (url path of its first operational page).
+PARTNER_HOME = {"agrofarm": "lahan", "koperasi": "harga", "freshfood": "mutu", "coldchain": "rute", "supermart": "permintaan"}
+
+
+def can_open(ent: str) -> bool:
+    """The Control Center can open every partner; a partner only its own workspace."""
+    return core.role_key() in ("global", ent)
+
+
+def open_partner(ent: str, path: Optional[str] = None) -> None:
+    """Navigate to a partner's work page (inside 'Operasional mitra' for the Control Center)."""
+    path = path or PARTNER_HOME[ent]
+    if core.role_key() == "global":
+        st.session_state["mitra_ent"] = ent
+        st.session_state.setdefault("mitra_sub", {})[ent] = path
+        st.switch_page(PAGES["mitra"])
+    elif path in PAGES:
+        st.switch_page(PAGES[path])
+
+
 def partner_strip(state: Dict[str, Any], highlight: Optional[str] = None) -> None:
-    """One-glance status of the five partners in supply-chain order."""
+    """One-glance status of the five partners in supply-chain order, each linking to its detail."""
     health = core.enterprise_health(state)
     with st.container(horizontal=True, gap="small"):
         for ent in core.ENTERPRISES:
@@ -170,10 +190,13 @@ def partner_strip(state: Dict[str, Any], highlight: Optional[str] = None) -> Non
                 st.caption(f"{sub} · **posisi Anda**" if ent == highlight else sub)
                 st.badge(label, color=color, icon=licon)
                 st.caption(text)
+                if can_open(ent) and st.button("Lihat detail", key=f"strip_{ent}", type="tertiary",
+                                               icon=":material/arrow_forward:", icon_position="right"):
+                    open_partner(ent)
 
 
-def attention_list(items: List[Tuple[str, str]]) -> None:
-    """items: list of (level, text) with level in ok | warn | alert | info."""
+def attention_list(items: List[tuple]) -> None:
+    """items: (level, text) or (level, text, (enterprise, page_path)) with level in ok|warn|alert|info."""
     if not items:
         st.success("Tidak ada hal yang perlu ditindaklanjuti saat ini.", icon=":material/task_alt:")
         return
@@ -184,8 +207,51 @@ def attention_list(items: List[Tuple[str, str]]) -> None:
         "ok": ":green[:material/check_circle:]",
     }
     with st.container(border=True):
-        for level, text in items:
-            st.markdown(f"{icons.get(level, '')} {text}")
+        for i, item in enumerate(items):
+            level, text = item[0], item[1]
+            target = item[2] if len(item) > 2 else None
+            with st.container(horizontal=True, vertical_alignment="center"):
+                st.markdown(f"{icons.get(level, '')} {text}")
+                if target and can_open(target[0]) and st.button(
+                        "Lihat", key=f"att_{i}", type="tertiary", icon=":material/arrow_forward:",
+                        icon_position="right", width="content"):
+                    open_partner(*target)
+
+
+WELCOME_STEPS = {
+    "global": ["Cek **Ringkasan**: kondisi kelima mitra dan angka utama siklus ini.",
+               "Buka **Persetujuan** bila ada rencana berisiko yang menunggu keputusan Anda.",
+               "Gunakan **Operasional mitra** untuk melihat detail tiap mitra."],
+    "agrofarm": ["Lihat **Perlu perhatian** untuk blok lahan yang bermasalah.",
+                 "Buka **Lahan & panen** untuk memperkirakan hasil dan jadwal panen.",
+                 "Cek **Masukan mitra** untuk umpan balik mutu dan perkiraan permintaan."],
+    "koperasi": ["Lihat **Perlu perhatian** dan status mitra di Ringkasan.",
+                 "Buka **Harga & penawaran** untuk harga pasar per grade.",
+                 "Nilai tawaran pembeli terhadap harga minimum koperasi."],
+    "freshfood": ["Lihat **Perlu perhatian** untuk lot yang diblokir atau bermasalah.",
+                  "Buka **Kontrol mutu** untuk menjalankan inspeksi keamanan pangan.",
+                  "Atur kapasitas lini dan lembur di **Jadwal produksi**."],
+    "coldchain": ["Lihat **Perlu perhatian** dan kapasitas gudang dingin.",
+                  "Buka **Rute pengiriman** untuk rencana rute truk.",
+                  "Pantau **Suhu & waktu tempuh** agar tetap 7–12 °C."],
+    "supermart": ["Lihat **Perlu perhatian** untuk penerimaan barang bermasalah.",
+                  "Buka **Permintaan & pesanan** untuk perkiraan 7 hari dan pesanan pembelian.",
+                  "Periksa kedatangan truk di **Penerimaan barang**."],
+}
+
+
+def welcome_card() -> None:
+    """Dismissible 3-step orientation for first-time users of each role."""
+    if st.session_state.get("welcome_closed"):
+        return
+    with st.container(border=True):
+        with st.container(horizontal=True, vertical_alignment="center"):
+            st.markdown(f":material/waving_hand: **Mulai di sini, {core.role()['title'].lower()}**")
+            if st.button("Tutup", key="welcome_close", type="tertiary", icon=":material/close:", width="content"):
+                st.session_state["welcome_closed"] = True
+                st.rerun()
+        for i, step in enumerate(WELCOME_STEPS[core.role_key()], 1):
+            st.markdown(f"{i}. {step}")
 
 
 def hitl_notice(state: Dict[str, Any]) -> None:

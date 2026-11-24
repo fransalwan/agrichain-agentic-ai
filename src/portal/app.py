@@ -102,17 +102,14 @@ def build_pages(role_key: str) -> dict:
         pending = (st.session_state["cycles"].get(st.session_state["scenario"], {}).get("hitl_status") == "PENDING_APPROVAL")
         home = _p(pc.global_overview, "Ringkasan", ":material/dashboard:", "ringkasan", default=True)
         approvals = _p(pc.approvals, "Persetujuan · 1" if pending else "Persetujuan", ":material/approval:", "persetujuan")
-        ui.PAGES.update({"home": home, "approvals": approvals})
-        partners = []
-        for ent, pages in ENTERPRISE_PAGES.items():
-            name = ui.ENTERPRISE_NAMES[ent][0]
-            for fn, title, icon, path in pages:
-                partners.append(_p(fn, f"{name} · {title}", icon, f"{ent}-{path}"))
-        return {"": [home, approvals], "Operasional mitra": partners, "Lainnya": [data, audit]}
+        mitra = _p(pe.partner_workspace, "Operasional mitra", ":material/groups:", "mitra")
+        ui.PAGES.update({"home": home, "approvals": approvals, "mitra": mitra})
+        return {"": [home, approvals, mitra], "Lainnya": [data, audit]}
 
     home = _p(lambda: pc.enterprise_overview(role_key), "Ringkasan", ":material/dashboard:", "ringkasan", default=True)
     ui.PAGES["home"] = home
     ops = [_p(fn, title, icon, path) for fn, title, icon, path in ENTERPRISE_PAGES[role_key]]
+    ui.PAGES.update({path: page for (_, _, _, path), page in zip(ENTERPRISE_PAGES[role_key], ops)})
     return {"": [home, *ops], "Lainnya": [data, audit]}
 
 
@@ -130,9 +127,12 @@ def sidebar() -> None:
     # Widget state is reset on page switches, so the chosen scenario lives in its own key.
     st.session_state["_scenario_widget"] = st.session_state["scenario"]
     with st.sidebar:
-        st.selectbox("Kondisi simulasi", list(core.SCENARIOS), format_func=lambda k: core.SCENARIOS[k][0],
-                     key="_scenario_widget", on_change=_set_scenario,
-                     help="Pilih kondisi operasional untuk melihat bagaimana agen menyesuaikan rencana.")
+        # Demo controls are kept apart from the work menu: real stakeholders do not pick scenarios.
+        with st.expander("Mode demo", icon=":material/science:", expanded=st.session_state["scenario"] != "NORMAL"):
+            st.selectbox("Kondisi simulasi", list(core.SCENARIOS), format_func=lambda k: core.SCENARIOS[k][0],
+                         key="_scenario_widget", on_change=_set_scenario,
+                         help="Untuk presentasi: pilih gangguan untuk melihat bagaimana agen menyesuaikan rencana.")
+            st.caption(core.SCENARIOS[st.session_state["scenario"]][1])
         if st.button("Perbarui data", icon=":material/refresh:", width="stretch"):
             core.clear_cycles()
             core.api_online.clear()

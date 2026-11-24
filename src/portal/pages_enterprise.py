@@ -38,10 +38,12 @@ def agrofarm_fields() -> None:
             "Blok": b["block_id"], "Lot": b["lot_id"], "Varietas": b["variety"], "Luas (ha)": b["area_ha"],
             "NDVI hari ini": b["ndvi_today"], "Batas bawah normal": b["ndvi_2sigma_lower"],
             "Hujan 14 hari (mm)": b["rain_14d_mm"], "Kelembapan tanah (%)": b["soil_moisture_pct"],
-            "Status": "🟢 Normal" if b["status"] == "NORMAL" else "🟠 Perlu dicek",
-            "Catatan": "; ".join(b["causes"]) if b["causes"] else "-",
+            "Status": "Normal" if b["status"] == "NORMAL" else "Perlu dicek",
+            "Catatan": core.id_text("; ".join(b["causes"])) if b["causes"] else "-",
         } for b in blocks])
-        st.dataframe(df, hide_index=True, column_config={
+        styled = df.style.map(
+            lambda v: f"color: {'#15803D' if v == 'Normal' else '#C2410C'}; font-weight: 600", subset=["Status"])
+        st.dataframe(styled, hide_index=True, column_config={
             "NDVI hari ini": st.column_config.ProgressColumn(
                 min_value=0.0, max_value=1.0, format="%.2f",
                 help="Indeks kehijauan tanaman (0–1). Makin tinggi makin sehat."),
@@ -92,7 +94,7 @@ def agrofarm_fields() -> None:
                 shift = hw["shift_days"]
                 shift_txt = "sesuai jadwal" if shift == 0 else (f"dimajukan {abs(shift)} hari" if shift < 0 else f"dimundurkan {shift} hari")
                 st.markdown(f":material/event: **Jendela panen:** {hw['start']} s.d. {hw['end']} ({shift_txt})")
-                st.caption(hw["reason"])
+                st.caption(core.id_text(hw["reason"]))
                 if p.get("doubtful"):
                     st.warning("Perkiraan kurang pasti karena sensor mati; gunakan sebagai acuan kasar.", icon=":material/warning:")
             fi = res.get("feature_importance", {})
@@ -122,7 +124,7 @@ def agrofarm_signals() -> None:
                 crit = f["severity"] == "CRITICAL"
                 st.badge("Kritis" if crit else "Saran", color="red" if crit else "blue")
             st.caption("Temuan: " + ", ".join(core.humanize_reason(x) for x in f["findings"]))
-            st.write(f["recommendation"])
+            st.write(core.id_text(f["recommendation"]))
 
     ui.section("Perkiraan permintaan SuperMart 7 hari", "Dipakai untuk merencanakan waktu dan volume panen.")
     with st.container(border=True):
@@ -252,7 +254,7 @@ def freshfood_quality() -> None:
                             st.caption("Lot dialihkan ke mitra kompos/biogas agar tidak terbuang.")
                     fb = res.get("qc_feedback_to_agrofarm")
                     if fb:
-                        st.info(f"Masukan dikirim ke AgroFarm ({fb['block_id']}): {fb['recommendation']}", icon=":material/send:")
+                        st.info(f"Masukan dikirim ke AgroFarm ({fb['block_id']}): {core.id_text(fb['recommendation'])}", icon=":material/send:")
                     st.caption(f"Tercatat di log audit · {res['audit_hash'][:12]}…")
 
     with st.expander("Contoh penilaian visual otomatis (kamera)", icon=":material/photo_camera:"):
@@ -598,4 +600,54 @@ def supermart_receiving() -> None:
                 box(f"**{label}**", icon=":material/inventory_2:")
                 if v["sla_penalty_rp"]:
                     st.caption(f"Klaim ke ColdChain: {fmt_rp(v['sla_penalty_rp'])}")
-                st.caption(v["action_note"])
+                st.caption(core.id_text(v["action_note"]))
+
+
+# ===========================================================================
+# Control Center: all partner work pages behind one menu entry
+# ===========================================================================
+ENTERPRISE_PAGES = {
+    "agrofarm": [(agrofarm_fields, "Lahan & panen", "lahan"), (agrofarm_signals, "Masukan mitra", "masukan")],
+    "koperasi": [(koperasi_pricing, "Harga & penawaran", "harga")],
+    "freshfood": [(freshfood_quality, "Kontrol mutu", "mutu"), (freshfood_schedule, "Jadwal produksi", "produksi")],
+    "coldchain": [(coldchain_routes, "Rute pengiriman", "rute"), (coldchain_fleet, "Armada & pengiriman", "armada"),
+                  (coldchain_temperature, "Suhu & waktu tempuh", "suhu")],
+    "supermart": [(supermart_demand, "Permintaan & pesanan", "permintaan"),
+                  (supermart_receiving, "Penerimaan barang", "penerimaan")],
+}
+
+
+def _keep(state_key: str, widget_key: str) -> None:
+    st.session_state[state_key] = st.session_state[widget_key]
+
+
+def partner_workspace() -> None:
+    """One page for the Control Center to open any partner's work pages.
+
+    Selections live in their own session keys (widget state resets on page switches), so
+    "Lihat detail" links from the overview can preselect a partner and page.
+    """
+    ss = st.session_state
+    ss.setdefault("mitra_ent", "agrofarm")
+    ss.setdefault("mitra_sub", {})
+    ss["_w_mitra_ent"] = ss["mitra_ent"]
+    st.segmented_control("Mitra", core.ENTERPRISES, required=True, key="_w_mitra_ent",
+                         format_func=lambda e: ui.ENTERPRISE_NAMES[e][0],
+                         on_change=_keep, args=("mitra_ent", "_w_mitra_ent"))
+    ent = ss["mitra_ent"]
+    pages = ENTERPRISE_PAGES[ent]
+    paths = [p for _, _, p in pages]
+    sub = ss["mitra_sub"].get(ent) if ss["mitra_sub"].get(ent) in paths else paths[0]
+    if len(pages) > 1:
+        ss["_w_mitra_sub"] = sub
+
+        def _keep_sub() -> None:
+            ss["mitra_sub"][ent] = ss["_w_mitra_sub"]
+
+        st.segmented_control("Halaman", paths, required=True, key="_w_mitra_sub", on_change=_keep_sub,
+                             format_func=lambda p: next(t for _, t, q in pages if q == p))
+        sub = ss["mitra_sub"].get(ent, sub) if ss["mitra_sub"].get(ent) in paths else sub
+    fn, title, path = next(x for x in pages if x[2] == sub)
+    st.subheader(f"{ui.ENTERPRISE_NAMES[ent][0]} · {title}")
+    ui.model_tags(path)
+    fn()

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import altair as alt
 import pandas as pd
@@ -31,6 +31,7 @@ def global_overview() -> None:
     state = ui.require_cycle()
     base = core.get_baseline()
     k = state["global_kpis"]
+    ui.welcome_card()
 
     if state["hitl_status"] == "PENDING_APPROVAL":
         with st.container(border=True, horizontal=True, vertical_alignment="center"):
@@ -86,81 +87,115 @@ def global_overview() -> None:
 # ---------------------------------------------------------------------------
 # Enterprise overview (one per partner role)
 # ---------------------------------------------------------------------------
-def _enterprise_kpis(ent: str, state: Dict[str, Any]) -> None:
-    k = state["global_kpis"]
-    milp = state["milp_result"]
-    profit_key = {"agrofarm": "AgroFarm", "koperasi": "Koperasi Tani", "freshfood": "FreshFood Processing",
-                  "coldchain": "ColdChain Logistics", "supermart": "SuperMart"}[ent]
-    profit = state["enterprise_profits_rp"].get(profit_key, 0)
+PROFIT_KEYS = {"agrofarm": "AgroFarm", "koperasi": "Koperasi Tani", "freshfood": "FreshFood Processing",
+               "coldchain": "ColdChain Logistics", "supermart": "SuperMart"}
+VS_BASE = "vs tanpa penyesuaian agen"
+
+
+def _diff(cur: float, ref: Optional[float], fmt) -> Optional[str]:
+    """Signed delta text for st.metric, or None when there is nothing to compare."""
+    if ref is None or abs(cur - ref) < 1e-9:
+        return None
+    return ("+" if cur > ref else "-") + fmt(abs(cur - ref))
+
+
+def _enterprise_kpis(ent: str, state: Dict[str, Any], base: Optional[Dict[str, Any]]) -> None:
+    k, milp = state["global_kpis"], state["milp_result"]
+    bk = base["global_kpis"] if base else {}
+    bm = base["milp_result"] if base else {}
+    profit = state["enterprise_profits_rp"].get(PROFIT_KEYS[ent], 0)
+    base_profit = base["enterprise_profits_rp"].get(PROFIT_KEYS[ent]) if base else None
+
+    def vs(delta: Optional[str]) -> Dict[str, Any]:
+        # Only label the comparison when there actually is a difference to show.
+        return {"border": True, "delta_description": VS_BASE if delta else None}
     with st.container(horizontal=True):
         if ent == "agrofarm":
             blocks = state.get("agrofarm_monitoring", [])
             flagged = sum(1 for b in blocks if b.get("status") != "NORMAL")
             fb = state.get("freshfood_qc_feedback", {}).get("feedback_to_agrofarm", [])
-            st.metric("Total pasokan panen", fmt_kg(milp["total_supply_kg"]), border=True)
+            st.metric("Total pasokan panen", fmt_kg(milp["total_supply_kg"]), border=True,
+                      help="Total tomat dari semua blok pada siklus ini.")
             st.metric("Blok perlu dicek", f"{flagged} dari {len(blocks)}", border=True,
                       help="Blok dengan NDVI di bawah batas normal 14 hari atau curah hujan > 90 mm.")
-            st.metric("Catatan mutu dari FreshFood", str(len(fb)), border=True)
+            st.metric("Catatan mutu dari FreshFood", str(len(fb)), border=True,
+                      help="Lot yang lebih buruk dari normal untuk grade-nya atau gagal uji keamanan pangan.")
         elif ent == "koperasi":
             st.metric("Volume diperdagangkan", fmt_kg(milp["total_supply_kg"]), border=True)
-            st.metric("Putaran negosiasi", f"{k['negotiation_rounds_used']} dari 3", border=True)
-            st.metric("Negosiasi berhasil", fmt_pct(k["negotiation_success_rate_pct"], 0), border=True)
+            st.metric("Putaran negosiasi", f"{k['negotiation_rounds_used']} dari 3", border=True,
+                      help="Maksimal 3 putaran sebelum diteruskan ke persetujuan manusia.")
+            d = _diff(k["negotiation_success_rate_pct"], bk.get("negotiation_success_rate_pct"),
+                      lambda x: f"{fmt_num(x, 0)} poin")
+            st.metric("Negosiasi berhasil", fmt_pct(k["negotiation_success_rate_pct"], 0), d, **vs(d))
         elif ent == "freshfood":
             sched = state.get("freshfood_qc_feedback", {}).get("fefo_line_schedule", {})
-            st.metric("Volume diproses", fmt_kg(milp.get("freshfood_used_kg", 0)), border=True)
-            st.metric("Utilisasi lini produksi", fmt_pct(sched.get("capacity_utilization_pct", 0), 0), border=True)
+            d = _diff(milp.get("freshfood_used_kg", 0), bm.get("freshfood_used_kg"), fmt_kg)
+            st.metric("Volume diproses", fmt_kg(milp.get("freshfood_used_kg", 0)), d, **vs(d))
+            st.metric("Utilisasi lini produksi", fmt_pct(sched.get("capacity_utilization_pct", 0), 0), border=True,
+                      help="Persentase kapasitas lini (2.000 kg reguler, +500 kg lembur) yang terpakai.")
             st.metric("Shift lembur", "Aktif" if k.get("overtime_activated") else "Tidak aktif", border=True)
         elif ent == "coldchain":
             vr = state.get("vrptw_plan", {})
             st.metric("Kapasitas gudang dingin", fmt_kg(state["cold_storage_cap_kg"]),
                       f"-{fmt_num(state['capacity_drop_pct'], 0)}%" if state["capacity_drop_pct"] else None,
-                      delta_color="inverse", border=True)
+                      delta_color="inverse", border=True, delta_description="vs kapasitas normal 3.000 kg")
             st.metric("Total jarak rute", f"{fmt_num(vr.get('optimized_distance_km', 0))} km",
-                      f"-{fmt_num(vr.get('distance_reduction_pct', 0), 0)}% dari rute biasa", delta_color="inverse",
-                      border=True)
-            st.metric("Pengiriman terlambat", str(vr.get("time_window_violations", 0)), border=True)
+                      f"-{fmt_num(vr.get('distance_reduction_pct', 0), 0)}%", delta_color="inverse",
+                      border=True, delta_description="vs rute tanpa optimasi")
+            st.metric("Pengiriman terlambat", str(vr.get("time_window_violations", 0)), border=True,
+                      help="Jumlah kunjungan yang tiba di luar jam terima mitra.")
         elif ent == "supermart":
             sla = state.get("goods_receipt_sla", [])
             ok = sum(1 for x in sla if x.get("sla_status") == "ACCEPTED_ON_TIME")
-            st.metric("Pesanan terpenuhi", fmt_pct(k["order_fulfillment_rate_pct"]), border=True)
-            st.metric("Volume diterima", fmt_kg(milp.get("supermart_fulfilled_kg", 0)), border=True)
+            d = _diff(k["order_fulfillment_rate_pct"], bk.get("order_fulfillment_rate_pct"),
+                      lambda x: f"{fmt_num(x, 1)} poin")
+            st.metric("Pesanan terpenuhi", fmt_pct(k["order_fulfillment_rate_pct"]), d, **vs(d))
+            d = _diff(milp.get("supermart_fulfilled_kg", 0), bm.get("supermart_fulfilled_kg"), fmt_kg)
+            st.metric("Volume diterima", fmt_kg(milp.get("supermart_fulfilled_kg", 0)), d, **vs(d))
             st.metric("Diterima tepat waktu", f"{ok} dari {len(sla)}", border=True)
-        st.metric("Keuntungan siklus ini", fmt_rp_short(profit), border=True)
+        d = _diff(profit, base_profit, fmt_rp_short)
+        st.metric("Keuntungan siklus ini", fmt_rp_short(profit), d, **vs(d))
 
 
-def _enterprise_attention(ent: str, state: Dict[str, Any]) -> List[Tuple[str, str]]:
+def _enterprise_attention(ent: str, state: Dict[str, Any]) -> List[tuple]:
+    """(level, text, (enterprise, page)) items; the target page is where the user can act on it."""
     level, text = core.enterprise_health(state)[ent]
-    items: List[Tuple[str, str]] = []
+    home = ui.PARTNER_HOME[ent]
+    items: List[tuple] = []
     if level != "ok":
-        items.append((level, text))
+        items.append((level, text, (ent, home)))
     if ent == "agrofarm":
         for b in state.get("agrofarm_monitoring", []):
             if b.get("status") != "NORMAL" and b.get("causes"):
-                items.append(("warn", f"**{b['block_id']}**: {'; '.join(b['causes'])}"))
+                items.append(("warn", f"**{b['block_id']}**: {core.id_text('; '.join(b['causes']))}", (ent, "lahan")))
         for f in state.get("freshfood_qc_feedback", {}).get("feedback_to_agrofarm", []):
-            items.append(("info", f"Masukan FreshFood untuk **{f['block_id']}**: {f['recommendation']}"))
+            items.append(("info", f"Masukan FreshFood untuk **{f['block_id']}**: {core.id_text(f['recommendation'])}",
+                          (ent, "masukan")))
     elif ent == "freshfood":
         for v in state.get("freshfood_qc_feedback", {}).get("waste_valorization_plan", []):
             items.append(("alert", f"Lot **{v.get('lot_id', '-')}** ({fmt_kg(v.get('blocked_qty_kg', 0))}) diblokir "
-                                   "dan dialihkan ke kompos/biogas"))
+                                   "dan dialihkan ke kompos/biogas", (ent, "produksi")))
     elif ent == "supermart":
         fp = state.get("supermart_horizon_7d", {}).get("flash_promo_absorption", {})
         if fp.get("enabled"):
-            items.append(("info", f"Promo kilat bisa menyerap tambahan {fmt_kg(fp['extra_absorption_cap_kg'])} Grade A."))
+            items.append(("info", f"Promo kilat bisa menyerap tambahan {fmt_kg(fp['extra_absorption_cap_kg'])} Grade A.",
+                          (ent, "permintaan")))
         for x in state.get("goods_receipt_sla", []):
             if x.get("sla_status") != "ACCEPTED_ON_TIME":
-                items.append(("alert", x.get("action_note", "")))
+                items.append(("alert", core.id_text(x.get("action_note", "")), (ent, "penerimaan")))
     elif ent == "coldchain":
         synced = state.get("vrptw_plan", {}).get("dock_windows_synced_nodes", [])
         if synced:
-            items.append(("info", f"Jadwal bongkar mitra sudah disinkronkan ke rute: {', '.join(synced)}"))
+            items.append(("info", f"Jadwal bongkar mitra sudah disinkronkan ke rute: {', '.join(synced)}", (ent, "rute")))
     return items
 
 
 def enterprise_overview(ent: str) -> None:
     state = ui.require_cycle()
+    base = core.get_baseline()
+    ui.welcome_card()
     ui.hitl_notice(state)
-    _enterprise_kpis(ent, state)
+    _enterprise_kpis(ent, state, base)
 
     ui.section("Perlu perhatian", icon=":material/notifications:")
     ui.attention_list(_enterprise_attention(ent, state))
@@ -313,7 +348,8 @@ def data_page() -> None:
                    f"(total {fmt_num(data['total_rows'])}).")
         if redacted:
             st.badge(f"{len(redacted)} kolom disembunyikan", color="orange", icon=":material/lock:",
-                     help=f"Kolom rahasia: {', '.join(redacted)}. Hanya pemilik data yang dapat melihatnya.")
+                     help=f"Kolom rahasia: {', '.join(core.column_label(c) for c in redacted)}. "
+                          "Hanya pemilik data yang dapat melihatnya.")
         else:
             st.badge("Akses penuh", color="green", icon=":material/lock_open:")
 
@@ -321,6 +357,7 @@ def data_page() -> None:
     if df.empty:
         st.info("Tidak ada data yang cocok dengan pencarian Anda.", icon=":material/search_off:")
         return
+    df = df.rename(columns=core.column_label)
     st.dataframe(df, hide_index=True)
     st.download_button("Unduh CSV", df.to_csv(index=False).encode("utf-8"), file_name=f"{ent}_{table}.csv",
                        mime="text/csv", icon=":material/download:")
@@ -374,8 +411,8 @@ def activity_page() -> None:
             icon = ":green[:material/check_circle:]" if step["status"] in STEP_OK else ":orange[:material/warning:]"
             with st.container(border=True):
                 st.markdown(f"{icon} **{step['step']}. {_step_label(step['node'])}**")
-                st.caption(f"{step['actors']} · {core.fmt_time(step['timestamp'])}")
-                st.write(step["summary"])
+                st.caption(f"{core.actor_label(step['actors'])} · {core.fmt_time(step['timestamp'])}")
+                st.write(core.id_text(step["summary"]))
         if state.get("lineage"):
             with st.expander("Ketertelusuran lot (dari kebun ke toko)", icon=":material/timeline:"):
                 lin = pd.DataFrame(state["lineage"]).rename(columns={
@@ -396,8 +433,8 @@ def activity_page() -> None:
             st.dataframe(pd.DataFrame([
                 {"Waktu": core.fmt_time(e["timestamp"]),
                  "Kejadian": EVENT_LABELS.get(e["event_type"], e["event_type"]),
-                 "Pelaku": e["actor"],
-                 "Detail": json.dumps(e["details"], ensure_ascii=False),
+                 "Pelaku": core.actor_label(e["actor"]),
+                 "Detail teknis": json.dumps(e["details"], ensure_ascii=False),
                  "Hash": e["hash"][:12] + "…"}
                 for e in aud["entries"]
             ]), hide_index=True)
@@ -405,22 +442,29 @@ def activity_page() -> None:
     with tabs[2]:
         agents = pd.DataFrame(state.get("agent_statuses", []))
         if not agents.empty:
+            agents["agent_id"] = agents["agent_id"].map(lambda a: core.AGENT_NAMES.get(a, a))
+            agents["llm_model"] = agents["llm_model"].map(
+                lambda m: "Tidak memakai LLM" if str(m).startswith("None") else m)
             view = agents.rename(columns={
-                "agent_id": "Agen", "enterprise": "Mitra", "domain_model": "Model", "llm_model": "Model bahasa",
+                "agent_id": "Agen", "enterprise": "Mitra (lengkap)", "domain_model": "Model", "llm_model": "Model bahasa",
                 "calls": "Panggilan", "avg_latency_ms": "Latensi (ms)", "cost_usd": "Biaya (USD)",
                 "privacy_firewall": "Perlindungan data", "last_action": "Aksi terakhir"})
-            st.dataframe(view[["Agen", "Mitra", "Model", "Model bahasa", "Panggilan", "Latensi (ms)", "Biaya (USD)",
+            st.dataframe(view[["Agen", "Model", "Model bahasa", "Panggilan", "Latensi (ms)", "Biaya (USD)",
                                "Perlindungan data", "Aksi terakhir"]], hide_index=True)
 
     with tabs[3]:
-        st.caption("Pesan teknis yang dipertukarkan agen (FIPA-ACL / GS1 EPCIS). Untuk keperluan audit teknis.")
+        st.caption("Pesan yang dipertukarkan antar-agen. Isi teknis lengkap (FIPA-ACL / GS1 EPCIS) dapat dibuka di bawah tabel.")
         msgs = state.get("messages", [])
         if msgs:
             st.dataframe(pd.DataFrame([
-                {"Waktu": core.fmt_time(m["timestamp"]), "Dari": m["sender"], "Ke": m["receiver"],
-                 "Jenis": m["performative"], "Protokol": m["protocol"], "Putaran": m["negotiation_round"]}
+                {"Waktu": core.fmt_time(m["timestamp"]), "Dari": core.actor_label(m["sender"]),
+                 "Ke": core.actor_label(m["receiver"]),
+                 "Jenis": core.PERFORMATIVE_LABELS.get(m["performative"], m["performative"]),
+                 "Protokol": core.PROTOCOL_LABELS.get(m["protocol"], m["protocol"]), "Putaran": m["negotiation_round"]}
                 for m in msgs
             ]), hide_index=True)
             idx = st.selectbox("Lihat isi pesan", range(len(msgs)),
-                               format_func=lambda i: f"#{i + 1} {msgs[i]['sender']} → {msgs[i]['receiver']} ({msgs[i]['performative']})")
+                               format_func=lambda i: f"#{i + 1} {core.actor_label(msgs[i]['sender'])} → "
+                                                     f"{core.actor_label(msgs[i]['receiver'])} "
+                                                     f"({core.PERFORMATIVE_LABELS.get(msgs[i]['performative'], msgs[i]['performative'])})")
             st.json({"payload": msgs[idx]["payload"], "epcis_event": msgs[idx].get("epcis_event")}, expanded=False)

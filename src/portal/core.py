@@ -200,6 +200,74 @@ def channel_label(ch: str) -> str:
     return CHANNEL_LABELS.get(ch, ch)
 
 
+def id_text(text: str) -> str:
+    """Convert English number separators in backend free text to Indonesian (4,500.5 → 4.500,5)."""
+    if not isinstance(text, str):
+        return text
+    return re.sub(r"(?<=\d)([.,])(?=\d)", lambda m: "," if m.group(1) == "." else ".", text)
+
+
+# ---------------------------------------------------------------------------
+# Friendly labels for technical identifiers (activity log, data tables)
+# ---------------------------------------------------------------------------
+AGENT_NAMES = {
+    "AGT-01": "AgroFarm", "AGT-02": "Koperasi Tani", "AGT-03": "FreshFood",
+    "AGT-04": "ColdChain", "AGT-05": "SuperMart", "AGT-06": "Pusat Kendali",
+}
+PERFORMATIVE_LABELS = {
+    "CFP": "Permintaan penawaran", "PROPOSE": "Penawaran", "ACCEPT_PROPOSAL": "Penawaran diterima",
+    "REJECT_PROPOSAL": "Penawaran ditolak", "COUNTER_PROPOSE": "Tawaran balik", "INFORM": "Kirim data",
+    "REQUEST": "Permintaan", "AGREE": "Setuju", "REFUSE": "Menolak",
+}
+PROTOCOL_LABELS = {"FIPA-CONTRACT-NET": "Lelang (Contract Net)", "A2A-EPCIS-2.0": "Pertukaran data (GS1 EPCIS)"}
+
+
+def actor_label(actor: str) -> str:
+    """'AGT-02:KoperasiTani' / 'AGT-06 (GPT-4o + MILP)' / 'HUMAN_SUPERVISOR' → readable names."""
+    if not isinstance(actor, str):
+        return actor
+    text = re.sub(r"\s*\([^)]*\)", "", actor)
+    text = re.sub(r"AGT-0([1-6])(?::\w+)?", lambda m: AGENT_NAMES[f"AGT-0{m.group(1)}"], text)
+    text = text.replace("HUMAN_SUPERVISOR", "Supervisor manusia").replace("AltBuyer", "Pembeli alternatif")
+    text = text.replace("Audit Trail SHA-256", "log audit")
+    return text.replace("..", "–")
+
+
+COLUMN_LABELS = {
+    "lot_id": "Lot", "harvest_date": "Tanggal panen", "plot_id": "Petak", "area_ha": "Luas (ha)",
+    "avg_temp_c": "Suhu rata-rata (°C)", "soil_moisture_pct": "Kelembapan tanah (%)", "rainfall_mm": "Curah hujan (mm)",
+    "fertilizer_kg_ha": "Pupuk (kg/ha)", "crop_age_days": "Umur tanaman (hari)", "actual_yield_kg": "Hasil panen (kg)",
+    "grade": "Grade", "shelf_life_days": "Umur simpan (hari)", "predicted_grade_mix": "Perkiraan campuran grade",
+    "production_cost_per_kg": "Biaya produksi (Rp/kg)", "farmer_personal_id": "ID petani", "plot_gps_private": "Koordinat petak",
+    "tx_id": "Transaksi", "tx_date": "Tanggal", "season": "Musim", "month": "Bulan",
+    "regional_supply_ton": "Pasokan regional (ton)", "qty_kg": "Volume (kg)", "market_ref_price_rp": "Harga acuan pasar (Rp/kg)",
+    "floor_price_rp": "Harga minimum (Rp/kg)", "buyer_id": "Pembeli", "initial_bid_rp": "Tawaran awal (Rp/kg)",
+    "final_agreed_rp": "Harga sepakat (Rp/kg)", "rounds": "Putaran", "status": "Status",
+    "inspection_id": "Inspeksi", "timestamp": "Waktu", "image_index": "No. foto",
+    "estimated_shelf_life_days": "Perkiraan umur simpan (hari)", "recommended_route": "Rekomendasi tujuan",
+    "visual_metrics.avg_diameter_mm": "Diameter rata-rata (mm)", "visual_metrics.color_ripeness_idx": "Indeks kematangan warna",
+    "visual_metrics.surface_defect_ratio": "Rasio cacat permukaan", "visual_metrics.ground_truth_grade": "Grade sebenarnya",
+    "food_safety_lab.ph_level": "pH", "food_safety_lab.brix_pct": "Brix (%)",
+    "food_safety_lab.pesticide_residue_ppm": "Residu pestisida (ppm)", "food_safety_lab.microbial_pass": "Lolos uji mikroba",
+    "food_safety_lab.food_safety_approved": "Lolos keamanan pangan",
+    "ts": "Waktu", "facility_id": "Fasilitas", "zone_id": "Zona", "temp_c": "Suhu (°C)", "humidity_pct": "Kelembapan (%)",
+    "power_kw": "Daya (kW)", "usable_cap_kg": "Kapasitas pakai (kg)", "used_cap_kg": "Terpakai (kg)",
+    "is_anomaly": "Anomali", "event_note": "Catatan",
+    "route_id": "Rute", "origin_node": "Asal", "dest_node": "Tujuan", "distance_km": "Jarak (km)",
+    "est_duration_min": "Perkiraan durasi (menit)", "truck_id": "Truk", "truck_cap_kg": "Kapasitas truk (kg)",
+    "cost_per_km_rp": "Biaya per km (Rp)", "reefer_temp_c": "Suhu reefer (°C)",
+    "sales_date": "Tanggal", "store_id": "Toko", "sku_grade": "Grade", "day_of_week": "Hari ke-", "price_rp": "Harga (Rp/kg)",
+    "is_promo": "Promo", "is_weekend": "Akhir pekan", "season_flag": "Musim", "opening_stock_kg": "Stok awal (kg)",
+    "demand_sold_kg": "Terjual (kg)", "stockout_kg": "Kekurangan stok (kg)", "spoilage_kg": "Busuk (kg)",
+}
+
+
+def column_label(col: str) -> str:
+    if col in COLUMN_LABELS:
+        return COLUMN_LABELS[col]
+    return col.split(".")[-1].replace("_", " ").capitalize()
+
+
 def _join(items: List[str]) -> str:
     items = [i for i in items if i]
     if len(items) <= 1:
@@ -423,13 +491,14 @@ def cycle_loaded() -> bool:
 def get_cycle() -> Optional[Dict[str, Any]]:
     """Current planning cycle for the selected scenario (run once, then reused).
 
-    The global operator also needs the no-replanning baseline, so both requests run in parallel.
+    The no-replanning baseline (used for "vs tanpa penyesuaian" comparisons on every overview)
+    is fetched in parallel.
     """
     scenario = st.session_state["scenario"]
     cycles = st.session_state["cycles"]
     if scenario not in cycles:
         tok = token()
-        want_base = role_key() == "global" and scenario not in st.session_state["baselines"]
+        want_base = scenario not in st.session_state["baselines"]
         with st.spinner("Agen sedang menyusun rencana rantai pasok…"):
             with ThreadPoolExecutor(max_workers=2) as pool:
                 fut = pool.submit(api_call, "POST", "/api/v1/orchestrator/run-cycle", token=tok,
