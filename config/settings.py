@@ -158,8 +158,8 @@ class Settings(BaseSettings):
     openrouter_api_key: str = ""
 
     # Configurable Free-Tier Model IDs (3 Heterogeneous Models for AGT-02, AGT-03, AGT-06)
-    groq_model_koperasi: str = "llama-3.3-70b-versatile"
-    gemini_model_freshfood: str = "gemini-2.5-flash"
+    groq_model_koperasi: str = "openai/gpt-oss-20b"
+    gemini_model_freshfood: str = "gemini-3.5-flash-lite"
     groq_model_global: str = "openai/gpt-oss-120b"
     openrouter_model_fallback: str = "meta-llama/llama-3.3-70b-instruct:free"
 

@@ -178,14 +178,16 @@ class HeterogeneousLLMRouter:
 
         # 2. 100% FREE-TIER HETEROGENEOUS ROUTING (Groq Cloud + Google Gemini AI Studio + OpenRouter :free)
         #    - AGT-03 FreshFood -> Gemini Free Tier first, then Groq, then OpenRouter
-        #    - AGT-02 Koperasi  -> Groq (Llama 3.3 70B / Qwen / GPT-OSS) first, then Gemini, then OpenRouter
-        #    - AGT-06 Global    -> Groq (GPT-OSS 120B / Llama 3.3 70B) first, then Gemini, then OpenRouter
+        #    - AGT-02 Koperasi  -> Groq (GPT-OSS 20B / Qwen) first, then Gemini, then OpenRouter
+        #    - AGT-06 Global    -> Groq (GPT-OSS 120B / GPT-OSS 20B) first, then Gemini, then OpenRouter
+        # Fallback lists only name models that are still served (Llama 3.x on Groq and Gemini 2.5
+        # are retired for new accounts), so a dead default never costs a failed round-trip.
         groq_candidates = (
-            list(dict.fromkeys([settings.groq_model_global, "openai/gpt-oss-120b", "llama-3.3-70b-versatile", "openai/gpt-oss-20b"]))
+            list(dict.fromkeys([settings.groq_model_global, "openai/gpt-oss-120b", "openai/gpt-oss-20b"]))
             if aid == "AGT-06"
-            else list(dict.fromkeys([settings.groq_model_koperasi, "llama-3.3-70b-versatile", "openai/gpt-oss-20b", "llama-3.1-8b-instant"]))
+            else list(dict.fromkeys([settings.groq_model_koperasi, "openai/gpt-oss-20b", "qwen/qwen3.8-27b"]))
         )
-        gemini_candidates = list(dict.fromkeys([settings.gemini_model_freshfood, "gemini-2.5-flash", "gemini-2.5-flash-lite"]))
+        gemini_candidates = list(dict.fromkeys([settings.gemini_model_freshfood, "gemini-3.5-flash-lite", "gemini-3.5-flash"]))
 
         provider_order = ("gemini", "groq", "openrouter") if aid == "AGT-03" else ("groq", "gemini", "openrouter")
 

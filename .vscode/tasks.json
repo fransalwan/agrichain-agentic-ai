@@ -23,6 +23,12 @@
       "type": "shell",
       "command": "python -m streamlit run src/dashboard/app.py --server.port 8501",
       "isBackground": true
+    },
+    {
+      "label": "AgriChain: Start Stakeholder Portal",
+      "type": "shell",
+      "command": "python -m streamlit run src/portal/app.py --server.port 8502",
+      "isBackground": true
     }
   ]
 }
