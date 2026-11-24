@@ -5,7 +5,10 @@ internal status codes into plain Indonesian lives here, so page code stays reada
 """
 from __future__ import annotations
 
+import os
 import re
+import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
@@ -253,10 +256,43 @@ def api_read(method: str, path: str, *, json: Optional[dict] = None, params: Opt
 
 @st.cache_data(ttl=15, show_spinner=False)
 def api_online() -> bool:
+    return _api_healthy()
+
+
+def _api_healthy() -> bool:
     try:
         return httpx.get(f"{API_BASE}/api/v1/health", timeout=2.5).status_code == 200
     except Exception:
         return False
+
+
+@st.cache_resource(show_spinner=False)
+def ensure_api() -> bool:
+    """Start the FastAPI gateway inside this process when none is reachable locally.
+
+    Hosts that run a single Streamlit process (e.g. Streamlit Community Cloud) have no
+    separate API server, so the gateway is served from a daemon thread on API_BASE.
+    When an API is already running (local development with uvicorn), nothing is started.
+    Set AGRICHAIN_EMBED_API=0 to disable.
+    """
+    if _api_healthy():
+        return True
+    url = httpx.URL(API_BASE)
+    if os.environ.get("AGRICHAIN_EMBED_API", "1") == "0" or url.host not in ("127.0.0.1", "localhost"):
+        return False
+
+    import uvicorn
+
+    from src.api.main import app as api_app
+
+    server = uvicorn.Server(uvicorn.Config(api_app, host=url.host, port=url.port or 8000, log_level="warning"))
+    threading.Thread(target=server.run, name="agrichain-api", daemon=True).start()
+    for _ in range(120):  # models load at startup
+        if _api_healthy():
+            api_online.clear()
+            return True
+        time.sleep(0.5)
+    return False
 
 
 # ---------------------------------------------------------------------------

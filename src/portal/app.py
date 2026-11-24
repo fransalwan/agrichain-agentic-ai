@@ -25,6 +25,8 @@ ASSETS = Path(__file__).parent / "assets"
 st.set_page_config(page_title="AgriChain", page_icon=str(ASSETS / "icon.svg"), layout="wide")
 st.logo(str(ASSETS / "logo.svg"), icon_image=str(ASSETS / "icon.svg"), size="large")
 core.init_session()
+with st.spinner("Menyiapkan layanan AgriChain…"):
+    core.ensure_api()
 
 if "_toast" in st.session_state:
     msg, icon = st.session_state.pop("_toast")
