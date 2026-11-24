@@ -1,8 +1,15 @@
 """Five Independent Enterprise Agents (AGT-01 through AGT-05) with Heterogeneous ML + LLM Backbones."""
 from __future__ import annotations
 
+import json
+import zlib
+from collections import Counter
+from functools import lru_cache
 from typing import Any, Dict, List
 
+import numpy as np
+
+from config.settings import DATA_DIR
 from src.agents.base import BaseEnterpriseAgent
 from src.llm.router import HeterogeneousLLMRouter
 from src.models.agrofarm_rf import AgroFarmYieldModel
@@ -20,6 +27,23 @@ from src.protocols.fipa_epcis import (
     SensorReport,
     now_wib_iso,
 )
+
+
+@lru_cache(maxsize=1)
+def _qc_image_pool() -> Dict[str, Any]:
+    """Tomato photos, their measured surface-defect ratios, and per-grade defect norms.
+
+    Each photo in freshfood_tomato_images.npz has exactly one inspected QC record in
+    freshfood_tomato_qc.json (linked by image_index), which supplies the measured defect ratio.
+    """
+    data = np.load(DATA_DIR / "freshfood_tomato_images.npz", allow_pickle=False)
+    images, labels = data["images"], data["labels"]
+    defects = np.zeros(len(images), dtype=np.float32)
+    for rec in json.loads((DATA_DIR / "freshfood_tomato_qc.json").read_text(encoding="utf-8")):
+        defects[rec["image_index"]] = rec["visual_metrics"]["surface_defect_ratio"]
+    by_grade = {str(g): np.where(labels == g)[0] for g in np.unique(labels)}
+    norms = {g: (float(defects[idx].mean()), float(defects[idx].std())) for g, idx in by_grade.items()}
+    return {"images": images, "defects": defects, "by_grade": by_grade, "norms": norms}
 
 
 class AgroFarmAgent(BaseEnterpriseAgent):
@@ -255,6 +279,46 @@ class FreshFoodAgent(BaseEnterpriseAgent):
             autonomy="Kritis-Terproteksi (Penolakan food safety mutlak; overtime > 500 kg wajib persetujuan Quality Control & Production Manager)",
         )
 
+    # Camera-sample visual QC -------------------------------------------------------
+    QC_SAMPLE_SIZE = 8          # photos graded per lot per cycle
+    QC_DEVIATION_SIGMA = 1.5    # advisory when the lot mean exceeds the grade norm by 1.5 standard errors
+    QC_MIN_ACTIONABLE = 0.05    # ...and is at least 5% (smaller defects are not worth a field action)
+    _GRADE_RANK = {"A": 0, "B": 1, "C": 2, "Reject": 3}
+
+    def _inspect_lot_sample(self, conversation_id: str, lot: Dict[str, Any]) -> Dict[str, Any]:
+        """Grade a random photo sample of the lot with the CNN and measure its surface defects.
+
+        Photos are drawn from the tomato image set with the lot's declared grade (seeded by
+        cycle + lot, so a cycle is reproducible but cycles differ). The defect ratio is the mean
+        of the inspected QC records for those photos. A lot is flagged when that mean is worse
+        than normal for its grade (grade mean + 1.5 standard errors of an 8-photo sample) and
+        at least 5%, so trivially small defects on premium lots do not trigger field actions.
+        """
+        pool = _qc_image_pool()
+        grade = lot["grade"] if lot["grade"] in pool["by_grade"] else "B"
+        candidates = pool["by_grade"][grade]
+        rng = np.random.default_rng(zlib.crc32(f"{conversation_id}:{lot['lot_id']}".encode()))
+        n = min(self.QC_SAMPLE_SIZE, len(candidates))
+        sample = rng.choice(candidates, size=n, replace=False)
+
+        preds = self.model.classify_images(pool["images"][sample])
+        votes = Counter(p["predicted_grade"] for p in preds)
+        cnn_grade = max(votes, key=lambda g: (votes[g], -self._GRADE_RANK.get(g, 9)))
+        conf = float(np.mean([p["confidence"] for p in preds if p["predicted_grade"] == cnn_grade]))
+
+        defect = float(np.mean(pool["defects"][sample]))
+        mean, std = pool["norms"][grade]
+        threshold = mean + self.QC_DEVIATION_SIGMA * std / np.sqrt(n)
+        return {
+            "cnn_grade": cnn_grade,
+            "cnn_confidence": round(conf, 4),
+            "sample_size": int(n),
+            "defect_ratio": round(defect, 3),
+            "norm_mean": round(mean, 3),
+            "above_norm": defect > threshold and defect >= self.QC_MIN_ACTIONABLE,
+            "downgraded": self._GRADE_RANK.get(cnn_grade, 0) > self._GRADE_RANK.get(grade, 0),
+        }
+
     def inspect_and_report_capacity(
         self,
         conversation_id: str,
@@ -276,21 +340,28 @@ class FreshFoodAgent(BaseEnterpriseAgent):
                 "pesticide_residue_ppm": 0.08 if is_failed else 0.015,
                 "microbial_pass": not is_failed,
             }
-            defect = 0.24 if is_failed else (0.02 if lot["grade"] == "A" else (0.08 if lot["grade"] == "B" else 0.14))
+            # Visual QC: the CNN grades a camera sample of the lot; the surface-defect ratio is the
+            # mean of the measured QC records for the same photos (see _inspect_lot_sample).
+            vis = self._inspect_lot_sample(conversation_id, lot)
+            defect = 0.24 if is_failed else vis["defect_ratio"]
             safety = self.model.verify_food_safety_hard_block(lab, defect)
             qc_item = {
                 "lot_id": lot["lot_id"],
                 "block_id": lot.get("block_id", block_map.get(lot["lot_id"], "BLK-01")),
-                "cnn_grade": lot["grade"],
-                "cnn_confidence": 0.94,
-                "defect_ratio": defect,
+                "declared_grade": lot["grade"],
+                "cnn_grade": vis["cnn_grade"],
+                "cnn_confidence": vis["cnn_confidence"],
+                "cnn_sample_size": vis["sample_size"],
+                "defect_ratio": round(defect, 3),
+                "defect_norm_for_grade": vis["norm_mean"],
                 "food_safety_approved": safety["food_safety_approved"],
                 "hard_block_triggered": safety["hard_block_triggered"],
                 "violation_reasons": safety["violation_reasons"],
             }
             qc_results.append(qc_item)
 
-            # Closed-Loop QC Feedback to AgroFarm (AGT-01) when defect >= 12% or lab violation occurs
+            # Closed-Loop QC Feedback to AgroFarm (AGT-01): lab violation (critical), or a lot that is
+            # visibly worse than normal for its grade / graded lower by the CNN than declared (advisory).
             if safety["hard_block_triggered"]:
                 qc_feedback_to_agrofarm.append({
                     "target_enterprise": "AgroFarm (AGT-01)",
@@ -308,15 +379,30 @@ class FreshFoodAgent(BaseEnterpriseAgent):
                     "est_recovery_value_rp": round(float(lot.get("qty_kg", 0.0)) * 450.0, 0),
                     "note": "Dialihkan ke mitra kompos/biogas agar tidak terbuang ke TPA sekaligus menjaga 0% kontaminasi pangan.",
                 })
-            elif defect >= 0.12:
-                qc_feedback_to_agrofarm.append({
-                    "target_enterprise": "AgroFarm (AGT-01)",
-                    "block_id": qc_item["block_id"],
-                    "lot_id": lot["lot_id"],
-                    "severity": "ADVISORY",
-                    "findings": [f"SURFACE_DEFECT_{int(defect*100)}PCT"],
-                    "recommendation": "Percepat petik Grade C sebelum over-ripe & perbaiki bantalan peti panen lapangan.",
-                })
+            else:
+                findings, advice = [], []
+                if vis["above_norm"]:
+                    findings.append(f"SURFACE_DEFECT_{int(round(defect * 100))}PCT")
+                    advice.append(
+                        f"Cacat permukaan {defect * 100:.1f}% di atas normal Grade {lot['grade']} "
+                        f"(rata-rata {vis['norm_mean'] * 100:.1f}%): percepat petik sebelum terlalu matang "
+                        f"& perbaiki bantalan peti panen."
+                    )
+                if vis["downgraded"]:
+                    findings.append(f"GRADE_DOWNGRADE_{lot['grade']}_TO_{vis['cnn_grade']}")
+                    advice.append(
+                        f"Kamera menilai lot dominan Grade {vis['cnn_grade']}, lebih rendah dari Grade "
+                        f"{lot['grade']} yang dilaporkan: tinjau ulang sortasi di lapangan."
+                    )
+                if findings:
+                    qc_feedback_to_agrofarm.append({
+                        "target_enterprise": "AgroFarm (AGT-01)",
+                        "block_id": qc_item["block_id"],
+                        "lot_id": lot["lot_id"],
+                        "severity": "ADVISORY",
+                        "findings": findings,
+                        "recommendation": " ".join(advice),
+                    })
 
         # Dynamic Receiving Dock Window exported to ColdChain OR-Tools VRPTW (minutes from 08:00 WIB)
         receiving_dock_window = {

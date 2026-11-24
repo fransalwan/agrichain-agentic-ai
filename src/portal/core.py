@@ -176,7 +176,10 @@ def humanize_reason(code: str) -> str:
         return f"Tingkat susut pangan {fmt_num(float(m.group(1)), 1)}% melebihi batas {m.group(2)}%"
     m = re.match(r"SURFACE_DEFECT_(\d+)PCT", code)
     if m:
-        return f"Cacat permukaan {m.group(1)}%"
+        return f"Cacat permukaan {m.group(1)}%, di atas normal untuk grade-nya"
+    m = re.match(r"GRADE_DOWNGRADE_(\w+)_TO_(\w+)", code)
+    if m:
+        return f"Kamera menilai Grade {m.group(2)}, lebih rendah dari Grade {m.group(1)} yang dilaporkan"
     known = {
         "RETAIL_GRADE_B_SUBSTITUTION_REQUIRES_APPROVAL": "SuperMart akan menerima tomat Grade B sebagai pengganti (maks. 30%)",
         "NEGOTIATION_DEADLOCK_AFTER_3_ROUNDS": "Negosiasi harga buntu setelah 3 putaran",
