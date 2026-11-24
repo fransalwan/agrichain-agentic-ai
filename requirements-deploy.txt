@@ -1,0 +1,23 @@
+# Pinned runtime dependencies for the container deployment (Hugging Face Spaces).
+# Versions match the environment the ML models in results/models/*.pkl were trained with,
+# so the pickled models load without version-mismatch errors.
+fastapi==0.163.2
+uvicorn==0.54.0
+pydantic==2.14.3
+pydantic-settings==2.16.3
+httpx==0.28.1
+langgraph==1.2.24
+langchain-core==1.8.4
+numpy==2.5.5
+pandas==2.3.3
+scipy==1.18.1
+scikit-learn==1.9.1
+lightgbm==4.7.0
+xgboost==3.4.1
+PuLP==3.3.2
+ortools==9.15.6755
+streamlit==1.67.0
+altair==6.3.0
+plotly==6.9.0
+matplotlib==3.11.2
+pillow==13.0.0

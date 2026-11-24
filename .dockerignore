@@ -1,0 +1,18 @@
+# Secrets and local tooling
+.env
+.git
+.vscode
+.venv
+venv
+__pycache__
+*.py[cod]
+.pytest_cache
+
+# Large documents not needed at runtime
+*.pdf
+*.docx
+*.pptx
+docs/
+Submit_Google_Drive*
+*_submission.zip
+data/generated_images/
